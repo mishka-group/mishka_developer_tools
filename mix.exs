@@ -8,6 +8,7 @@ defmodule MishkaDeveloperTools.MixProject do
       version: @version,
       elixir: "~> 1.13",
       name: "Mishka developer tools",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: description(),
@@ -20,7 +21,8 @@ defmodule MishkaDeveloperTools.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger],
+      mod: {MishkaDeveloperTools.Application, []}
     ]
   end
 
@@ -32,6 +34,9 @@ defmodule MishkaDeveloperTools.MixProject do
       {:ex_doc, "~> 0.26", only: :dev, runtime: false}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp description() do
     "Mishka developer tools provides some macros and modules to make creating your elixir site as easy as possible"
