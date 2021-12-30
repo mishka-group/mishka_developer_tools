@@ -44,7 +44,7 @@ defmodule MishkaDeveloperTools.MixProject do
 
   defp package() do
     [
-      files: ~w(lib .formatter.exs mix.exs LICENSE.md README*),
+      files: ~w(lib .formatter.exs mix.exs LICENSE README*),
       licenses: ["Apache License 2.0"],
       maintainers: ["Shahryar Tavakkoli"],
       links: %{"GitHub" => "https://github.com/mishka-group/mishka_developer_tools"}
