@@ -8,3 +8,9 @@ erl_crash.dump
 *.beam
 /config/*.secret.exs
 .elixir_ls/
+
+# General
+.DS_Store
+Desktop.ini
+.AppleDouble
+.LSOverride
