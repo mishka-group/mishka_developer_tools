@@ -27,11 +27,6 @@ Code.require_file("test_tables.exs", __DIR__)
 
 :ok = Ecto.Migrator.up(TestRepo, 0, MishkaDeveloperTools.Repo.Migrations.TestTables, log: false)
 Ecto.Adapters.SQL.Sandbox.mode(TestRepo, :manual)
-
-Mix.Task.run("ecto.drop")
-Mix.Task.run("ecto.create")
-Mix.Task.run("ecto.load")
-
 Process.flag(:trap_exit, true)
 
 
