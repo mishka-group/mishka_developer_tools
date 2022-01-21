@@ -2,7 +2,7 @@ ExUnit.start()
 alias Ecto.Integration.TestRepo
 
 # postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
-IO.inspect(System.get_env("DATABASE_DEVELOPERT_URL")
+IO.inspect(System.get_env("DATABASE_DEVELOPERT_URL"))
 Application.put_env(
   :ecto,
   TestRepo,
