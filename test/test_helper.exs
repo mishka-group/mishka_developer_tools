@@ -2,19 +2,17 @@ ExUnit.start()
 alias Ecto.Integration.TestRepo
 
 # postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
-IO.inspect(System.get_env("DATABASE_DEVELOPERT_URL"))
 Application.put_env(
   :ecto,
   TestRepo,
   adapter: Ecto.Adapters.Postgres,
   url: System.get_env("DATABASE_DEVELOPERT_URL", "postgresql://postgres:postgres@localhost:5432/mishka_developer_tools_test"),
-  pool: Ecto.Adapters.SQL.Sandbox,
-  show_sensitive_data_on_connection_error: true
+  pool: Ecto.Adapters.SQL.Sandbox
 )
 
 defmodule Ecto.Integration.TestRepo do
   use Ecto.Repo,
-    otp_app: :mishka_developer_tools,
+    otp_app: :ecto,
     adapter: Ecto.Adapters.Postgres
 end
 
