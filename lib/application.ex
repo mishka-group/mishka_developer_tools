@@ -3,9 +3,7 @@ defmodule MishkaDeveloperTools.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      MishkaDeveloperTools.Repo
-    ]
+    children = []
     opts = [strategy: :one_for_one, name: MishkaDeveloperTools.Supervisor]
     Supervisor.start_link(children, opts)
   end

@@ -1,17 +1,17 @@
 defmodule MishkaDeveloperToolsTest.Macro.DB.CrudMacroTest do
   use ExUnit.Case, async: true
   doctest MishkaDeveloperTools
-
+  alias Ecto.Integration.TestRepo
   @right_info %{test_field_one: "this is a test with test", test_field_two: "this is a test with test"}
   @eror_tag :test_tables
 
   use MishkaDeveloperTools.DB.CRUD,
       module: TestTablesSchema,
       error_atom: :test_tables,
-      repo: MishkaDeveloperTools.Repo
+      repo: TestRepo
 
   setup do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(MishkaDeveloperTools.Repo)
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(TestRepo)
   end
 
   describe "Happy | CRUD Macro with users DB (▰˘◡˘▰)" do

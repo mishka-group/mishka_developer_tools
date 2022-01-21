@@ -1,0 +1,74 @@
+name: MishkaDeveloperTools CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  ci:
+    env:
+      GITHUB_ACTION: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pair:
+              elixir: '1.13'
+              otp: '24.2'
+              postgres: '10.19-alpine'
+
+          - pair:
+              elixir: '1.13.1'
+              otp: '24.2'
+              postgres: '13.5-alpine'
+
+          - pair:
+              elixir: '1.13.2'
+              otp: '24.2'
+              postgres: '14.1-alpine'
+
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:${{matrix.pair.postgres}}
+        env:
+          POSTGRES_DB: mishka_test
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432/tcp
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.pair.otp}}
+          elixir-version: ${{matrix.pair.elixir}}
+
+      - name: Elixir and Erlang Dependencies
+        run: | 
+          mix local.hex --force
+          mix local.rebar --force
+
+      - name: Source Compiling
+        run: | 
+          mix deps.get
+          mix deps.compile
+
+      - name: Run test with temporary information
+        env:
+          DATABASE_DEVELOPERT_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
+        run: |
+          mix test

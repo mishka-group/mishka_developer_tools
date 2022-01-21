@@ -29,8 +29,13 @@ defmodule MishkaDeveloperTools.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ecto_sql, "~> 3.7"},
-      {:postgrex, "~> 0.15.13"},
+      {:ecto, "~> 3.7"},
+
+      # Test dependencies
+      {:ecto_sql, "~> 3.7", only: :test},
+      {:postgrex, "~> 0.15.13", only: :test},
+
+      # Dev dependencies
       {:ex_doc, "~> 0.26", only: :dev, runtime: false}
     ]
   end
