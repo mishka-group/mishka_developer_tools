@@ -63,6 +63,8 @@ jobs:
           mix local.rebar --force
 
       - name: Source Compiling
+        env:
+          DATABASE_DEVELOPERT_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
         run: | 
           mix deps.get
           mix deps.compile
