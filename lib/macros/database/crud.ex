@@ -305,7 +305,7 @@ defmodule MishkaDeveloperTools.DB.CRUD do
       record_info -> {:ok, :get_record_by_field, error_atom, record_info}
     end
   rescue
-    _ -> {:error, :get_record_by_id, error_atom}
+    _ -> {:error, :get_record_by_field, error_atom}
   end
 
 
