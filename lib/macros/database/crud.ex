@@ -311,23 +311,24 @@ defmodule MishkaDeveloperTools.DB.CRUD do
 
   @doc false
   def edit_record(attrs, module, error_atom, repo) do
-    with {:ok, :uuid, record_id} <- uuid(if Map.has_key?(attrs, :id), do: attrs.id, else: attrs["id"]),
-        {:ok, :get_record_by_id, error_atom, record_info} <- get_record_by_id(record_id, module, error_atom, repo),
-        {:ok, info} <- update(record_info, attrs, module, repo) do
+    try do
+      with {:ok, :uuid, record_id} <- uuid(if Map.has_key?(attrs, :id), do: attrs.id, else: attrs["id"]),
+          {:ok, :get_record_by_id, error_atom, record_info} <- get_record_by_id(record_id, module, error_atom, repo),
+          {:ok, info} <- update(record_info, attrs, module, repo) do
 
-        {:ok, :edit, error_atom, info}
-      else
-        {:error, :uuid} ->
-          {:error, :edit, :uuid, error_atom}
+          {:ok, :edit, error_atom, info}
+        else
+          {:error, :uuid} ->
+            {:error, :edit, :uuid, error_atom}
 
-        {:error, changeset} ->
-          {:error, :edit, error_atom, changeset}
+          {:error, changeset} ->
+            {:error, :edit, error_atom, changeset}
 
-        _ ->
-          {:error, :edit, :get_record_by_id, error_atom}
-    end
+          _ ->
+            {:error, :edit, :get_record_by_id, error_atom}
+      end
     rescue
-      _ -> {:error, :edit, :get_record_by_id, error_atom}
+      _e -> {:error, :edit, :get_record_by_id, error_atom}
     end
   end
 
@@ -351,7 +352,7 @@ defmodule MishkaDeveloperTools.DB.CRUD do
           {:error, :delete, :get_record_by_id, error_atom}
       end
     rescue
-      _ -> {:error, :delete, :forced_to_delete, error_atom}
+      _e -> {:error, :delete, :forced_to_delete, error_atom}
     end
   end
 
