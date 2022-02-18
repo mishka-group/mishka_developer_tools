@@ -326,6 +326,9 @@ defmodule MishkaDeveloperTools.DB.CRUD do
         _ ->
           {:error, :edit, :get_record_by_id, error_atom}
     end
+    rescue
+      _ -> {:error, :edit, :get_record_by_id, error_atom}
+    end
   end
 
 
@@ -348,7 +351,7 @@ defmodule MishkaDeveloperTools.DB.CRUD do
           {:error, :delete, :get_record_by_id, error_atom}
       end
     rescue
-      _e in Ecto.ConstraintError -> {:error, :delete, :forced_to_delete, error_atom}
+      _ -> {:error, :delete, :forced_to_delete, error_atom}
     end
   end
 
