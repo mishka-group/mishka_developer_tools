@@ -12,7 +12,7 @@ The package can be installed by adding `mishka_developer_tools` to your list of 
 ```elixir
 def deps do
   [
-    {:mishka_developer_tools, "~> 0.0.5"}
+    {:mishka_developer_tools, "~> 0.0.6"}
   ]
 end
 ```
