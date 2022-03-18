@@ -1,6 +1,6 @@
 defmodule MishkaDeveloperTools.MixProject do
   use Mix.Project
-  @version "0.0.6"
+  @version "0.0.7"
 
   def project do
     [
@@ -29,9 +29,9 @@ defmodule MishkaDeveloperTools.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ecto, "~> 3.7"},
-      {:ecto_sql, "~> 3.7.2"},
-      {:postgrex, "~> 0.16.2"},
+      {:ecto, "~> 3.7.2", override: true},
+      {:ecto_sql, "~> 3.7.2", override: true},
+      {:postgrex, "~> 0.16.2", override: true},
 
       # Dev dependencies
       {:ex_doc, "~> 0.26", only: :dev, runtime: false}
