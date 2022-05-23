@@ -38,8 +38,8 @@ defmodule TestTablesSchema do
   @foreign_key_type :binary_id
 
   schema "test_tables" do
-    field(:test_field_one, :string, size: 100, null: false)
-    field(:test_field_two, :string, size: 100, null: false)
+    field(:test_field_one, :string)
+    field(:test_field_two, :string)
     timestamps(type: :utc_datetime)
   end
 
