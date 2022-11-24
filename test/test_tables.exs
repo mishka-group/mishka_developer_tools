@@ -1,5 +1,6 @@
 defmodule MishkaDeveloperTools.Repo.Migrations.TestTables do
   use Ecto.Migration
+
   def change do
     create table(:test_tables, primary_key: false) do
       add(:id, :uuid, primary_key: true)

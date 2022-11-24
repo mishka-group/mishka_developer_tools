@@ -21,35 +21,32 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   """
 
   # custom Typespecs
-  @type data_uuid() :: Ecto.UUID.t
+  @type data_uuid() :: Ecto.UUID.t()
   @type record_input() :: map()
   @type error_tag() :: atom()
   @type repo_data() :: Ecto.Schema.t()
   @type repo_error() :: Ecto.Changeset.t()
 
-
   @callback create(record_input()) ::
-            {:error, :add, error_tag(), repo_error()} |
-            {:ok, :add, error_tag(), repo_data()}
+              {:error, :add, error_tag(), repo_error()}
+              | {:ok, :add, error_tag(), repo_data()}
 
   @callback edit(record_input()) ::
-            {:error, :edit, :uuid, error_tag()} |
-            {:error, :edit, :get_record_by_id, error_tag()} |
-            {:error, :edit, error_tag(), repo_error()} |
-            {:ok, :edit, error_tag(), repo_data()}
+              {:error, :edit, :uuid, error_tag()}
+              | {:error, :edit, :get_record_by_id, error_tag()}
+              | {:error, :edit, error_tag(), repo_error()}
+              | {:ok, :edit, error_tag(), repo_data()}
 
   @callback delete(data_uuid()) ::
-            {:error, :delete, :uuid, error_tag()} |
-            {:error, :delete, :get_record_by_id, error_tag()} |
-            {:error, :delete, :forced_to_delete, error_tag()} |
-            {:error, :delete, error_tag(), repo_error()} |
-            {:ok, :delete, error_tag(), repo_data()}
-
+              {:error, :delete, :uuid, error_tag()}
+              | {:error, :delete, :get_record_by_id, error_tag()}
+              | {:error, :delete, :forced_to_delete, error_tag()}
+              | {:error, :delete, error_tag(), repo_error()}
+              | {:ok, :delete, error_tag(), repo_data()}
 
   @callback show_by_id(data_uuid()) ::
-            {:error, :get_record_by_id, error_tag()} |
-            {:ok, :get_record_by_id, error_tag(), repo_data()}
-
+              {:error, :get_record_by_id, error_tag()}
+              | {:ok, :get_record_by_id, error_tag(), repo_data()}
 
   defmacro __using__(opts) do
     quote(bind_quoted: [opts: opts]) do
@@ -82,36 +79,38 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   defmacro crud_add(attrs) do
     quote do
       module_selected = Keyword.get(@interface_module, :module)
-      error_atom =  Keyword.get(@interface_module, :error_atom)
-      repo =  Keyword.get(@interface_module, :repo)
+      error_atom = Keyword.get(@interface_module, :error_atom)
+      repo = Keyword.get(@interface_module, :repo)
 
-      add = module_selected.__struct__
-      |> module_selected.changeset(unquote(attrs))
-      |> repo.insert()
+      add =
+        module_selected.__struct__
+        |> module_selected.changeset(unquote(attrs))
+        |> repo.insert()
+
       case add do
-        {:ok, data}             -> {:ok, :add, error_atom, data}
-        {:error, changeset}     -> {:error, :add, error_atom, changeset}
+        {:ok, data} -> {:ok, :add, error_atom, data}
+        {:error, changeset} -> {:error, :add, error_atom, changeset}
       end
     end
   end
 
-  defmacro crud_add(attrs, allowed_fields)  do
+  defmacro crud_add(attrs, allowed_fields) do
     quote do
       module_selected = Keyword.get(@interface_module, :module)
-      error_atom =  Keyword.get(@interface_module, :error_atom)
-      repo =  Keyword.get(@interface_module, :repo)
+      error_atom = Keyword.get(@interface_module, :error_atom)
+      repo = Keyword.get(@interface_module, :repo)
 
-      add = module_selected.__struct__
-      |> module_selected.changeset(Map.take(unquote(attrs), unquote(allowed_fields)))
-      |> repo.insert()
+      add =
+        module_selected.__struct__
+        |> module_selected.changeset(Map.take(unquote(attrs), unquote(allowed_fields)))
+        |> repo.insert()
+
       case add do
-        {:ok, data}             -> {:ok, :add, error_atom, data}
-        {:error, changeset}     -> {:error, :add, error_atom, changeset}
+        {:ok, data} -> {:ok, :add, error_atom, data}
+        {:error, changeset} -> {:error, :add, error_atom, changeset}
       end
     end
   end
-
-
 
   @doc """
   ### Edit a record in a database Macro
@@ -147,23 +146,27 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   defmacro crud_edit(attr) do
     quote do
       module_selected = Keyword.get(@interface_module, :module)
-      error_atom =  Keyword.get(@interface_module, :error_atom)
-      repo =  Keyword.get(@interface_module, :repo)
+      error_atom = Keyword.get(@interface_module, :error_atom)
+      repo = Keyword.get(@interface_module, :repo)
 
       MishkaDeveloperTools.DB.CRUD.edit_record(unquote(attr), module_selected, error_atom, repo)
     end
   end
 
-  defmacro crud_edit(attrs, allowed_fields)  do
+  defmacro crud_edit(attrs, allowed_fields) do
     quote do
       module_selected = Keyword.get(@interface_module, :module)
-      error_atom =  Keyword.get(@interface_module, :error_atom)
-      repo =  Keyword.get(@interface_module, :repo)
+      error_atom = Keyword.get(@interface_module, :error_atom)
+      repo = Keyword.get(@interface_module, :repo)
 
-      MishkaDeveloperTools.DB.CRUD.edit_record(Map.take(unquote(attrs), unquote(allowed_fields)), module_selected, error_atom, repo)
+      MishkaDeveloperTools.DB.CRUD.edit_record(
+        Map.take(unquote(attrs), unquote(allowed_fields)),
+        module_selected,
+        error_atom,
+        repo
+      )
     end
   end
-
 
   @doc """
   ### delete a record from the database with the help of ID Macro
@@ -199,13 +202,12 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   defmacro crud_delete(id) do
     quote do
       module_selected = Keyword.get(@interface_module, :module)
-      error_atom =  Keyword.get(@interface_module, :error_atom)
-      repo =  Keyword.get(@interface_module, :repo)
+      error_atom = Keyword.get(@interface_module, :error_atom)
+      repo = Keyword.get(@interface_module, :repo)
 
       MishkaDeveloperTools.DB.CRUD.delete_record(unquote(id), module_selected, error_atom, repo)
     end
   end
-
 
   @doc """
   ### Macro Finding a record in a database with the help of ID
@@ -230,12 +232,17 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   defmacro crud_get_record(id) do
     quote do
       module_selected = Keyword.get(@interface_module, :module)
-      error_atom =  Keyword.get(@interface_module, :error_atom)
-      repo =  Keyword.get(@interface_module, :repo)
-      MishkaDeveloperTools.DB.CRUD.get_record_by_id(unquote(id), module_selected, error_atom, repo)
+      error_atom = Keyword.get(@interface_module, :error_atom)
+      repo = Keyword.get(@interface_module, :repo)
+
+      MishkaDeveloperTools.DB.CRUD.get_record_by_id(
+        unquote(id),
+        module_selected,
+        error_atom,
+        repo
+      )
     end
   end
-
 
   @doc """
   ### Macro Find a record in the database with the help of the requested field
@@ -259,16 +266,18 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   defmacro crud_get_by_field(field, value) do
     quote do
       module_selected = Keyword.get(@interface_module, :module)
-      error_atom =  Keyword.get(@interface_module, :error_atom)
-      repo =  Keyword.get(@interface_module, :repo)
+      error_atom = Keyword.get(@interface_module, :error_atom)
+      repo = Keyword.get(@interface_module, :repo)
 
-      MishkaDeveloperTools.DB.CRUD.get_record_by_field(unquote(field), unquote(value), module_selected, error_atom, repo)
+      MishkaDeveloperTools.DB.CRUD.get_record_by_field(
+        unquote(field),
+        unquote(value),
+        module_selected,
+        error_atom,
+        repo
+      )
     end
   end
-
-
-
-
 
   # functions to create macro
   @doc false
@@ -277,7 +286,6 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     |> repo.update
   end
 
-
   @doc false
   def uuid(id) do
     case Ecto.UUID.cast(id) do
@@ -285,7 +293,6 @@ defmodule MishkaDeveloperTools.DB.CRUD do
       _ -> {:error, :uuid}
     end
   end
-
 
   @doc false
   def get_record_by_id(id, module, error_atom, repo) do
@@ -297,7 +304,6 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     _ -> {:error, :get_record_by_id, error_atom}
   end
 
-
   @doc false
   def get_record_by_field(field, value, module, error_atom, repo) do
     case repo.get_by(module, "#{field}": value) do
@@ -308,38 +314,37 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     _ -> {:error, :get_record_by_field, error_atom}
   end
 
-
   @doc false
   def edit_record(attrs, module, error_atom, repo) do
     try do
-      with {:ok, :uuid, record_id} <- uuid(if Map.has_key?(attrs, :id), do: attrs.id, else: attrs["id"]),
-          {:ok, :get_record_by_id, error_atom, record_info} <- get_record_by_id(record_id, module, error_atom, repo),
-          {:ok, info} <- update(record_info, attrs, module, repo) do
+      with {:ok, :uuid, record_id} <-
+             uuid(if Map.has_key?(attrs, :id), do: attrs.id, else: attrs["id"]),
+           {:ok, :get_record_by_id, error_atom, record_info} <-
+             get_record_by_id(record_id, module, error_atom, repo),
+           {:ok, info} <- update(record_info, attrs, module, repo) do
+        {:ok, :edit, error_atom, info}
+      else
+        {:error, :uuid} ->
+          {:error, :edit, :uuid, error_atom}
 
-          {:ok, :edit, error_atom, info}
-        else
-          {:error, :uuid} ->
-            {:error, :edit, :uuid, error_atom}
+        {:error, changeset} ->
+          {:error, :edit, error_atom, changeset}
 
-          {:error, changeset} ->
-            {:error, :edit, error_atom, changeset}
-
-          _ ->
-            {:error, :edit, :get_record_by_id, error_atom}
+        _ ->
+          {:error, :edit, :get_record_by_id, error_atom}
       end
     rescue
       _e -> {:error, :edit, :get_record_by_id, error_atom}
     end
   end
 
-
   @doc false
   def delete_record(id, module, error_atom, repo) do
     try do
       with {:ok, :uuid, record_id} <- uuid(id),
-           {:ok, :get_record_by_id, error_atom, record_info} <- get_record_by_id(record_id, module, error_atom, repo),
+           {:ok, :get_record_by_id, error_atom, record_info} <-
+             get_record_by_id(record_id, module, error_atom, repo),
            {:ok, struct} <- repo.delete(record_info) do
-
         {:ok, :delete, error_atom, struct}
       else
         {:error, :uuid} ->
@@ -355,5 +360,4 @@ defmodule MishkaDeveloperTools.DB.CRUD do
       _e -> {:error, :delete, :forced_to_delete, error_atom}
     end
   end
-
 end
