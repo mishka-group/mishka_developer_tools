@@ -20,6 +20,8 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   ```
   """
 
+  import Ecto.Changeset
+
   # custom Typespecs
   @type data_uuid() :: Ecto.UUID.t()
   @type record_input() :: map()
@@ -358,6 +360,54 @@ defmodule MishkaDeveloperTools.DB.CRUD do
       end
     rescue
       _e -> {:error, :delete, :forced_to_delete, error_atom}
+    end
+  end
+
+  def delete_record_by_force_constraint({_type, _id} = id_info, module, repo) do
+    with {:ok, valid_id} <- record_id_check(id_info),
+         data_received when is_struct(data_received) <-
+           fetch_record_by_id(valid_id, module, repo),
+         {:delete, {:ok, data}} <- {:delete, repo.delete(data_received)} do
+      {:ok, :delete, data}
+    else
+      {:delete, {:error, error_data}} -> {:erro, :delete, error_data}
+      {:error, _action, _extra} = error_data -> {:erro, :delete, error_data}
+    end
+  rescue
+    _e ->
+      {:erro, :delete,
+       {:error, :force_constraint, "There are one or more dependencies to delete this record."}}
+  end
+
+  def delete_record_by_no_assoc_constraint({_type, _id} = id_info, module, assoc, repo) do
+    with {:ok, valid_id} <- record_id_check(id_info),
+         data_received when is_struct(data_received) <-
+           fetch_record_by_id(valid_id, module, repo),
+         created_change <- Ecto.Changeset.change(struct(module, %{id: data_received.id})),
+         created_assoc <-
+           Enum.reduce(assoc, created_change, fn item, acc ->
+             Ecto.Changeset.no_assoc_constraint(acc, item)
+           end),
+         {:delete, {:ok, data}} <- {:delete, repo.delete(created_assoc)} do
+      {:ok, :delete, data}
+    else
+      {:delete, {:error, error_data}} -> {:erro, :delete, error_data}
+      {:error, _action, _extra} = error_data -> {:erro, :delete, error_data}
+    end
+  end
+
+  @doc false
+  defp record_id_check({:uuid, id}) do
+    with :error <- Ecto.UUID.cast(id) do
+      {:error, :uuid, "The submitted ID is not valid."}
+    end
+  end
+
+  defp record_id_check({_, id}), do: {:ok, id}
+
+  defp fetch_record_by_id(id, module, repo) do
+    with nil <- repo.get(module, id) do
+      {:error, :not_found, "There is no data for this request."}
     end
   end
 end
