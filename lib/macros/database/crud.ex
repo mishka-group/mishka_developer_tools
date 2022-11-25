@@ -21,32 +21,35 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   """
 
   # custom Typespecs
-  @type data_uuid() :: Ecto.UUID.t()
   @type record_input() :: map()
-  @type error_tag() :: atom()
   @type repo_data() :: Ecto.Schema.t()
   @type repo_error() :: Ecto.Changeset.t()
 
   @callback create(record_input()) ::
-              {:error, :add, error_tag(), repo_error()}
-              | {:ok, :add, error_tag(), repo_data()}
+              {:error, :add, repo_error()} | {:ok, :add, repo_data()}
 
   @callback edit(record_input()) ::
-              {:error, :edit, :uuid, error_tag()}
-              | {:error, :edit, :get_record_by_id, error_tag()}
-              | {:error, :edit, error_tag(), repo_error()}
-              | {:ok, :edit, error_tag(), repo_data()}
+              {:error, :edit, repo_error()}
+              | {:ok, :edit, repo_data()}
+              | {:error, :edit, {:error, :uuid | :not_found, String.t()}}
 
-  @callback delete(data_uuid()) ::
-              {:error, :delete, :uuid, error_tag()}
-              | {:error, :delete, :get_record_by_id, error_tag()}
-              | {:error, :delete, :forced_to_delete, error_tag()}
-              | {:error, :delete, error_tag(), repo_error()}
-              | {:ok, :delete, error_tag(), repo_data()}
+  @callback delete(Ecto.UUID.t() | non_neg_integer()) ::
+              {:error, :delete, repo_error()}
+              | {:error, :delete, {:error, :uuid | :not_found | :force_constraint, String.t()}}
+              | {:ok, :delete, repo_data()}
 
-  @callback show_by_id(data_uuid()) ::
-              {:error, :get_record_by_id, error_tag()}
-              | {:ok, :get_record_by_id, error_tag(), repo_data()}
+  @callback delete(Ecto.UUID.t() | non_neg_integer(), list(atom())) ::
+              {:error, :delete, {:error, :uuid | :not_found, String.t()}}
+              | {:error, :delete, repo_error()}
+              | {:ok, :delete, repo_data()}
+
+  @callback show_by_id(Ecto.UUID.t() | non_neg_integer()) ::
+              {:error, :not_found, String.t()} | struct()
+
+  @callback show_by_field(String.t(), any()) ::
+              {:error, :not_found, String.t()} | struct()
+
+  @optional_callbacks delete: 2, show_by_id: 1, show_by_field: 2
 
   defmacro __using__(opts) do
     quote(bind_quoted: [opts: opts]) do
@@ -265,6 +268,8 @@ defmodule MishkaDeveloperTools.DB.CRUD do
 
   ###  Functions to create macro
 
+  @spec create_record(record_input(), module(), module()) ::
+          {:error, :add, repo_error()} | {:ok, :add, repo_data()}
   @doc false
   def create_record(attrs, module, repo) do
     module.changeset(module.__struct__, attrs)
@@ -275,6 +280,15 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     end
   end
 
+  @spec edit_record_by_fetch(
+          {:uuid | any(), String.t() | non_neg_integer()},
+          record_input(),
+          module(),
+          module()
+        ) ::
+          {:error, :edit, repo_error()}
+          | {:ok, :edit, repo_data()}
+          | {:error, :edit, {:error, :uuid | :not_found, String.t()}}
   @doc false
   def edit_record_by_fetch({_type, _id} = id_info, attrs, module, repo) do
     with {:ok, valid_id} <- record_id_check(id_info),
@@ -289,6 +303,14 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     end
   end
 
+  @spec delete_record_by_force_constraint(
+          {:uuid | any, String.t() | non_neg_integer()},
+          module(),
+          module()
+        ) ::
+          {:error, :delete, repo_error()}
+          | {:error, :delete, {:error, :uuid | :not_found | :force_constraint, String.t()}}
+          | {:ok, :delete, repo_data()}
   @doc false
   def delete_record_by_force_constraint({_type, _id} = id_info, module, repo) do
     with {:ok, valid_id} <- record_id_check(id_info),
@@ -306,6 +328,15 @@ defmodule MishkaDeveloperTools.DB.CRUD do
        {:error, :force_constraint, "There are one or more dependencies to delete this record."}}
   end
 
+  @spec delete_record_by_no_assoc_constraint(
+          {:uuid | any, String.t() | non_neg_integer()},
+          module(),
+          list(atom()),
+          module()
+        ) ::
+          {:error, :delete, {:error, :uuid | :not_found, String.t()}}
+          | {:error, :delete, repo_error()}
+          | {:ok, :delete, repo_data()}
   @doc false
   def delete_record_by_no_assoc_constraint({_type, _id} = id_info, module, assoc, repo) do
     with {:ok, valid_id} <- record_id_check(id_info),
@@ -333,6 +364,8 @@ defmodule MishkaDeveloperTools.DB.CRUD do
 
   defp record_id_check({_, id}), do: {:ok, id}
 
+  @spec fetch_record_by_id(String.t() | integer(), module(), module()) ::
+          {:error, :not_found, String.t()} | struct()
   @doc false
   def fetch_record_by_id(id, module, repo) do
     with nil <- repo.get(module, id) do
@@ -340,6 +373,8 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     end
   end
 
+  @spec fetch_record_by_field(String.t() | atom(), any, module(), module()) ::
+          {:error, :not_found, String.t()} | struct()
   @doc false
   def fetch_record_by_field(field, value, module, repo) do
     with nil <- repo.get_by(module, "#{field}": value) do
@@ -347,6 +382,11 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     end
   end
 
+  @spec get_initial_macro_data(keyword) :: %{
+          id_type: atom(),
+          module_selected: module(),
+          repo: module()
+        }
   @doc false
   def get_initial_macro_data(interface_module) do
     %{
