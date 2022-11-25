@@ -363,6 +363,29 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     end
   end
 
+  ### New Functions
+  def create_record(attrs, module, repo) do
+    module.changeset(module.__struct__, attrs)
+    |> repo.insert()
+    |> case do
+      {:ok, data} -> {:ok, :add, data}
+      {:error, error_data} -> {:error, :add, error_data}
+    end
+  end
+
+  def edit_record_by_fetch({_type, _id} = id_info, attrs, module, repo) do
+    with {:ok, valid_id} <- record_id_check(id_info),
+         data_received when is_struct(data_received) <-
+           fetch_record_by_id(valid_id, module, repo),
+         created_changeset <- module.changeset(data_received, attrs),
+         {:edit, {:ok, data}} <- {:edit, repo.update(created_changeset)} do
+      {:ok, :edit, data}
+    else
+      {:edit, {:error, error_data}} -> {:erro, :edit, error_data}
+      {:error, _action, _extra} = error_data -> {:erro, :edit, error_data}
+    end
+  end
+
   def delete_record_by_force_constraint({_type, _id} = id_info, module, repo) do
     with {:ok, valid_id} <- record_id_check(id_info),
          data_received when is_struct(data_received) <-
@@ -407,6 +430,12 @@ defmodule MishkaDeveloperTools.DB.CRUD do
 
   defp fetch_record_by_id(id, module, repo) do
     with nil <- repo.get(module, id) do
+      {:error, :not_found, "There is no data for this request."}
+    end
+  end
+
+  defp fetch_record_by_field(field, value, module, repo) do
+    with nil <- repo.get_by(module, "#{field}": value) do
       {:error, :not_found, "There is no data for this request."}
     end
   end
