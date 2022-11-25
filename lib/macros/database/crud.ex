@@ -20,8 +20,6 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   ```
   """
 
-  import Ecto.Changeset
-
   # custom Typespecs
   @type data_uuid() :: Ecto.UUID.t()
   @type record_input() :: map()
@@ -80,37 +78,20 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   """
   defmacro crud_add(attrs) do
     quote do
-      module_selected = Keyword.get(@interface_module, :module)
-      error_atom = Keyword.get(@interface_module, :error_atom)
-      repo = Keyword.get(@interface_module, :repo)
-
-      add =
-        module_selected.__struct__
-        |> module_selected.changeset(unquote(attrs))
-        |> repo.insert()
-
-      case add do
-        {:ok, data} -> {:ok, :add, error_atom, data}
-        {:error, changeset} -> {:error, :add, error_atom, changeset}
-      end
+      initial = get_initial_macro_data(@interface_module)
+      create_record(unquote(attrs), initial.module_selected, initial.repo)
     end
   end
 
   defmacro crud_add(attrs, allowed_fields) do
     quote do
-      module_selected = Keyword.get(@interface_module, :module)
-      error_atom = Keyword.get(@interface_module, :error_atom)
-      repo = Keyword.get(@interface_module, :repo)
+      initial = get_initial_macro_data(@interface_module)
 
-      add =
-        module_selected.__struct__
-        |> module_selected.changeset(Map.take(unquote(attrs), unquote(allowed_fields)))
-        |> repo.insert()
-
-      case add do
-        {:ok, data} -> {:ok, :add, error_atom, data}
-        {:error, changeset} -> {:error, :add, error_atom, changeset}
-      end
+      create_record(
+        Map.take(unquote(attrs), unquote(allowed_fields)),
+        initial.module_selected,
+        initial.repo
+      )
     end
   end
 
@@ -145,27 +126,30 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   crud_edit(map_of_info like: %{id: "6d80d5f4-781b-4fa8-9796-1821804de6ba", name: "trangell"}, [:id, :name])
   ```
   """
-  defmacro crud_edit(attr) do
+  defmacro crud_edit(attrs) do
     quote do
-      module_selected = Keyword.get(@interface_module, :module)
-      error_atom = Keyword.get(@interface_module, :error_atom)
-      repo = Keyword.get(@interface_module, :repo)
+      initial = get_initial_macro_data(@interface_module)
+      converted_attrs = unquote(attrs)
 
-      MishkaDeveloperTools.DB.CRUD.edit_record(unquote(attr), module_selected, error_atom, repo)
+      edit_record_by_fetch(
+        {initial.id_type, converted_attrs["id"]},
+        unquote(attrs),
+        initial.module_selected,
+        initial.repo
+      )
     end
   end
 
   defmacro crud_edit(attrs, allowed_fields) do
     quote do
-      module_selected = Keyword.get(@interface_module, :module)
-      error_atom = Keyword.get(@interface_module, :error_atom)
-      repo = Keyword.get(@interface_module, :repo)
+      initial = get_initial_macro_data(@interface_module)
+      converted_attrs = unquote(attrs)
 
-      MishkaDeveloperTools.DB.CRUD.edit_record(
-        Map.take(unquote(attrs), unquote(allowed_fields)),
-        module_selected,
-        error_atom,
-        repo
+      edit_record_by_fetch(
+        {initial.id_type, converted_attrs["id"]},
+        Map.take(converted_attrs, unquote(allowed_fields)),
+        initial.module_selected,
+        initial.repo
       )
     end
   end
@@ -203,11 +187,26 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   """
   defmacro crud_delete(id) do
     quote do
-      module_selected = Keyword.get(@interface_module, :module)
-      error_atom = Keyword.get(@interface_module, :error_atom)
-      repo = Keyword.get(@interface_module, :repo)
+      initial = get_initial_macro_data(@interface_module)
 
-      MishkaDeveloperTools.DB.CRUD.delete_record(unquote(id), module_selected, error_atom, repo)
+      delete_record_by_force_constraint(
+        {initial.id_type, unquote(id)},
+        initial.module_selected,
+        initial.repo
+      )
+    end
+  end
+
+  defmacro crud_delete(id, assoc) do
+    quote do
+      initial = get_initial_macro_data(@interface_module)
+
+      delete_record_by_no_assoc_constraint(
+        {initial.id_type, unquote(id)},
+        initial.module_selected,
+        unquote(assoc),
+        initial.repo
+      )
     end
   end
 
@@ -233,16 +232,8 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   """
   defmacro crud_get_record(id) do
     quote do
-      module_selected = Keyword.get(@interface_module, :module)
-      error_atom = Keyword.get(@interface_module, :error_atom)
-      repo = Keyword.get(@interface_module, :repo)
-
-      MishkaDeveloperTools.DB.CRUD.get_record_by_id(
-        unquote(id),
-        module_selected,
-        error_atom,
-        repo
-      )
+      initial = get_initial_macro_data(@interface_module)
+      fetch_record_by_id(unquote(id), initial.module_selected, initial.repo)
     end
   end
 
@@ -267,103 +258,14 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   """
   defmacro crud_get_by_field(field, value) do
     quote do
-      module_selected = Keyword.get(@interface_module, :module)
-      error_atom = Keyword.get(@interface_module, :error_atom)
-      repo = Keyword.get(@interface_module, :repo)
-
-      MishkaDeveloperTools.DB.CRUD.get_record_by_field(
-        unquote(field),
-        unquote(value),
-        module_selected,
-        error_atom,
-        repo
-      )
+      initial = get_initial_macro_data(@interface_module)
+      fetch_record_by_field(unquote(field), unquote(value), initial.module_selected, initial.repo)
     end
   end
 
-  # functions to create macro
-  @doc false
-  def update(changeset, attrs, module, repo) do
-    module.changeset(changeset, attrs)
-    |> repo.update
-  end
+  ###  Functions to create macro
 
   @doc false
-  def uuid(id) do
-    case Ecto.UUID.cast(id) do
-      {:ok, record_id} -> {:ok, :uuid, record_id}
-      _ -> {:error, :uuid}
-    end
-  end
-
-  @doc false
-  def get_record_by_id(id, module, error_atom, repo) do
-    case repo.get(module, id) do
-      nil -> {:error, :get_record_by_id, error_atom}
-      record_info -> {:ok, :get_record_by_id, error_atom, record_info}
-    end
-  rescue
-    _ -> {:error, :get_record_by_id, error_atom}
-  end
-
-  @doc false
-  def get_record_by_field(field, value, module, error_atom, repo) do
-    case repo.get_by(module, "#{field}": value) do
-      nil -> {:error, :get_record_by_field, error_atom}
-      record_info -> {:ok, :get_record_by_field, error_atom, record_info}
-    end
-  rescue
-    _ -> {:error, :get_record_by_field, error_atom}
-  end
-
-  @doc false
-  def edit_record(attrs, module, error_atom, repo) do
-    try do
-      with {:ok, :uuid, record_id} <-
-             uuid(if Map.has_key?(attrs, :id), do: attrs.id, else: attrs["id"]),
-           {:ok, :get_record_by_id, error_atom, record_info} <-
-             get_record_by_id(record_id, module, error_atom, repo),
-           {:ok, info} <- update(record_info, attrs, module, repo) do
-        {:ok, :edit, error_atom, info}
-      else
-        {:error, :uuid} ->
-          {:error, :edit, :uuid, error_atom}
-
-        {:error, changeset} ->
-          {:error, :edit, error_atom, changeset}
-
-        _ ->
-          {:error, :edit, :get_record_by_id, error_atom}
-      end
-    rescue
-      _e -> {:error, :edit, :get_record_by_id, error_atom}
-    end
-  end
-
-  @doc false
-  def delete_record(id, module, error_atom, repo) do
-    try do
-      with {:ok, :uuid, record_id} <- uuid(id),
-           {:ok, :get_record_by_id, error_atom, record_info} <-
-             get_record_by_id(record_id, module, error_atom, repo),
-           {:ok, struct} <- repo.delete(record_info) do
-        {:ok, :delete, error_atom, struct}
-      else
-        {:error, :uuid} ->
-          {:error, :delete, :uuid, error_atom}
-
-        {:error, changeset} ->
-          {:error, :delete, error_atom, changeset}
-
-        _ ->
-          {:error, :delete, :get_record_by_id, error_atom}
-      end
-    rescue
-      _e -> {:error, :delete, :forced_to_delete, error_atom}
-    end
-  end
-
-  ### New Functions
   def create_record(attrs, module, repo) do
     module.changeset(module.__struct__, attrs)
     |> repo.insert()
@@ -373,6 +275,7 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     end
   end
 
+  @doc false
   def edit_record_by_fetch({_type, _id} = id_info, attrs, module, repo) do
     with {:ok, valid_id} <- record_id_check(id_info),
          data_received when is_struct(data_received) <-
@@ -381,11 +284,12 @@ defmodule MishkaDeveloperTools.DB.CRUD do
          {:edit, {:ok, data}} <- {:edit, repo.update(created_changeset)} do
       {:ok, :edit, data}
     else
-      {:edit, {:error, error_data}} -> {:erro, :edit, error_data}
-      {:error, _action, _extra} = error_data -> {:erro, :edit, error_data}
+      {:edit, {:error, error_data}} -> {:error, :edit, error_data}
+      {:error, _action, _extra} = error_data -> {:error, :edit, error_data}
     end
   end
 
+  @doc false
   def delete_record_by_force_constraint({_type, _id} = id_info, module, repo) do
     with {:ok, valid_id} <- record_id_check(id_info),
          data_received when is_struct(data_received) <-
@@ -393,15 +297,16 @@ defmodule MishkaDeveloperTools.DB.CRUD do
          {:delete, {:ok, data}} <- {:delete, repo.delete(data_received)} do
       {:ok, :delete, data}
     else
-      {:delete, {:error, error_data}} -> {:erro, :delete, error_data}
-      {:error, _action, _extra} = error_data -> {:erro, :delete, error_data}
+      {:delete, {:error, error_data}} -> {:error, :delete, error_data}
+      {:error, _action, _extra} = error_data -> {:error, :delete, error_data}
     end
   rescue
     _e ->
-      {:erro, :delete,
+      {:error, :delete,
        {:error, :force_constraint, "There are one or more dependencies to delete this record."}}
   end
 
+  @doc false
   def delete_record_by_no_assoc_constraint({_type, _id} = id_info, module, assoc, repo) do
     with {:ok, valid_id} <- record_id_check(id_info),
          data_received when is_struct(data_received) <-
@@ -414,8 +319,8 @@ defmodule MishkaDeveloperTools.DB.CRUD do
          {:delete, {:ok, data}} <- {:delete, repo.delete(created_assoc)} do
       {:ok, :delete, data}
     else
-      {:delete, {:error, error_data}} -> {:erro, :delete, error_data}
-      {:error, _action, _extra} = error_data -> {:erro, :delete, error_data}
+      {:delete, {:error, error_data}} -> {:error, :delete, error_data}
+      {:error, _action, _extra} = error_data -> {:error, :delete, error_data}
     end
   end
 
@@ -428,15 +333,26 @@ defmodule MishkaDeveloperTools.DB.CRUD do
 
   defp record_id_check({_, id}), do: {:ok, id}
 
-  defp fetch_record_by_id(id, module, repo) do
+  @doc false
+  def fetch_record_by_id(id, module, repo) do
     with nil <- repo.get(module, id) do
       {:error, :not_found, "There is no data for this request."}
     end
   end
 
-  defp fetch_record_by_field(field, value, module, repo) do
+  @doc false
+  def fetch_record_by_field(field, value, module, repo) do
     with nil <- repo.get_by(module, "#{field}": value) do
       {:error, :not_found, "There is no data for this request."}
     end
+  end
+
+  @doc false
+  def get_initial_macro_data(interface_module) do
+    %{
+      module_selected: Keyword.get(interface_module, :module),
+      repo: Keyword.get(interface_module, :repo),
+      id_type: Keyword.get(interface_module, :id)
+    }
   end
 end
