@@ -28,8 +28,8 @@ At first, you need to call the `__using__` macro of the Mishka developer tools.
 ```elixir
  use MishkaDeveloperTools.DB.CRUD,
     module: YOUR_SCHEMA_MODULE,
-    error_atom: :YOUR_REQUESTED_ATOM,
-    repo: YOUR_REPO_MODULE
+    repo: YOUR_REPO_MODULE,
+    id: :uuid OR ANY_TYPE_YOU_WANT
 ```    
 
 And after that, you can define `@behaviour`; it is optional.
@@ -41,38 +41,46 @@ Now is the time you can have your CRUD function; it should be noted you are not 
 
 
 ```elixir
-@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :crud_add, 1}
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :create, 1}
 def create(attrs) do
   crud_add(attrs)
 end
 
-@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :crud_add, 1}
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :create, 1}
 def create(attrs, allowed_fields) do
   crud_add(attrs, allowed_fields)
 end
 
-@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :crud_edit, 1}
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :edit, 1}
 def edit(attrs) do
   crud_edit(attrs)
 end
 
-@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :crud_edit, 1}
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :edit, 1}
 def edit(attrs, allowed_fields) do
   crud_edit(attrs, allowed_fields)
 end
 
-@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :crud_delete, 1}
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :delete, 1}
 def delete(id) do
   crud_delete(id)
 end
 
-@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :crud_get_record, 1}
+# It is optional
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :delete, 2}
+def delete(id) do
+  crud_delete(id)
+end
+
+# It is optional
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :show_by_id, 1}
 def show_by_id(id) do
   crud_get_record(id)
 end
 
 # It is optional
-def get_something(field) do
+@doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :show_by_field, 1}
+def show_by_field(field) do
   crud_get_by_field("field", field)
 end
 ```
