@@ -8,15 +8,15 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   ```elixir
   use MishkaDeveloperTools.DB.CRUD,
       module: YOURschemaMODULE,
-      error_atom: :your_error_tag,
-      repo: Your.Repo
+      repo: Your.Repo,
+      id: :uuid OR ANY_TYPE_YOU_WANT
   ```
   It should be noted that the following three parameters must be sent and also make sure you are connected to the database.
 
   ```elixir
   module
-  error_atom
   repo
+  id
   ```
   """
 
@@ -63,20 +63,20 @@ defmodule MishkaDeveloperTools.DB.CRUD do
 
   ## Example
   ```elixir
-  crud_add(map_of_info like: %{name: "trangell"})
+  crud_add(map_of_info like: %{"name" => "Mishka"})
   ```
   The input of this macro is a map and its output are a map. For example
 
   ```elixir
-  {:ok, :add, error_atom, data}
-  {:error, :add, error_atom, changeset}
+  {:error, :add, repo_error()}
+  {:ok, :add, repo_data()}
   ```
 
   If you want only the selected parameters to be separated from the list of submitted parameters and sent to the database, use the same macro with input 2
 
   ###  Example
   ```elixir
-  crud_add(map_of_info like: %{name: "trangell"}, [:name])
+  crud_add(map_of_info like: %{"name" => "Mishka"}, ["name"])
   ```
   """
   defmacro crud_add(attrs) do
@@ -105,28 +105,23 @@ defmodule MishkaDeveloperTools.DB.CRUD do
 
   ## Example
   ```elixir
-  crud_edit(map_of_info like: %{id: "6d80d5f4-781b-4fa8-9796-1821804de6ba",name: "trangell"})
+  crud_edit(map_of_info like: %{"id" => "6d80d5f4-781b-4fa8-9796-1821804de6ba", "name" => "Mishka"})
   ```
   > Note that the sending ID must be of UUID type.
 
   The input of this macro is a map and its output are a map. For example
 
   ```elixir
-  # If your request has been saved successfully
-  {:ok, :edit, error_atom, info}
-  # If your ID is not uuid type
-  {:error, :edit, error_atom, :uuid}
-  # If there is an error in sending the data
-  {:error, :edit, error_atom, changeset}
-  # If no record is found for your ID
-  {:error, :delete, error_atom, :get_record_by_id}
+  {:error, :edit, repo_error()}
+  {:ok, :edit, repo_data()}
+  {:error, :edit, {:error, :uuid | :not_found, String.t()}}
   ```
 
   It should be noted that if you want only the selected fields to be separated from the submitted parameters and sent to the database, use the macro with dual input.
 
   ## Example
   ```elixir
-  crud_edit(map_of_info like: %{id: "6d80d5f4-781b-4fa8-9796-1821804de6ba", name: "trangell"}, [:id, :name])
+  crud_edit(map_of_info like: %{"id" => "6d80d5f4-781b-4fa8-9796-1821804de6ba", "name" => "Mishka"}, , ["id", "name"])
   ```
   """
   defmacro crud_edit(attrs) do
@@ -167,25 +162,17 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   ## Example
   ```elixir
   crud_delete("6d80d5f4-781b-4fa8-9796-1821804de6ba")
+  crud_delete("6d80d5f4-781b-4fa8-9796-1821804de6ba", [:comment, :post])
   ```
   Output:
   You should note that this macro prevents the orphan data of the record requested to be deleted. So, use this macro when the other data is not dependent on the data with the ID sent by you.
 
-
-
   Outputs:
 
   ```elixir
-  # This message will be returned when your data has been successfully deleted
-  {:ok, :delete, error_atom, struct}
-  # This error will be returned if the ID sent by you is not a UUID
-  {:error, :delete, error_atom, :uuid}
-  # This error is reversed when an error occurs while sending data
-  {:error, :delete, error_atom, changeset}
-  # This error will be reversed when there is no submitted ID in the database
-  {:error, :delete, error_atom, :get_record_by_id}
-  # This error is reversed when another record is associated with this record
-  {:error, :delete, error_atom, :forced_to_delete}
+  {:error, :delete, repo_error()}
+  {:error, :delete, {:error, :uuid | :not_found | :force_constraint, String.t()}}
+  {:ok, :delete, repo_data()}
   ```
   """
   defmacro crud_delete(id) do
@@ -228,8 +215,7 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   Outputs:
 
   ```
-  {:error, error_atom, :get_record_by_id}
-  {:ok, error_atom, :get_record_by_id, record_info}
+  {:error, :not_found, String.t()} | struct()
   ```
 
   """
@@ -254,8 +240,7 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   Outputs:
 
   ```
-  {:error, error_atom, :get_record_by_field}
-  {:ok, error_atom, :get_record_by_field, record_info}
+  {:error, :not_found, String.t()} | struct()
   ```
 
   """
