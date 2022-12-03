@@ -66,10 +66,10 @@ def delete(id) do
   crud_delete(id)
 end
 
-# It is optional
+# It is optional, list of tables name can be the assoc parameter
 @doc delegate_to: {MishkaDeveloperTools.DB.CRUD, :delete, 2}
-def delete(id) do
-  crud_delete(id)
+def delete(id, assoc) do
+  crud_delete(id, assoc)
 end
 
 # It is optional
