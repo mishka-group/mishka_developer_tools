@@ -1,5 +1,15 @@
-defmodule MishkaDeveloperTools.GuardedStruct do
+defmodule GuardedStruct do
   @moduledoc """
+
+  This module creates a struct for you with `t()` type in the first step and after that you will
+  have some auxiliary functions such as `builder`, which is actually a tuple creation function with
+  error management. It should be noted that this helper function checks the necessary fields and validation
+  for each field and finally gives the output to the parent validation as `main_validator` function,
+  which returns a successful output if there is none.
+
+  > Outputs can be ` {:error, :bad_parameters, errors_list}` or `{:ok, data}`.
+
+  ---
 
   ## Copyright
 
@@ -26,14 +36,14 @@ defmodule MishkaDeveloperTools.GuardedStruct do
 
   defmacro __using__(_) do
     quote do
-      import MishkaDeveloperTools.GuardedStruct, only: [guardedstruct: 1, guardedstruct: 2]
+      import GuardedStruct, only: [guardedstruct: 1, guardedstruct: 2]
     end
   end
 
   @doc """
   Defines a typed struct.
 
-  Inside a `typedstruct` block, each field is defined through the `field/2`
+  Inside a `guardedstruct` block, each field is defined through the `field/2`
   macro.
 
   ## Options
@@ -43,45 +53,94 @@ defmodule MishkaDeveloperTools.GuardedStruct do
       individual fields.
     * `opaque` - if set to true, creates an opaque type for the struct.
     * `module` - if set, creates the struct in a submodule named `module`.
+    * `validator` - if set as tuple like this {ModuleName, :function_name} for each field,
+    in fact you have a `builder` function that check the validation.
+    * `main_validator` - if set as tuple like this {ModuleName, :function_name},
+    for guardedstruct, in fact you have a global validation.
+
+
+  > **Note:** If you did not set `main_validator` or `validator`, it checks the parent module for these!
+  > You should consider when you create `validator(:field_name_atom, value)` and do not want to create for
+  > all fields, please have `validator(field_name_atom, value)` with `{:ok, field_name_atom, value}` to let us
+  > handle this for you. you can see this in the examples
 
   ## Examples
 
-      defmodule MyStruct do
-        use TypedStruct
+  ```elixir
+    guardedstruct main_validator: {Validator, :main_validator} do
+      field(:id, String.t(), validator: {Validator, :validator})
+      field(:type, String.t(), enforce: true)
+      field(:name, String.t(), default: "Joe")
+    end
+  ```
 
-        typedstruct do
+  OR
+
+  ```elixir
+      defmodule MyStruct do
+        use GuardedStruct
+
+        guardedstruct do
           field :field_one, String.t()
           field :field_two, integer(), enforce: true
           field :field_three, boolean(), enforce: true
           field :field_four, atom(), default: :hey
         end
       end
+  ```
+
+  OR
+
+  ```elixir
+    use GuardedStruct
+
+    guardedstruct  do
+      field(:id, String.t())
+      field(:type, String.t(), enforce: true)
+      field(:name, String.t(), default: "Joe")
+      field(:content, String.t())
+    end
+
+    def validator(:content, value) do
+      {:error, :content, value}
+    end
+
+    def validator(name, value) do
+      {:ok, name, value}
+    end
+  ```
 
   The following is an equivalent using the *enforce by default* behaviour:
 
+  ```elixir
       defmodule MyStruct do
         use TypedStruct
 
-        typedstruct enforce: true do
+        guardedstruct enforce: true do
           field :field_one, String.t(), enforce: false
           field :field_two, integer()
-          field :field_three, boolean()
+          field :field_three, boolean(), validator: {Validator, :validator}
           field :field_four, atom(), default: :hey
         end
       end
+  ```
 
   You can create the struct in a submodule instead:
 
+  ```elixir
       defmodule MyModule do
         use TypedStruct
 
-        typedstruct module: Struct do
+        guardedstruct module: Struct do
           field :field_one, String.t()
           field :field_two, integer(), enforce: true
           field :field_three, boolean(), enforce: true
           field :field_four, atom(), default: :hey
         end
       end
+  ```
+
+  > **Note:** The builder function is created in Parent module.
   """
   defmacro guardedstruct(opts \\ [], do: block) do
     ast = register_struct(block, opts)
@@ -128,7 +187,7 @@ defmodule MishkaDeveloperTools.GuardedStruct do
       @before_compile {unquote(__MODULE__), :create_builder}
       @before_compile {unquote(__MODULE__), :delete_temporary_revaluation}
 
-      import MishkaDeveloperTools.GuardedStruct
+      import GuardedStruct
       # Leave the block with its orginal face
       unquote(block)
 
@@ -137,7 +196,7 @@ defmodule MishkaDeveloperTools.GuardedStruct do
       defstruct @gs_fields
 
       # Create type `t()` with `@opaque` option
-      MishkaDeveloperTools.GuardedStruct.__type__(@gs_types, unquote(opts))
+      GuardedStruct.__type__(@gs_types, unquote(opts))
     end
   end
 
@@ -157,7 +216,7 @@ defmodule MishkaDeveloperTools.GuardedStruct do
   @doc false
   defmacro field(name, type, opts \\ []) do
     quote bind_quoted: [name: name, type: Macro.escape(type), opts: opts] do
-      MishkaDeveloperTools.GuardedStruct.__field__(name, type, opts, __ENV__)
+      GuardedStruct.__field__(name, type, opts, __ENV__)
     end
   end
 
@@ -212,7 +271,7 @@ defmodule MishkaDeveloperTools.GuardedStruct do
 
     quote do
       def builder(attrs) do
-        MishkaDeveloperTools.GuardedStruct.builder(
+        GuardedStruct.builder(
           attrs,
           unquote(module),
           unquote(gs_main_validator),
@@ -244,13 +303,9 @@ defmodule MishkaDeveloperTools.GuardedStruct do
   def builder(attrs, module, gs_main_validator, gs_validator, gs_fields, enforce_keys) do
     main_validator = Enum.find(gs_main_validator, &is_tuple(&1))
 
-    MishkaDeveloperTools.GuardedStruct.required_fields(enforce_keys, attrs)
-    |> MishkaDeveloperTools.GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
-    |> MishkaDeveloperTools.GuardedStruct.main_validating(
-      main_validator,
-      gs_main_validator,
-      module
-    )
+    GuardedStruct.required_fields(enforce_keys, attrs)
+    |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
+    |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
   end
 
   @doc false
@@ -264,7 +319,7 @@ defmodule MishkaDeveloperTools.GuardedStruct do
     validated =
       allowed_data
       |> Enum.map(fn {key, value} ->
-        MishkaDeveloperTools.GuardedStruct.find_validator(key, value, gs_validator, module)
+        GuardedStruct.find_validator(key, value, gs_validator, module)
       end)
 
     validated_errors =
