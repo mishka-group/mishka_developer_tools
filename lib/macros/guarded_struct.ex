@@ -20,7 +20,7 @@ defmodule GuardedStruct do
 
   **MIT License**
 
-  Adding new Copyright (c) [2023] [Shahryar Tavakkoli at Mishka Group]
+  Adding new Copyright (c) [2023] [Shahryar Tavakkoli at [Mishka Group](https://github.com/mishka-group)]
 
   **Note:** If the license changes during the support of this project, this file will always remain on MIT
 
@@ -67,37 +67,38 @@ defmodule GuardedStruct do
   ## Examples
 
   ```elixir
-    guardedstruct main_validator: {Validator, :main_validator} do
-      field(:id, String.t(), validator: {Validator, :validator})
-      field(:type, String.t(), enforce: true)
-      field(:name, String.t(), default: "Joe")
+  guardedstruct main_validator: {Validator, :main_validator} do
+    field(:id, String.t(), validator: {Validator, :validator})
+    field(:type, String.t(), enforce: true)
+    field(:name, String.t(), default: "Shahryar")
+  end
+  ```
+
+  OR
+
+  ```elixir
+  defmodule MyStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field :field_one, String.t()
+      field :field_two, integer(), enforce: true
+      field :field_three, boolean(), enforce: true
+      field :field_four, atom(), default: :hey
     end
+  end
   ```
 
   OR
 
   ```elixir
-      defmodule MyStruct do
-        use GuardedStruct
-
-        guardedstruct do
-          field :field_one, String.t()
-          field :field_two, integer(), enforce: true
-          field :field_three, boolean(), enforce: true
-          field :field_four, atom(), default: :hey
-        end
-      end
-  ```
-
-  OR
-
-  ```elixir
+  defmodule MyStruct do
     use GuardedStruct
 
     guardedstruct  do
       field(:id, String.t())
       field(:type, String.t(), enforce: true)
-      field(:name, String.t(), default: "Joe")
+      field(:name, String.t(), default: "Shahryar")
       field(:content, String.t())
     end
 
@@ -108,36 +109,37 @@ defmodule GuardedStruct do
     def validator(name, value) do
       {:ok, name, value}
     end
+  end
   ```
 
   The following is an equivalent using the *enforce by default* behaviour:
 
   ```elixir
-      defmodule MyStruct do
-        use TypedStruct
+  defmodule MyStruct do
+    use TypedStruct
 
-        guardedstruct enforce: true do
-          field :field_one, String.t(), enforce: false
-          field :field_two, integer()
-          field :field_three, boolean(), validator: {Validator, :validator}
-          field :field_four, atom(), default: :hey
-        end
-      end
+    guardedstruct enforce: true do
+      field :field_one, String.t(), enforce: false
+      field :field_two, integer()
+      field :field_three, boolean(), validator: {Validator, :validator}
+      field :field_four, atom(), default: :hey
+    end
+  end
   ```
 
   You can create the struct in a submodule instead:
 
   ```elixir
-      defmodule MyModule do
-        use TypedStruct
+  defmodule MyModule do
+    use TypedStruct
 
-        guardedstruct module: Struct do
-          field :field_one, String.t()
-          field :field_two, integer(), enforce: true
-          field :field_three, boolean(), enforce: true
-          field :field_four, atom(), default: :hey
-        end
-      end
+    guardedstruct module: Struct do
+      field :field_one, String.t()
+      field :field_two, integer(), enforce: true
+      field :field_three, boolean(), enforce: true
+      field :field_four, atom(), default: :hey
+    end
+  end
   ```
 
   > **Note:** The builder function is created in Parent module.
