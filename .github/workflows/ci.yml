@@ -18,17 +18,7 @@ jobs:
       matrix:
         include:
           - pair:
-              elixir: '1.13'
-              otp: '24.2'
-              postgres: '10.19-alpine'
-
-          - pair:
-              elixir: '1.13.1'
-              otp: '24.2'
-              postgres: '13.5-alpine'
-
-          - pair:
-              elixir: '1.13.2'
+              elixir: '1.15.1'
               otp: '24.2'
               postgres: '14.1-alpine'
 
@@ -58,14 +48,14 @@ jobs:
           elixir-version: ${{matrix.pair.elixir}}
 
       - name: Elixir and Erlang Dependencies
-        run: | 
+        run: |
           mix local.hex --force
           mix local.rebar --force
 
       - name: Source Compiling
         env:
           DATABASE_DEVELOPERT_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
-        run: | 
+        run: |
           mix deps.get
           mix deps.compile
 
