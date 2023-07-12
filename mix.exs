@@ -6,7 +6,7 @@ defmodule MishkaDeveloperTools.MixProject do
     [
       app: :mishka_developer_tools,
       version: @version,
-      elixir: "~> 1.13",
+      elixir: "~> 1.15",
       name: "Mishka developer tools",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -35,11 +35,11 @@ defmodule MishkaDeveloperTools.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ecto_sql, "~> 3.9"},
-      {:postgrex, "~> 0.16.5"},
+      {:ecto_sql, "~> 3.10"},
+      {:postgrex, "~> 0.17.2"},
       {:ecto_enum, "~> 1.4"},
       # Dev dependencies
-      {:ex_doc, "~> 0.29", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.30.2", only: :dev, runtime: false}
     ]
   end
 
