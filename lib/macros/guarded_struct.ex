@@ -141,6 +141,32 @@ defmodule GuardedStruct do
   ```
 
   > **Note:** The builder function is created in Parent module.
+
+  ---
+
+  ## This macro creates `builder`, `enforce_keys`, `keys` functions for you:
+
+  ```elixir
+    %{id: "123", type: "example", name: "Shahryar", content: "Lorem ipsum"}
+    |> MyModule.builder()
+
+    # Returns:
+    # {:ok, %{id: "123", type: "example", name: "Shahryar", content: "Lorem ipsum"}}
+    # {:error, :error_action, errors_list}
+
+    MyModule.enforce_keys(:id)
+    # Returns: false or true
+
+    MyModule.enforce_keys()
+    # Returns: List of enforce keys
+
+
+    MyModule.keys(:id)
+    # Returns: false or true
+
+    MyModule.keys()
+    # Returns: List of keys
+  ```
   """
   defmacro guardedstruct(opts \\ [], do: block) do
     ast = register_struct(block, opts)
