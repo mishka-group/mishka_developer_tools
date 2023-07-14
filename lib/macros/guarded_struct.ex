@@ -391,7 +391,7 @@ defmodule GuardedStruct do
       end
 
     if status == :ok and length(validated_errors) == 0 do
-      {:ok, main_error_or_data}
+      {:ok, struct(module, main_error_or_data)}
     else
       {:error, :bad_parameters,
        validated_errors ++ if(status == :error, do: [main_error_or_data], else: [])}

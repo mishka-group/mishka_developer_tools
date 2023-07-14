@@ -15,6 +15,7 @@ defmodule MishkaDeveloperTools.MixProject do
       package: package(),
       homepage_url: "https://github.com/mishka-group",
       source_url: "https://github.com/mishka-group/mishka_developer_tools",
+      test_elixirc_options: [debug_info: Mix.env() == :test],
       docs: [
         main: "MishkaDeveloperTools",
         source_ref: "master",
