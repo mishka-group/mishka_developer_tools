@@ -1,4 +1,4 @@
-defmodule MishkaDeveloperTools.Helper.Derive.ValidationDeriver do
+defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   # "validate(not_empty, max_len = 20)"
   def call(input, nil), do: input
 

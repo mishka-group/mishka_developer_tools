@@ -1,5 +1,5 @@
 defmodule MishkaDeveloperTools.Helper.Derive do
-  alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDeriver, ValidationDeriver}
+  alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDerive, ValidationDerive}
 
   def derive({:error, _, _} = error, _derive_input), do: error
 
@@ -10,8 +10,8 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
       parsed_derive ->
         data
-        |> SanitizerDeriver.call(Map.get(parsed_derive, :sanitize))
-        |> ValidationDeriver.call(Map.get(parsed_derive, :validate))
+        |> SanitizerDerive.call(Map.get(parsed_derive, :sanitize))
+        |> ValidationDerive.call(Map.get(parsed_derive, :validate))
     end
   end
 end
