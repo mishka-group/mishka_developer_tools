@@ -1,4 +1,4 @@
-# TODO: needs ast graph field validator? -> main validator? -> drive sanitizer! -> dive validator!
+# TODO: needs ast graph field validator? -> main validator? -> derive sanitizer! -> dive validator!
 defmodule GuardedStruct do
   @moduledoc """
 
@@ -26,13 +26,15 @@ defmodule GuardedStruct do
   **Note:** If the license changes during the support of this project, this file will always remain on MIT
 
   """
+  alias MishkaDeveloperTools.Helper.Derive
 
   @temporary_revaluation [
     :gs_fields,
     :gs_types,
     :gs_enforce_keys,
     :gs_validator,
-    :gs_main_validator
+    :gs_main_validator,
+    :gs_derive
   ]
 
   defmacro __using__(_) do
@@ -268,6 +270,8 @@ defmodule GuardedStruct do
 
     custom_validator = !is_nil(opts[:validator]) && !is_nil(custom_validator(opts[:validator]))
 
+    if !is_nil(opts[:derive]), do: Module.put_attribute(mod, :gs_derive, opts[:derive])
+
     if custom_validator do
       Module.put_attribute(mod, :gs_validator, %{
         field: name,
@@ -297,6 +301,7 @@ defmodule GuardedStruct do
     gs_validator = Macro.escape(Module.get_attribute(module, :gs_validator))
     gs_enforce_keys = Module.get_attribute(module, :gs_enforce_keys)
     gs_fields = Macro.escape(Module.get_attribute(module, :gs_fields) |> Enum.map(&elem(&1, 0)))
+    gs_derive = Module.get_attribute(module, :gs_derive)
 
     quote do
       def builder(attrs) do
@@ -306,7 +311,8 @@ defmodule GuardedStruct do
           unquote(gs_main_validator),
           unquote(gs_validator),
           unquote(gs_fields),
-          unquote(gs_enforce_keys)
+          unquote(gs_enforce_keys),
+          unquote(gs_derive)
         )
       end
 
@@ -329,14 +335,13 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def builder(attrs, module, gs_main_validator, gs_validator, gs_fields, enforce_keys) do
+  def builder(attrs, module, gs_main_validator, gs_validator, gs_fields, enforce_keys, gs_derive) do
     main_validator = Enum.find(gs_main_validator, &is_tuple(&1))
 
     GuardedStruct.required_fields(enforce_keys, attrs)
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
-
-    # |> GuardedStruct.drive(drive_str)
+    |> Derive.derive(gs_derive)
   end
 
   @doc false

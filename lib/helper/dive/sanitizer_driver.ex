@@ -1,4 +1,4 @@
-defmodule MishkaDeveloperTools.Helper.Drive.SanitizerDriver do
+defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDeriver do
   # "sanitize(trim, lowercase)"
   #
   def call(input, nil), do: input

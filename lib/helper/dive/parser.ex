@@ -1,4 +1,4 @@
-defmodule MishkaDeveloperTools.Helper.Drive.Parser do
+defmodule MishkaDeveloperTools.Helper.Derive.Parser do
   def parser(input) do
     String.split(String.trim(input), ")")
     |> Enum.reject(&(&1 == ""))
