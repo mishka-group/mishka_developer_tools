@@ -61,9 +61,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   @bytecode_opaque bytecode_opaque
   @bytecode_noalias bytecode_noalias
 
-  # Standard struct name used when comparing generated types.
-  @standard_struct_name MishkaDeveloperToolsTest.GuardedStructTest.TestStruct
-
   ############## (▰˘◡˘▰) GuardedStructTest Tests functions (▰˘◡˘▰) ##############
   test "generates the struct with its defaults" do
     assert TestStruct.__struct__() == %TestStruct{
@@ -184,12 +181,37 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         end
       end
 
-    # Get both types and standardise them (remove line numbers and rename
-    # the second struct with the name of the first one).
     fields = [:test]
 
     assert check_type(:t, @bytecode_noalias, fields)
     assert check_type(:t, bytecode_actual, fields)
+  end
+
+  test "create builder function to test enforce keys and normal keys" do
+  end
+
+  test "use builder to test an allowed map as its params" do
+  end
+
+  test "use builder to get validator inside its module" do
+  end
+
+  test "use builder to get main_validator inside its module" do
+  end
+
+  test "use builder to get validator inside another module" do
+  end
+
+  test "use builder to get main_validator inside another module" do
+  end
+
+  test "use builder with none validator and none main_validator" do
+  end
+
+  test "use builder with none validator and exists main_validator" do
+  end
+
+  test "use builder with none main_validator and exists validator" do
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############

@@ -1,3 +1,4 @@
+# TODO: needs ast graph field validator? -> main validator? -> drive sanitizer! -> dive validator!
 defmodule GuardedStruct do
   @moduledoc """
 
@@ -334,6 +335,8 @@ defmodule GuardedStruct do
     GuardedStruct.required_fields(enforce_keys, attrs)
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
+
+    # |> GuardedStruct.drive(drive_str)
   end
 
   @doc false
