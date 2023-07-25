@@ -310,17 +310,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "use builder to get main_validator inside another module" do
-    defmodule GuardedStructTest.AnotherModule do
+    defmodule GuardedStructTest.AnotherMainModule do
       def main_validator(value) do
         {:ok, value}
       end
     end
 
     defmodule TestStructAnotherMainValidatorBuilder do
-      alias GuardedStructTest.AnotherModule
+      alias GuardedStructTest.AnotherMainModule
       use GuardedStruct
 
-      guardedstruct main_validator: {AnotherModule, :main_validator} do
+      guardedstruct main_validator: {AnotherMainModule, :main_validator} do
         field(:name, String.t(), enforce: true)
         field(:title, String.t())
       end
