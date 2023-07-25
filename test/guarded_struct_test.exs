@@ -188,15 +188,14 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "create builder function to test enforce keys and normal keys" do
-    {:module, name, _bytecode_actual, _exports} =
-      defmodule TestStructBuilder do
-        use GuardedStruct
+    defmodule TestStructBuilder do
+      use GuardedStruct
 
-        guardedstruct do
-          field(:name, String.t(), enforce: true)
-          field(:title, String.t())
-        end
+      guardedstruct do
+        field(:name, String.t(), enforce: true)
+        field(:title, String.t())
       end
+    end
 
     {:error, :required_fields, [:name]} = assert TestStructBuilder.builder(%{title: "user"})
 
@@ -209,34 +208,126 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     keys = TestStructBuilder.keys()
     keys_by_field = TestStructBuilder.keys(:name)
 
-    enforce_keys = assert [:name]
+    [:name] = assert enforce_keys
     assert enforce_keys_by_field
-    keys = assert [:title, :name]
+    [:title, :name] = assert keys
     assert keys_by_field
   end
 
   test "use builder to test an allowed map as its params" do
+    defmodule TestStructBuilderAllowedMap do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), enforce: true)
+        field(:title, String.t())
+      end
+    end
+
+    test_map = %{name: "shahryar", title: "user", test: "test"}
+
+    {:ok, _data} = assert TestStructBuilderAllowedMap.builder(test_map)
   end
 
   test "use builder to get validator inside its module" do
+    defmodule TestStructInsideValidatorBuilder do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), enforce: true)
+        field(:title, String.t())
+      end
+
+      def validator(:name, value) do
+        if is_binary(value), do: {:ok, :name, value}, else: {:error, :name, "No, never"}
+      end
+
+      def validator(name, value) do
+        {:ok, name, value}
+      end
+    end
+
+    {:ok, _data} =
+      assert TestStructInsideValidatorBuilder.builder(%{name: "shahryar", title: "user"})
+
+    {:error, :bad_parameters, [%{message: _msg, action: :name}]} =
+      assert TestStructInsideValidatorBuilder.builder(%{name: 1, title: "user"})
   end
 
   test "use builder to get main_validator inside its module" do
+    defmodule TestStructInsideMainValidatorBuilder do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), enforce: true)
+        field(:title, String.t())
+      end
+
+      def validator(:name, value) do
+        if is_binary(value), do: {:ok, :name, value}, else: {:error, :name, "No, never"}
+      end
+
+      def validator(name, value) do
+        {:ok, name, value}
+      end
+
+      def main_validator(value) do
+        {:ok, value}
+      end
+    end
+
+    {:ok, _data} =
+      assert TestStructInsideMainValidatorBuilder.builder(%{name: "mishka", title: "org"})
   end
 
   test "use builder to get validator inside another module" do
+    defmodule GuardedStructTest.AnotherModule do
+      def validator(:name, value) do
+        if is_binary(value), do: {:ok, :name, value}, else: {:error, :name, "No, never"}
+      end
+    end
+
+    defmodule TestStructAnotherValidatorBuilder do
+      alias GuardedStructTest.AnotherModule
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), enforce: true, validator: {AnotherModule, :validator})
+        field(:title, String.t())
+      end
+
+      # You can not use it, but it is mentioned here for test clarity
+      def validator(name, value) do
+        {:ok, name, value}
+      end
+    end
+
+    {:ok, _data} =
+      assert TestStructAnotherValidatorBuilder.builder(%{name: "mishka", title: "org"})
+
+    {:error, :bad_parameters, [%{message: _msg, action: :name}]} =
+      assert TestStructAnotherValidatorBuilder.builder(%{name: 1, title: "user"})
   end
 
   test "use builder to get main_validator inside another module" do
-  end
+    defmodule GuardedStructTest.AnotherModule do
+      def main_validator(value) do
+        {:ok, value}
+      end
+    end
 
-  test "use builder with none validator and none main_validator" do
-  end
+    defmodule TestStructAnotherMainValidatorBuilder do
+      alias GuardedStructTest.AnotherModule
+      use GuardedStruct
 
-  test "use builder with none validator and exists main_validator" do
-  end
+      guardedstruct main_validator: {AnotherModule, :main_validator} do
+        field(:name, String.t(), enforce: true)
+        field(:title, String.t())
+      end
+    end
 
-  test "use builder with none main_validator and exists validator" do
+    {:ok, _data} =
+      assert TestStructAnotherMainValidatorBuilder.builder(%{name: "mishka", title: "org"})
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
