@@ -270,7 +270,12 @@ defmodule GuardedStruct do
 
     custom_validator = !is_nil(opts[:validator]) && !is_nil(custom_validator(opts[:validator]))
 
-    if !is_nil(opts[:derive]), do: Module.put_attribute(mod, :gs_derive, opts[:derive])
+    if !is_nil(opts[:derive]),
+      do:
+        Module.put_attribute(mod, :gs_derive, %{
+          field: name,
+          derive: custom_validator(opts[:derive])
+        })
 
     if custom_validator do
       Module.put_attribute(mod, :gs_validator, %{
@@ -301,7 +306,7 @@ defmodule GuardedStruct do
     gs_validator = Macro.escape(Module.get_attribute(module, :gs_validator))
     gs_enforce_keys = Module.get_attribute(module, :gs_enforce_keys)
     gs_fields = Macro.escape(Module.get_attribute(module, :gs_fields) |> Enum.map(&elem(&1, 0)))
-    gs_derive = Module.get_attribute(module, :gs_derive)
+    gs_derive = Macro.escape(Module.get_attribute(module, :gs_derive))
 
     quote do
       def builder(attrs) do
@@ -341,7 +346,8 @@ defmodule GuardedStruct do
     GuardedStruct.required_fields(enforce_keys, attrs)
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
-    |> Derive.derive(gs_derive)
+
+    # |> Derive.derive(gs_derive)
   end
 
   @doc false

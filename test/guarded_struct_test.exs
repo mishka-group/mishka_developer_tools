@@ -188,6 +188,31 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "create builder function to test enforce keys and normal keys" do
+    {:module, name, _bytecode_actual, _exports} =
+      defmodule TestStructBuilder do
+        use GuardedStruct
+
+        guardedstruct do
+          field(:name, String.t(), enforce: true)
+          field(:title, String.t())
+        end
+      end
+
+    {:error, :required_fields, [:name]} = assert TestStructBuilder.builder(%{title: "user"})
+
+    {:ok, data} = assert TestStructBuilder.builder(%{name: "shahryar", title: "user"})
+
+    assert is_struct(data)
+
+    enforce_keys = TestStructBuilder.enforce_keys()
+    enforce_keys_by_field = TestStructBuilder.enforce_keys(:name)
+    keys = TestStructBuilder.keys()
+    keys_by_field = TestStructBuilder.keys(:name)
+
+    enforce_keys = assert [:name]
+    assert enforce_keys_by_field
+    keys = assert [:title, :name]
+    assert keys_by_field
   end
 
   test "use builder to test an allowed map as its params" do
