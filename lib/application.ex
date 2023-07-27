@@ -1,4 +1,5 @@
 defmodule MishkaDeveloperTools.Application do
+  @moduledoc false
   use Application
 
   @impl true

@@ -1,4 +1,3 @@
-# TODO: needs ast graph field validator? -> main validator? -> derive sanitizer! -> dive validator!
 # TODO: we need helper to find our input map is string or atom, if string it should be converted to atom
 defmodule GuardedStruct do
   @moduledoc """
@@ -120,7 +119,7 @@ defmodule GuardedStruct do
 
   ```elixir
   defmodule MyStruct do
-    use TypedStruct
+    use GuardedStruct
 
     guardedstruct enforce: true do
       field :field_one, String.t(), enforce: false
@@ -135,7 +134,7 @@ defmodule GuardedStruct do
 
   ```elixir
   defmodule MyModule do
-    use TypedStruct
+    use GuardedStruct
 
     guardedstruct module: Struct do
       field :field_one, String.t()
@@ -172,6 +171,52 @@ defmodule GuardedStruct do
 
     MyModule.keys()
     # Returns: List of keys
+  ```
+
+  ---
+
+  ## Predefined validations and sanitizers as a derive
+
+  Based on the convenience of working with GuardedStruct, you can enter sanitizers
+  and validation for each field as a string.
+
+  > **Note:** you can mix `derive` with your field `validator` and struct `main_validator`.
+  > It should be noted that the prioritization of functions is as follows:
+  > Field validators --> Main validator --> Field sanitizes --> Field validations
+
+  ```elixir
+  defmodule MyStruct do
+    use GuardedStruct
+
+    guardedstruct enforce: true do
+      field :field_one, String.t(), enforce: false
+      field :field_two, integer(), derive: "sanitize(trim, lowercase) validate(not_empty, max_len = 20)"
+      field :field_three, boolean(), validator: {Validator, :validator}
+      field :field_four, atom(), default: :hey,
+            validator: {Validator, :validator}, , derive: "sanitize(trim) validate(not_empty)"
+    end
+  end
+  ```
+
+  > **Note:** Like the examples above, this case also follows the rules of internal validator function checker.
+
+  ```elixir
+  defmodule MyStruct do
+    use GuardedStruct
+
+    guardedstruct enforce: true do
+      field :field_one, String.t(), enforce: false
+      field :field_two, integer(), derive: "sanitize(trim, lowercase) validate(not_empty)"
+    end
+
+    def validator(:field_two, value) do
+      {:ok, :name, "Mishka   "}
+    end
+
+    def validator(field, value) do
+      {:ok, field, value}
+    end
+  end
   ```
   """
   defmacro guardedstruct(opts \\ [], do: block) do
