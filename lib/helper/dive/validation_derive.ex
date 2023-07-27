@@ -1,38 +1,45 @@
 defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
-  def call(input, nil), do: input
+  def call({_field, input}, nil), do: input
 
-  def call(input, actions) do
-    Enum.map(actions, &validate(&1, input))
+  def call({field, input}, actions) do
+    validated = Enum.map(actions, &validate(&1, input, field))
+
+    validated
+    |> Enum.find(&(elem(&1, 0) == :error))
+    |> case do
+      nil -> List.first(validated)
+      _ -> validated
+    end
   end
 
-  def validate(:not_empty, input) when is_binary(input) do
-    if input == "", do: {:error, :not_empty}, else: {:ok, input}
+  def validate(:not_empty, input, field) when is_binary(input) do
+    if input == "", do: {:error, field, :not_empty}, else: input
   end
 
-  def validate(:not_empty, input) when is_list(input) do
-    if input == [], do: {:error, :not_empty}, else: {:ok, input}
+  def validate(:not_empty, input, field) when is_list(input) do
+    if input == [], do: {:error, field, :not_empty}, else: input
   end
 
-  def validate(:not_empty, input) when is_map(input) do
-    if input == %{}, do: {:error, :not_empty}, else: {:ok, input}
+  def validate(:not_empty, input, field) when is_map(input) do
+    if input == %{}, do: {:error, field, :not_empty}, else: input
   end
 
-  def validate(:not_empty, _input) do
-    {:error, :not_empty}
+  def validate(:not_empty, _input, field) do
+    {:error, field, :not_empty}
   end
 
-  def validate({:max_len, _len}, _input) do
+  def validate({:max_len, _len}, _input, _field) do
   end
 
-  def validate({:min_len, _len}, _input) do
+  def validate({:min_len, _len}, _input, _field) do
   end
 
-  def validate(:location, _input) do
+  def validate(:location, _input, _field) do
   end
 
-  def validate(:time, _input) do
+  def validate(:time, _input, _field) do
   end
 
-  def validate(:url, _input) do
+  def validate(:url, _input, _field) do
   end
 end

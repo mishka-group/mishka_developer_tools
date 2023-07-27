@@ -1,4 +1,5 @@
 # TODO: needs ast graph field validator? -> main validator? -> derive sanitizer! -> dive validator!
+# TODO: we need helper to find our input map is string or atom, if string it should be converted to atom
 defmodule GuardedStruct do
   @moduledoc """
 
@@ -346,8 +347,7 @@ defmodule GuardedStruct do
     GuardedStruct.required_fields(enforce_keys, attrs)
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
-
-    # |> Derive.derive(gs_derive)
+    |> Derive.derive(gs_derive)
   end
 
   @doc false
