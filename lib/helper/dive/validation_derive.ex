@@ -1,15 +1,19 @@
 defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
-  def call({_field, input}, nil), do: input
+  def call({_field, input}, nil), do: {input, []}
 
   def call({field, input}, actions) do
     validated = Enum.map(actions, &validate(&1, input, field))
 
-    validated
-    |> Enum.find(&(elem(&1, 0) == :error))
-    |> case do
-      nil -> List.first(validated)
-      _ -> validated
-    end
+    validated_errors =
+      Enum.reduce(validated, [], fn map, acc ->
+        if is_tuple(map) and elem(map, 0) == :error do
+          [%{message: elem(map, 2), action: field}] ++ acc
+        else
+          acc
+        end
+      end)
+
+    {List.first(validated), validated_errors}
   end
 
   def validate(:not_empty, input, field) when is_binary(input) do
@@ -37,7 +41,8 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   def validate(:location, _input, _field) do
   end
 
-  def validate(:time, _input, _field) do
+  def validate(:time, _input, field) do
+    {:error, field, :time}
   end
 
   def validate(:url, _input, _field) do

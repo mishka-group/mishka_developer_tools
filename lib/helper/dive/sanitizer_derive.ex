@@ -1,5 +1,5 @@
 defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
-  def call({_field, input}, nil), do: input
+  def call({field, input}, nil), do: {field, input}
 
   def call({field, input}, actions) do
     converted_input = Enum.reduce(actions, input, fn i, acc -> sanitize(i, acc) end)

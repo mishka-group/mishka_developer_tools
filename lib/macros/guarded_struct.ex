@@ -275,7 +275,7 @@ defmodule GuardedStruct do
       do:
         Module.put_attribute(mod, :gs_derive, %{
           field: name,
-          derive: custom_validator(opts[:derive])
+          derive: opts[:derive]
         })
 
     if custom_validator do

@@ -10,12 +10,15 @@ defmodule MishkaDeveloperTools.Helper.Derive do
         get_field = Map.get(data, map.field)
 
         if !is_nil(get_field) do
-          converted_value =
+          {all_data, validated_errors} =
             {map.field, get_field}
             |> SanitizerDerive.call(Map.get(parsed_derive, :sanitize))
             |> ValidationDerive.call(Map.get(parsed_derive, :validate))
 
-          Map.put(acc, map.field, converted_value)
+          converted_validated_values =
+            if length(validated_errors) > 0, do: {:error, validated_errors}, else: all_data
+
+          Map.put(acc, map.field, converted_validated_values)
         else
           acc
         end
@@ -28,10 +31,11 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
   def error_handler(reduced_fields) do
     get_error =
-      Map.values(reduced_fields)
+      reduced_fields
+      |> Map.values()
+      |> Enum.filter(&(is_tuple(&1) && elem(&1, 0) == :error))
+      |> Enum.map(fn {:error, errors} -> errors end)
       |> Enum.concat()
-      |> Enum.filter(&(is_tuple(&1) and elem(&1, 0) == :error))
-      |> Enum.map(fn {:error, field, msg} -> %{message: msg, action: field} end)
 
     {:error, :bad_parameters, get_error}
   end

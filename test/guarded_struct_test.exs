@@ -330,6 +330,82 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       assert TestStructAnotherMainValidatorBuilder.builder(%{name: "mishka", title: "org"})
   end
 
+  test "use builder to Sanitize - derive: sanitize(trim, lowercase)" do
+    defmodule TestStructWithSanitizeDerive do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), enforce: true, derive: "sanitize(trim, upcase)")
+        field(:title, String.t(), derive: "sanitize(capitalize)")
+      end
+    end
+
+    {:ok, data} = TestStructWithSanitizeDerive.builder(%{name: " mishka ", title: "org"})
+    "MISHKA" = assert data.name
+    "Org" = assert data.title
+  end
+
+  test "use builder to Validation" do
+    defmodule TestStructWithValidationDerive do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), enforce: true, derive: "validate(not_empty)")
+        field(:title, String.t(), derive: "validate(not_empty, time)")
+      end
+    end
+
+    {:error, :bad_parameters,
+     [
+       %{message: :not_empty, action: :name},
+       %{message: :time, action: :title},
+       %{message: :not_empty, action: :title}
+     ]} = assert TestStructWithValidationDerive.builder(%{name: "", title: ""})
+
+    defmodule TestStructWithValidationDerive1 do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), enforce: true, derive: "validate(not_empty)")
+        field(:title, String.t(), derive: "validate(not_empty)")
+      end
+    end
+
+    {:ok, data} = assert TestStructWithValidationDerive1.builder(%{name: "1", title: "1"})
+  end
+
+  test "use builder to Sanitize and Validation" do
+    defmodule TestStructWithValidationAndValidationDerive do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(),
+          enforce: true,
+          derive: "sanitize(trim, upcase) validate(not_empty)"
+        )
+
+        field(:title, String.t(), derive: "validate(not_empty)")
+      end
+    end
+
+    {:ok, data} =
+      TestStructWithValidationAndValidationDerive.builder(%{name: " mishka ", title: "org"})
+
+    "MISHKA" = assert data.name
+
+    {:error, :bad_parameters, [%{message: :not_empty, action: :title}]} =
+      assert TestStructWithValidationAndValidationDerive.builder(%{name: " mishka ", title: ""})
+  end
+
+  test "use builder to Derive and field validator" do
+  end
+
+  test "use builder to Derive and main validator" do
+  end
+
+  test "use builder to Derive and both validator" do
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do
