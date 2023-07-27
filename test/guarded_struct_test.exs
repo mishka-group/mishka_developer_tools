@@ -371,7 +371,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       end
     end
 
-    {:ok, data} = assert TestStructWithValidationDerive1.builder(%{name: "1", title: "1"})
+    {:ok, _data} =
+      assert TestStructWithValidationDerive1.builder(%{name: "mishka", title: "group"})
   end
 
   test "use builder to Sanitize and Validation" do
@@ -398,12 +399,116 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "use builder to Derive and field validator" do
+    defmodule TestStructBuilderWithValidationDeriveAndFieldValidator do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(),
+          enforce: true,
+          derive: "sanitize(trim, upcase) validate(not_empty)"
+        )
+
+        field(:title, String.t(), derive: "sanitize(trim, capitalize) validate(not_empty)")
+      end
+
+      def validator(:name, value) do
+        if is_binary(value), do: {:ok, :name, "Mishka   "}, else: {:error, :name, "No, never"}
+      end
+
+      def validator(name, value) do
+        {:ok, name, value}
+      end
+    end
+
+    {:ok, data} =
+      TestStructBuilderWithValidationDeriveAndFieldValidator.builder(%{
+        name: "fake_mishka",
+        title: "  org"
+      })
+
+    "MISHKA" = assert data.name
+    "Org" = assert data.title
+
+    {:error, :bad_parameters, [%{message: "No, never", action: :name}]} =
+      assert TestStructBuilderWithValidationDeriveAndFieldValidator.builder(%{
+               name: 1,
+               title: "  org"
+             })
   end
 
   test "use builder to Derive and main validator" do
+    defmodule TestStructBuilderWithValidationDeriveAndMainValidator do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(),
+          enforce: true,
+          derive: "sanitize(trim, upcase) validate(not_empty)"
+        )
+
+        field(:title, String.t(), derive: "sanitize(trim, capitalize) validate(not_empty)")
+      end
+
+      def main_validator(value) do
+        {:ok, Map.merge(value, %{title: "    Group"})}
+      end
+    end
+
+    {:ok, data} =
+      TestStructBuilderWithValidationDeriveAndMainValidator.builder(%{
+        name: "mishka",
+        title: "  org"
+      })
+
+    "MISHKA" = assert data.name
+    "Group" = assert data.title
   end
 
   test "use builder to Derive and both validator" do
+    defmodule TestStructBuilderWithValidationDeriveAndBothValidator do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(),
+          enforce: true,
+          derive: "sanitize(trim, upcase) validate(not_empty)"
+        )
+
+        field(:title, String.t(), derive: "sanitize(trim, capitalize) validate(not_empty)")
+        field(:nickname, String.t(), derive: "validate(not_empty, time)")
+      end
+
+      def validator(:name, value) do
+        if is_binary(value), do: {:ok, :name, "Mishka   "}, else: {:error, :name, "No, never"}
+      end
+
+      def validator(name, value) do
+        {:ok, name, value}
+      end
+
+      def main_validator(value) do
+        {:ok, Map.merge(value, %{title: "    Group"})}
+      end
+    end
+
+    {:ok, data} =
+      TestStructBuilderWithValidationDeriveAndBothValidator.builder(%{
+        name: "fake_mishka",
+        title: "  org"
+      })
+
+    "MISHKA" = assert data.name
+    "Group" = assert data.title
+
+    {:error, :bad_parameters,
+     [
+       %{message: :time, action: :nickname},
+       %{message: :not_empty, action: :nickname}
+     ]} =
+      assert TestStructBuilderWithValidationDeriveAndBothValidator.builder(%{
+               name: "fake_mishka",
+               nickname: ""
+             })
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
