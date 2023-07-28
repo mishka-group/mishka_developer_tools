@@ -28,14 +28,20 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     if input == %{}, do: {:error, field, :not_empty}, else: input
   end
 
-  def validate(:not_empty, _input, field) do
-    {:error, field, :not_empty}
+  def validate({:max_len, len}, input, field) when is_binary(input) do
+    if String.length(input) >= len, do: {:error, field, :max_len}, else: input
   end
 
-  def validate({:max_len, _len}, _input, _field) do
+  def validate({:max_len, len}, input, field) when is_integer(input) do
+    if input <= len, do: input, else: {:error, field, :max_len}
   end
 
-  def validate({:min_len, _len}, _input, _field) do
+  def validate({:min_len, len}, input, field) when is_binary(input) do
+    if String.length(input) <= len, do: {:error, field, :min_len}, else: input
+  end
+
+  def validate({:min_len, len}, input, field) when is_integer(input) do
+    if input >= len, do: input, else: {:error, field, :max_len}
   end
 
   def validate(:location, _input, _field) do
@@ -45,6 +51,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     {:error, field, :time}
   end
 
-  def validate(:url, _input, _field) do
+  def validate(:url, input, field) when is_binary(input) do
+    {:error, field, :time}
+  end
+
+  def validate(_, _input, field) do
+    {:error, field, :not_allowed_types}
   end
 end

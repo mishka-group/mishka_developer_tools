@@ -7,6 +7,8 @@ defmodule GuardedStruct do
   error management. It should be noted that this helper function checks the necessary fields and validation
   for each field and finally gives the output to the parent validation as `main_validator` function,
   which returns a successful output if there is none.
+  This was part of the macro's capabilities; Now you can use the predefined validations and
+  sanitizers of this library.
 
   > Outputs can be ` {:error, :bad_parameters, errors_list}` or `{:ok, data}`.
 
@@ -44,7 +46,7 @@ defmodule GuardedStruct do
   end
 
   @doc """
-  Defines a typed struct.
+  Defines a guarded struct.
 
   Inside a `guardedstruct` block, each field is defined through the `field/2`
   macro.
@@ -156,7 +158,7 @@ defmodule GuardedStruct do
     |> MyModule.builder()
 
     # Returns:
-    # {:ok, %{id: "123", type: "example", name: "Shahryar", content: "Lorem ipsum"}}
+    # {:ok, %ModuleStruct{id: "123", type: "example", name: "Shahryar", content: "Lorem ipsum"}}
     # {:error, :error_action, errors_list}
 
     MyModule.enforce_keys(:id)
@@ -192,7 +194,7 @@ defmodule GuardedStruct do
       field :field_one, String.t(), enforce: false
       field :field_two, integer(), derive: "sanitize(trim, lowercase) validate(not_empty, max_len = 20)"
       field :field_three, boolean(), validator: {Validator, :validator}
-      field :field_four, atom(), default: :hey,
+      field :field_four, atom(), default: :mishka_group,
             validator: {Validator, :validator}, , derive: "sanitize(trim) validate(not_empty)"
     end
   end
