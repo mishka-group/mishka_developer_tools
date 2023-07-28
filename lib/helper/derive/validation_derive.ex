@@ -55,6 +55,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     {:error, field, :time}
   end
 
+  def validate(:email, input, field) when is_binary(input) do
+    {:error, field, :email}
+  end
+
   def validate(_, _input, field) do
     {:error, field, :not_allowed_types}
   end

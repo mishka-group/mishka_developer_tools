@@ -36,9 +36,10 @@ defmodule MishkaDeveloperTools.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ecto_sql, "~> 3.10"},
-      {:postgrex, "~> 0.17.2"},
-      {:ecto_enum, "~> 1.4"},
+      {:ecto_sql, "~> 3.10", optional: true},
+      {:postgrex, "~> 0.17.2", optional: true},
+      {:ecto_enum, "~> 1.4", optional: true},
+      {:html_sanitize_ex, "~> 1.4", optional: true},
       # Dev dependencies
       {:ex_doc, "~> 0.30.2", only: :dev, runtime: false}
     ]

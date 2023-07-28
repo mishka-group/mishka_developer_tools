@@ -52,6 +52,11 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   @optional_callbacks delete: 2, show_by_id: 1, show_by_field: 2
 
   defmacro __using__(opts) do
+    if !Code.ensure_loaded?(Ecto) or !Code.ensure_loaded?(EctoEnum) or
+         !Code.ensure_loaded?(Postgrex),
+       do:
+         raise("For using this macro you need to installe `ecto_sql`, `postgrex` and `ecto_enum`")
+
     quote(bind_quoted: [opts: opts]) do
       import MishkaDeveloperTools.DB.CRUD
       @interface_module opts
