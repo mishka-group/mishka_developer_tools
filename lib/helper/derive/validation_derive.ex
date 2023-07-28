@@ -56,7 +56,18 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate(:email, input, field) when is_binary(input) do
-    {:error, field, :email}
+    if Code.ensure_loaded?(EmailChecker) do
+      EmailChecker.valid?(input, [EmailChecker.Check.Format, EmailChecker.Check.MX])
+      |> case do
+        true -> input
+        _ -> {:error, field, :email}
+      end
+    else
+      case Regex.match?(~r/^[A-Za-z0-9\._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/, input) do
+        true -> input
+        _ -> {:error, field, :email}
+      end
+    end
   end
 
   def validate(_, _input, field) do
