@@ -72,28 +72,36 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate(:geo_url, input, field) when is_binary(input) do
-    case URL.new("geo:#{input}") do
-      {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{} = _data}} ->
-        input
+    if Code.ensure_loaded?(URL) do
+      case URL.new("geo:#{input}") do
+        {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{} = _data}} ->
+          input
 
-      {:ok, %URL{scheme: "geo", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
-        {:error, field, msg}
+        {:ok, %URL{scheme: "geo", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
+          {:error, field, msg}
 
-      _ ->
-        {:error, field, :geo_url}
+        _ ->
+          {:error, field, :geo_url}
+      end
+    else
+      raise("For using this validation you need to installe `ex_url`")
     end
   end
 
   def validate(:tell, input, field) when is_binary(input) do
-    case URL.new("tel:#{input}") do
-      {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{} = _data}} ->
-        input
+    if Code.ensure_loaded?(URL) do
+      case URL.new("tel:#{input}") do
+        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{} = _data}} ->
+          input
 
-      {:ok, %URL{scheme: "tel", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
-        {:error, :tell, msg}
+        {:ok, %URL{scheme: "tel", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
+          {:error, :tell, msg}
 
-      _ ->
-        {:error, field, :tell}
+        _ ->
+          {:error, field, :tell}
+      end
+    else
+      raise("For using this validation you need to installe `ex_url`")
     end
   end
 
