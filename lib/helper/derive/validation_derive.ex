@@ -52,7 +52,23 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate(:url, input, field) when is_binary(input) do
-    {:error, field, :time}
+    case URI.parse(input) do
+      %URI{scheme: nil} ->
+        {:error, field, "is missing a scheme (e.g. https)"}
+
+      %URI{host: nil} ->
+        {:error, field, "is missing a host"}
+
+      %URI{port: port, scheme: scheme, host: host}
+      when port in [80, 443] and scheme in ["https", "http"] ->
+        case :inet.gethostbyname(Kernel.to_charlist(host)) do
+          {:ok, _} -> input
+          _ -> {:error, field, "invalid host"}
+        end
+
+      _ ->
+        {:error, field, "invalid url"}
+    end
   end
 
   def validate(:geo_url, input, field) when is_binary(input) do
