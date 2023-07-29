@@ -55,9 +55,35 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     {:error, field, :time}
   end
 
+  def validate(:geo_url, input, field) when is_binary(input) do
+    case URL.new("geo:#{input}") do
+      {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{} = _data}} ->
+        input
+
+      {:ok, %URL{scheme: "geo", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
+        {:error, field, msg}
+
+      _ ->
+        {:error, field, :geo_url}
+    end
+  end
+
+  def validate(:tell, input, field) when is_binary(input) do
+    case URL.new("tel:#{input}") do
+      {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{} = _data}} ->
+        input
+
+      {:ok, %URL{scheme: "tel", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
+        {:error, :tell, msg}
+
+      _ ->
+        {:error, field, :tell}
+    end
+  end
+
   def validate(:email, input, field) when is_binary(input) do
     if Code.ensure_loaded?(EmailChecker) do
-      EmailChecker.valid?(input, [EmailChecker.Check.Format, EmailChecker.Check.MX])
+      EmailChecker.valid?(input)
       |> case do
         true -> input
         _ -> {:error, field, :email}
