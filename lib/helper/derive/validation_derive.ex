@@ -275,6 +275,13 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
+  def validate({:regex, pattern_str}, input, field) when is_binary(input) do
+    case regex_match?(pattern_str, input) do
+      true -> input
+      _ -> {:error, field, :regex, "Invalid format in the #{field} field"}
+    end
+  end
+
   def validate(_, _input, field) do
     {:error, field, :type, "Unexpected type error in #{field} field"}
   end
@@ -297,5 +304,12 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
 
   defp is_type(field, status, type, input) do
     if status, do: input, else: {:error, field, type, "The #{field} field must be #{type}"}
+  end
+
+  defp regex_match?(pattern_str, subject) do
+    case Regex.compile(pattern_str) do
+      {:ok, regex} -> Regex.match?(regex, subject)
+      {:error, reason} -> {:error, reason}
+    end
   end
 end
