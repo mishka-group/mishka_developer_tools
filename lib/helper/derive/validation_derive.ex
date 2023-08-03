@@ -66,13 +66,6 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
          "The minimum number the #{field} field is #{len} and you have sent less than this number of entries"}
   end
 
-  def validate(:location, _input, _field) do
-  end
-
-  def validate(:time, _input, field) do
-    {:error, field, :time, :not_valid}
-  end
-
   def validate(:url, input, field) when is_binary(input) do
     case URI.parse(input) do
       %URI{scheme: nil} ->
@@ -95,19 +88,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
 
   def validate(:geo_url, input, field) when is_binary(input) do
     if Code.ensure_loaded?(URL) do
-      case URL.new("geo:#{input}") do
-        {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{lat: lat, lng: lng}}}
-        when not is_nil(lat) and not is_nil(lng) ->
-          input
-
-        {:error, {URL.Parser.ParseError, _msg}} ->
-          {:error, field, :geo_url,
-           "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
-
-        _ ->
-          {:error, field, :geo_url,
-           "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
-      end
+      location("geo:#{input}", field, :geo_url)
     else
       raise("For using this validation you need to installe `ex_url`")
     end
@@ -168,7 +149,54 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
+  def validate(:location, input, field) when is_binary(input) do
+    converted =
+      input
+      |> String.split(" ")
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.join()
+
+    location("geo:#{converted}", field, :location)
+  end
+
+  def validate(:string_boolean, input, field) do
+    case input in ["true", "false"] do
+      true -> input
+      false -> {:error, field, :string_boolean, "Invalid boolean format in the #{field} field"}
+    end
+  end
+
+  def validate(:datetime, input, field) when is_binary(input) do
+    case DateTime.from_iso8601(input) do
+      {:error, _msg} -> {:error, field, :time, "Invalid DateTime format in the #{field} field"}
+      _ -> input
+    end
+  end
+
+  def validate(:date, input, field) when is_binary(input) do
+    case Date.from_iso8601(input) do
+      {:error, _msg} -> {:error, field, :time, "Invalid Date format in the #{field} field"}
+      _ -> input
+    end
+  end
+
   def validate(_, _input, field) do
     {:error, field, :type, "Unexpected type error #{inspect(field)}"}
+  end
+
+  defp location(geo_link, field, action) do
+    case URL.new(geo_link) do
+      {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{lat: lat, lng: lng}}}
+      when not is_nil(lat) and not is_nil(lng) ->
+        geo_link
+
+      {:error, {URL.Parser.ParseError, _msg}} ->
+        {:error, field, action,
+         "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
+
+      _ ->
+        {:error, field, action,
+         "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
+    end
   end
 end
