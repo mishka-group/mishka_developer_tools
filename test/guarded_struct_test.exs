@@ -345,7 +345,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     "Org" = assert data.title
   end
 
-  test "use builder to Validation" do
+  test "use builder to Validation and Lack of validation" do
     defmodule TestStructWithValidationDerive do
       use GuardedStruct
 
@@ -358,7 +358,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     {:error, :bad_parameters,
      [
        %{message: _msg1, field: :name, action: :not_empty},
-       %{message: _msg2, field: :title, action: :time},
+       %{message: _msg2, field: :title, action: :type},
        %{message: _msg3, field: :title, action: :not_empty}
      ]} = assert TestStructWithValidationDerive.builder(%{name: "", title: ""})
 
@@ -464,7 +464,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     "Group" = assert data.title
   end
 
-  test "use builder to Derive and both validator" do
+  test "use builder to Derive and both validator and Lack of validation" do
     defmodule TestStructBuilderWithValidationDeriveAndBothValidator do
       use GuardedStruct
 
@@ -502,7 +502,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
     {:error, :bad_parameters,
      [
-       %{message: _msg1, field: :nickname, action: :time},
+       %{message: _msg1, field: :nickname, action: :type},
        %{message: _msg2, field: :nickname, action: :not_empty}
      ]} =
       assert TestStructBuilderWithValidationDeriveAndBothValidator.builder(%{
