@@ -22,19 +22,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
     if is_binary(input), do: String.capitalize(input), else: input
   end
 
-  def sanitize(:basic_html, input) do
-    input
-  end
+  def sanitize(:basic_html, input), do: HtmlSanitizeEx.basic_html(input)
 
-  def sanitize(:html5, input) do
-    input
-  end
+  def sanitize(:html5, input), do: HtmlSanitizeEx.html5(input)
 
-  def sanitize(:markdown_html, input) do
-    input
-  end
+  def sanitize(:markdown_html, input), do: HtmlSanitizeEx.markdown_html(input)
 
-  def sanitize(:strip_tags, input) do
-    input
-  end
+  def sanitize(:strip_tags, input), do: HtmlSanitizeEx.strip_tags(input)
 end

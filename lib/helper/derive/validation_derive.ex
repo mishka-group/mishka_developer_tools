@@ -51,7 +51,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate({:max_len, len}, %{__struct__: Range, first: _first, last: last} = input, field) do
-    if last <= len,
+    if is_integer(last) and last <= len,
       do: input,
       else:
         {:error, field, :min_len,
@@ -75,7 +75,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate({:min_len, len}, %{__struct__: Range, first: first, last: _last} = input, field) do
-    if first >= len,
+    if is_integer(first) and first >= len,
       do: input,
       else:
         {:error, field, :min_len,
