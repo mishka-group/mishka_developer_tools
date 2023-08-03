@@ -357,9 +357,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
     {:error, :bad_parameters,
      [
-       %{message: :not_empty, action: :name},
-       %{message: :time, action: :title},
-       %{message: :not_empty, action: :title}
+       %{message: _msg1, field: :name, action: :not_empty},
+       %{message: _msg2, field: :title, action: :time},
+       %{message: _msg3, field: :title, action: :not_empty}
      ]} = assert TestStructWithValidationDerive.builder(%{name: "", title: ""})
 
     defmodule TestStructWithValidationDerive1 do
@@ -394,7 +394,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
     "MISHKA" = assert data.name
 
-    {:error, :bad_parameters, [%{message: :not_empty, action: :title}]} =
+    {:error, :bad_parameters, [%{field: :title, action: :not_empty, message: _msg}]} =
       assert TestStructWithValidationAndValidationDerive.builder(%{name: " mishka ", title: ""})
   end
 
@@ -502,8 +502,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
     {:error, :bad_parameters,
      [
-       %{message: :time, action: :nickname},
-       %{message: :not_empty, action: :nickname}
+       %{message: _msg1, field: :nickname, action: :time},
+       %{message: _msg2, field: :nickname, action: :not_empty}
      ]} =
       assert TestStructBuilderWithValidationDeriveAndBothValidator.builder(%{
                name: "fake_mishka",
