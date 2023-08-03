@@ -50,6 +50,14 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
          "The maximum number the #{field} field is #{len} and you have sent more than this number of entries"}
   end
 
+  def validate({:max_len, len}, %{__struct__: Range, first: _first, last: last} = input, field) do
+    if last <= len,
+      do: input,
+      else:
+        {:error, field, :min_len,
+         "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
+  end
+
   def validate({:min_len, len}, input, field) when is_binary(input) do
     if String.length(input) <= len,
       do:
@@ -64,6 +72,14 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       else:
         {:error, field, :min_len,
          "The minimum number the #{field} field is #{len} and you have sent less than this number of entries"}
+  end
+
+  def validate({:min_len, len}, %{__struct__: Range, first: first, last: _last} = input, field) do
+    if first >= len,
+      do: input,
+      else:
+        {:error, field, :min_len,
+         "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
   end
 
   def validate(:url, input, field) when is_binary(input) do
@@ -171,6 +187,13 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       {:error, _msg} -> {:error, field, :time, "Invalid DateTime format in the #{field} field"}
       _ -> input
     end
+  end
+
+  def validate(:range, input, field) do
+    Range.size(input)
+  rescue
+    _ ->
+      {:error, field, :time, "Invalid Range format in the #{field} field"}
   end
 
   def validate(:date, input, field) when is_binary(input) do
