@@ -250,7 +250,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     {:ok, _data} =
       assert TestStructInsideValidatorBuilder.builder(%{name: "shahryar", title: "user"})
 
-    {:error, :bad_parameters, [%{message: _msg, action: :name}]} =
+    {:error, :bad_parameters, [%{message: _msg, field: :name}]} =
       assert TestStructInsideValidatorBuilder.builder(%{name: 1, title: "user"})
   end
 
@@ -305,7 +305,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     {:ok, _data} =
       assert TestStructAnotherValidatorBuilder.builder(%{name: "mishka", title: "org"})
 
-    {:error, :bad_parameters, [%{message: _msg, action: :name}]} =
+    {:error, :bad_parameters, [%{message: _msg, field: :name}]} =
       assert TestStructAnotherValidatorBuilder.builder(%{name: 1, title: "user"})
   end
 
@@ -429,7 +429,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     "MISHKA" = assert data.name
     "Org" = assert data.title
 
-    {:error, :bad_parameters, [%{message: "No, never", action: :name}]} =
+    {:error, :bad_parameters, [%{message: "No, never", field: :name}]} =
       assert TestStructBuilderWithValidationDeriveAndFieldValidator.builder(%{
                name: 1,
                title: "  org"

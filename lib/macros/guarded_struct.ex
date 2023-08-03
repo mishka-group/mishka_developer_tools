@@ -414,7 +414,7 @@ defmodule GuardedStruct do
     validated_errors =
       Enum.filter(validated, fn {status, _field, _error_or_data} -> status == :error end)
       |> Enum.map(fn {_status, field, error_or_data} ->
-        %{action: field, message: error_or_data}
+        %{field: field, message: error_or_data}
       end)
 
     validated_allowed_data =
