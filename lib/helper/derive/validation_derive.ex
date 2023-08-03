@@ -16,6 +16,78 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     {List.first(validated), validated_errors}
   end
 
+  def validate(:string, input, field) do
+    is_type(field, is_binary(input), :string, input)
+  end
+
+  def validate(:integer, input, field) do
+    is_type(field, is_integer(input), :integer, input)
+  end
+
+  def validate(:list, input, field) do
+    is_type(field, is_list(input), :list, input)
+  end
+
+  def validate(:atom, input, field) do
+    is_type(field, is_atom(input), :atom, input)
+  end
+
+  def validate(:bitstring, input, field) do
+    is_type(field, is_bitstring(input), :bitstring, input)
+  end
+
+  def validate(:boolean, input, field) do
+    is_type(field, is_boolean(input), :boolean, input)
+  end
+
+  def validate(:exception, input, field) do
+    is_type(field, is_exception(input), :exception, input)
+  end
+
+  def validate(:float, input, field) do
+    is_type(field, is_float(input), :float, input)
+  end
+
+  def validate(:function, input, field) do
+    is_type(field, is_function(input), :function, input)
+  end
+
+  def validate(:map, input, field) do
+    is_type(field, is_map(input), :map, input)
+  end
+
+  def validate(:nil_value, input, field) do
+    is_type(field, is_nil(input), :nil_value, input)
+  end
+
+  def validate(:not_nil_value, input, field) do
+    is_type(field, !is_nil(input), :not_nil_value, input)
+  end
+
+  def validate(:number, input, field) do
+    is_type(field, is_number(input), :number, input)
+  end
+
+  def validate(:pid, input, field) do
+    is_type(field, is_pid(input), :pid, input)
+  end
+
+  def validate(:port, input, field) do
+    is_type(field, is_port(input), :port, input)
+  end
+
+  def validate(:reference, input, field) do
+    is_type(field, is_reference(input), :reference, input)
+  end
+
+  def validate(:struct, input, field) do
+    is_type(field, is_struct(input), :struct, input)
+  end
+
+  def validate(:tuple, input, field) do
+    is_type(field, is_tuple(input), :tuple, input)
+  end
+
   def validate(:not_empty, input, field) when is_binary(input) do
     if input == "",
       do: {:error, field, :not_empty, "The #{field} field must not be empty"},
@@ -204,7 +276,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate(_, _input, field) do
-    {:error, field, :type, "Unexpected type error #{inspect(field)}"}
+    {:error, field, :type, "Unexpected type error in #{field} field"}
   end
 
   defp location(geo_link, field, action) do
@@ -221,5 +293,9 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
         {:error, field, action,
          "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
     end
+  end
+
+  defp is_type(field, status, type, input) do
+    if status, do: input, else: {:error, field, type, "The #{field} field must be #{type}"}
   end
 end
