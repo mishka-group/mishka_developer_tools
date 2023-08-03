@@ -17,11 +17,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate(:not_empty, input, field) when is_binary(input) do
-    if input == "", do: {:error, field, :not_empty}, else: input
+    if input == "", do: {:error, field, :not_valid}, else: input
   end
 
   def validate(:not_empty, input, field) when is_list(input) do
-    if input == [], do: {:error, field, :not_empty}, else: input
+    if input == [], do: {:error, field, :not_valid}, else: input
   end
 
   def validate(:not_empty, input, field) when is_map(input) do
@@ -29,19 +29,19 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate({:max_len, len}, input, field) when is_binary(input) do
-    if String.length(input) >= len, do: {:error, field, :max_len}, else: input
+    if String.length(input) >= len, do: {:error, field, :not_valid}, else: input
   end
 
   def validate({:max_len, len}, input, field) when is_integer(input) do
-    if input <= len, do: input, else: {:error, field, :max_len}
+    if input <= len, do: input, else: {:error, field, :not_valid}
   end
 
   def validate({:min_len, len}, input, field) when is_binary(input) do
-    if String.length(input) <= len, do: {:error, field, :min_len}, else: input
+    if String.length(input) <= len, do: {:error, field, :not_valid}, else: input
   end
 
   def validate({:min_len, len}, input, field) when is_integer(input) do
-    if input >= len, do: input, else: {:error, field, :max_len}
+    if input >= len, do: input, else: {:error, field, :not_valid}
   end
 
   def validate(:location, _input, _field) do
@@ -74,14 +74,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   def validate(:geo_url, input, field) when is_binary(input) do
     if Code.ensure_loaded?(URL) do
       case URL.new("geo:#{input}") do
-        {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{} = _data}} ->
+        {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{lat: lat, lng: lng}}}
+        when not is_nil(lat) and not is_nil(lng) ->
           input
 
-        {:ok, %URL{scheme: "geo", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
+        {:error, {URL.Parser.ParseError, msg}} ->
           {:error, field, msg}
 
         _ ->
-          {:error, field, :geo_url}
+          {:error, field, :not_valid}
       end
     else
       raise("For using this validation you need to installe `ex_url`")
@@ -91,14 +92,31 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   def validate(:tell, input, field) when is_binary(input) do
     if Code.ensure_loaded?(URL) do
       case URL.new("tel:#{input}") do
-        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{} = _data}} ->
+        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} when not is_nil(tel) ->
           input
 
-        {:ok, %URL{scheme: "tel", parsed_path: {:error, {URL.Parser.ParseError, msg}}}} ->
+        {:error, {URL.Parser.ParseError, msg}} ->
           {:error, :tell, msg}
 
         _ ->
-          {:error, field, :tell}
+          {:error, field, :not_valid}
+      end
+    else
+      raise("For using this validation you need to installe `ex_url`")
+    end
+  end
+
+  def validate({:tell, len}, input, field) when is_binary(input) do
+    if Code.ensure_loaded?(URL) do
+      case URL.new("tel:#{input}") do
+        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} ->
+          if String.length(tel) === len, do: input, else: {:error, field, :not_valid_length}
+
+        {:error, {URL.Parser.ParseError, msg}} ->
+          {:error, :tell, msg}
+
+        _ ->
+          {:error, field, :not_valid}
       end
     else
       raise("For using this validation you need to installe `ex_url`")
@@ -110,12 +128,12 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       EmailChecker.valid?(input)
       |> case do
         true -> input
-        _ -> {:error, field, :email}
+        _ -> {:error, field, :not_valid}
       end
     else
       case Regex.match?(~r/^[A-Za-z0-9\._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/, input) do
         true -> input
-        _ -> {:error, field, :email}
+        _ -> {:error, field, :not_valid}
       end
     end
   end

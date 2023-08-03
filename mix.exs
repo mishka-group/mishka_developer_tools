@@ -39,9 +39,9 @@ defmodule MishkaDeveloperTools.MixProject do
       {:ecto_sql, "~> 3.10", optional: true},
       {:postgrex, "~> 0.17.2", optional: true},
       {:ecto_enum, "~> 1.4", optional: true},
-      {:html_sanitize_ex, "~> 1.4", optional: true},
+      {:html_sanitize_ex, "~> 1.4.3", optional: true},
       {:email_checker, "~> 0.2.4", optional: true},
-      {:ex_url, "~> 1.5", optional: true},
+      {:ex_url, github: "kipcole9/url", optional: true},
       # Dev dependencies
       {:ex_doc, "~> 0.30.2", only: :dev, runtime: false}
     ]
