@@ -23,12 +23,17 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
   end
 
   if Code.ensure_loaded?(HtmlSanitizeEx) do
-    def sanitize(:basic_html, input), do: HtmlSanitizeEx.basic_html(input)
+    def sanitize(:basic_html, input) when is_binary(input), do: HtmlSanitizeEx.basic_html(input)
 
-    def sanitize(:html5, input), do: HtmlSanitizeEx.html5(input)
+    def sanitize(:html5, input) when is_binary(input), do: HtmlSanitizeEx.html5(input)
 
-    def sanitize(:markdown_html, input), do: HtmlSanitizeEx.markdown_html(input)
+    def sanitize(:markdown_html, input) when is_binary(input),
+      do: HtmlSanitizeEx.markdown_html(input)
 
-    def sanitize(:strip_tags, input), do: HtmlSanitizeEx.strip_tags(input)
+    def sanitize(:strip_tags, input) when is_binary(input), do: HtmlSanitizeEx.strip_tags(input)
+  end
+
+  def sanitize(_, _input) do
+    ""
   end
 end
