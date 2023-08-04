@@ -174,51 +174,45 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
-  def validate(:geo_url, input, field) when is_binary(input) do
-    if Code.ensure_loaded?(URL) do
+  if Code.ensure_loaded?(URL) do
+    def validate(:geo_url, input, field) when is_binary(input) do
       location("geo:#{input}", field, :geo_url)
-    else
-      raise("For using this validation you need to installe `ex_url`")
     end
-  end
 
-  def validate(:tell, input, field) when is_binary(input) do
-    if Code.ensure_loaded?(URL) do
-      case URL.new("tel:#{input}") do
-        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} when not is_nil(tel) ->
-          input
+    def validate(:tell, input, field) when is_binary(input) do
+      if Code.ensure_loaded?(URL) do
+        case URL.new("tel:#{input}") do
+          {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} when not is_nil(tel) ->
+            input
 
-        {:error, {URL.Parser.ParseError, _msg}} ->
-          {:error, field, :tell, "Invalid tell format in the #{field} field"}
+          {:error, {URL.Parser.ParseError, _msg}} ->
+            {:error, field, :tell, "Invalid tell format in the #{field} field"}
 
-        _ ->
-          {:error, field, :tell, "Invalid tell format in the #{field} field"}
+          _ ->
+            {:error, field, :tell, "Invalid tell format in the #{field} field"}
+        end
       end
-    else
-      raise("For using this validation you need to installe `ex_url`")
     end
-  end
 
-  def validate({:tell, country_code}, input, field) when is_binary(input) do
-    if Code.ensure_loaded?(URL) and Code.ensure_loaded?(ExPhoneNumber) do
-      case URL.new("tel:#{input}") do
-        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: _tel}}} ->
-          case ExPhoneNumber.parse(input, nil) do
-            {:ok, %ExPhoneNumber.Model.PhoneNumber{country_code: ^country_code}} ->
-              input
+    if Code.ensure_loaded?(ExPhoneNumber) do
+      def validate({:tell, country_code}, input, field) when is_binary(input) do
+        case URL.new("tel:#{input}") do
+          {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: _tel}}} ->
+            case ExPhoneNumber.parse(input, nil) do
+              {:ok, %ExPhoneNumber.Model.PhoneNumber{country_code: ^country_code}} ->
+                input
 
-            _ ->
-              {:error, field, :tell, "Invalid tell format in the #{field} field"}
-          end
+              _ ->
+                {:error, field, :tell, "Invalid tell format in the #{field} field"}
+            end
 
-        {:error, {URL.Parser.ParseError, _msg}} ->
-          {:error, field, :tell, "Invalid tell format in the #{field} field"}
+          {:error, {URL.Parser.ParseError, _msg}} ->
+            {:error, field, :tell, "Invalid tell format in the #{field} field"}
 
-        _ ->
-          {:error, field, :tell, "Invalid tell format in the #{field} field"}
+          _ ->
+            {:error, field, :tell, "Invalid tell format in the #{field} field"}
+        end
       end
-    else
-      raise("For using this validation you need to installe `ex_url` and `ex_phone_number`")
     end
   end
 
