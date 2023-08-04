@@ -54,3 +54,7 @@ defmodule TestTablesSchema do
     |> validate_length(:test_field_two, min: 10)
   end
 end
+
+defmodule User do
+  defstruct name: "Shahryar"
+end
