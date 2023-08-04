@@ -126,12 +126,12 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     if is_integer(last) and last <= len,
       do: input,
       else:
-        {:error, field, :min_len,
+        {:error, field, :max_len,
          "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
   end
 
   def validate({:min_len, len}, input, field) when is_binary(input) do
-    if String.length(input) <= len,
+    if String.length(input) < len,
       do:
         {:error, field, :min_len,
          "The minimum number of characters in the #{field} field is #{len} and you have sent less than this number of entries"},
@@ -139,11 +139,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate({:min_len, len}, input, field) when is_integer(input) do
-    if input >= len,
-      do: input,
-      else:
+    if input < len,
+      do:
         {:error, field, :min_len,
-         "The minimum number the #{field} field is #{len} and you have sent less than this number of entries"}
+         "The minimum number the #{field} field is #{len} and you have sent less than this number of entries"},
+      else: input
   end
 
   def validate({:min_len, len}, %{__struct__: Range, first: first, last: _last} = input, field) do
@@ -154,7 +154,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
          "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
   end
 
-  def validate(:url, input, field) when is_binary(input) do
+  def validate(:url, input, field) do
     case URI.parse(input) do
       %URI{scheme: nil} ->
         {:error, field, :url, "Is missing a url scheme (e.g. https) in the #{field} field"}
@@ -172,25 +172,25 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       _ ->
         {:error, field, :url, "Invalid url format in the #{field} field"}
     end
+  rescue
+    _ -> {:error, field, :url, "Invalid url format in the #{field} field"}
   end
 
   if Code.ensure_loaded?(URL) do
-    def validate(:geo_url, input, field) when is_binary(input) do
+    def validate(:geo_url, input, field) do
       location("geo:#{input}", field, :geo_url)
     end
 
-    def validate(:tell, input, field) when is_binary(input) do
-      if Code.ensure_loaded?(URL) do
-        case URL.new("tel:#{input}") do
-          {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} when not is_nil(tel) ->
-            input
+    def validate(:tell, input, field) do
+      case URL.new("tel:#{input}") do
+        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} when not is_nil(tel) ->
+          input
 
-          {:error, {URL.Parser.ParseError, _msg}} ->
-            {:error, field, :tell, "Invalid tell format in the #{field} field"}
+        {:error, {URL.Parser.ParseError, _msg}} ->
+          {:error, field, :tell, "Invalid tell format in the #{field} field"}
 
-          _ ->
-            {:error, field, :tell, "Invalid tell format in the #{field} field"}
-        end
+        _ ->
+          {:error, field, :tell, "Invalid tell format in the #{field} field"}
       end
     end
 
@@ -216,7 +216,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
-  def validate(:email, input, field) when is_binary(input) do
+  def validate(:email, input, field) do
     if Code.ensure_loaded?(EmailChecker) do
       EmailChecker.valid?(input)
       |> case do
@@ -229,6 +229,8 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
         _ -> {:error, field, :email, "Invalid email format in the #{field} field"}
       end
     end
+  rescue
+    _ -> {:error, field, :email, "Invalid email format in the #{field} field"}
   end
 
   def validate(:location, input, field) when is_binary(input) do
@@ -239,6 +241,8 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       |> Enum.join()
 
     location("geo:#{converted}", field, :location)
+  rescue
+    _ -> {:error, field, :email, "Invalid location format in the #{field} field"}
   end
 
   def validate(:string_boolean, input, field) do
@@ -248,25 +252,35 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
-  def validate(:datetime, input, field) when is_binary(input) do
+  def validate(:datetime, input, field) do
     case DateTime.from_iso8601(input) do
-      {:error, _msg} -> {:error, field, :time, "Invalid DateTime format in the #{field} field"}
-      _ -> input
+      {:error, _msg} ->
+        {:error, field, :datetime, "Invalid DateTime format in the #{field} field"}
+
+      _ ->
+        input
     end
+  rescue
+    _ ->
+      {:error, field, :datetime, "Invalid DateTime format in the #{field} field"}
   end
 
   def validate(:range, input, field) do
     Range.size(input)
+    input
   rescue
     _ ->
-      {:error, field, :time, "Invalid Range format in the #{field} field"}
+      {:error, field, :range, "Invalid Range format in the #{field} field"}
   end
 
   def validate(:date, input, field) when is_binary(input) do
     case Date.from_iso8601(input) do
-      {:error, _msg} -> {:error, field, :time, "Invalid Date format in the #{field} field"}
+      {:error, _msg} -> {:error, field, :date, "Invalid Date format in the #{field} field"}
       _ -> input
     end
+  rescue
+    _ ->
+      {:error, field, :date, "Invalid Date format in the #{field} field"}
   end
 
   # All the regex that you want to use should put inside '' and see the result before using.
@@ -290,14 +304,14 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       when not is_nil(lat) and not is_nil(lng) ->
         geo_link
 
-      {:error, {URL.Parser.ParseError, _msg}} ->
-        {:error, field, action,
-         "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
-
       _ ->
         {:error, field, action,
          "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
     end
+  rescue
+    _ ->
+      {:error, field, action,
+       "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
   end
 
   defp is_type(field, status, type, input) do
