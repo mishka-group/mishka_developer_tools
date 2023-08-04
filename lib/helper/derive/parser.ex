@@ -23,7 +23,8 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
       parameters
       |> Enum.map(fn
         {key, _, nil} -> key
-        {:=, _, [{key, _, nil}, value]} -> {key, value}
+        {:=, _, [{key, _, nil}, {value, _, nil}]} when is_atom(value) -> {key, value}
+        {:=, _, [{key, _, nil}, value]} when is_integer(value) or is_list(value) -> {key, value}
         _ -> nil
       end)
       |> Enum.reject(&is_nil(&1))

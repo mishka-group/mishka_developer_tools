@@ -275,11 +275,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
-  def validate({:regex, pattern_str}, input, field) when is_binary(input) do
-    case regex_match?(pattern_str, input) do
+  # All the regex that you want to use should put inside '' and see the result before using.
+  def validate({:regex, pattern_str}, input, field)
+      when is_binary(input) and is_list(pattern_str) do
+    case regex_match?(to_string(pattern_str), input) do
       true -> input
       _ -> {:error, field, :regex, "Invalid format in the #{field} field"}
     end
+  rescue
+    _ -> {:error, field, :regex, "Invalid format in the #{field} field"}
   end
 
   def validate(_, _input, field) do
@@ -311,5 +315,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       {:ok, regex} -> Regex.match?(regex, subject)
       {:error, reason} -> {:error, reason}
     end
+  rescue
+    _ -> {:error, :unexpected_regex}
   end
 end
