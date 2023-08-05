@@ -106,6 +106,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       else: input
   end
 
+  def validate(:not_empty, _, field) do
+    {:error, field, :not_empty,
+     "Invalid NotEmpty format in the #{field} field, you must pass data which is string, list or map."}
+  end
+
   def validate({:max_len, len}, input, field) when is_binary(input) do
     if String.length(input) >= len,
       do:
@@ -130,6 +135,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
          "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
   end
 
+  def validate(:max_len, _, field) do
+    {:error, field, :max_len,
+     "Invalid Max length format in the #{field} field, you must pass data which is integer, range or string."}
+  end
+
   def validate({:min_len, len}, input, field) when is_binary(input) do
     if String.length(input) < len,
       do:
@@ -152,6 +162,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       else:
         {:error, field, :min_len,
          "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
+  end
+
+  def validate(:min_len, _, field) do
+    {:error, field, :min_len,
+     "Invalid Min length format in the #{field} field, you must pass data which is integer, range or string."}
   end
 
   def validate(:url, input, field) do
@@ -192,10 +207,13 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
         _ ->
           {:error, field, :tell, "Invalid tell format in the #{field} field"}
       end
+    rescue
+      _ ->
+        {:error, field, :tell, "Invalid tell format in the #{field} field"}
     end
 
     if Code.ensure_loaded?(ExPhoneNumber) do
-      def validate({:tell, country_code}, input, field) when is_binary(input) do
+      def validate({:tell, country_code}, input, field) do
         case URL.new("tel:#{input}") do
           {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: _tel}}} ->
             case ExPhoneNumber.parse(input, nil) do
@@ -212,6 +230,8 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
           _ ->
             {:error, field, :tell, "Invalid tell format in the #{field} field"}
         end
+      rescue
+        _ -> {:error, field, :tell, "Invalid tell format in the #{field} field"}
       end
     end
   end

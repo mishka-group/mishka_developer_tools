@@ -33,7 +33,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
     def sanitize(:strip_tags, input) when is_binary(input), do: HtmlSanitizeEx.strip_tags(input)
   end
 
-  def sanitize(_, _input) do
-    ""
+  def sanitize(_, input) do
+    input
   end
 end
