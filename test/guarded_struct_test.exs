@@ -511,6 +511,32 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
+  defmodule TestNestedStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:title, String.t())
+      field(:subject, String.t())
+
+      sub_field(:oop, String.t(), enforce: true) do
+        field(:title, String.t())
+        field(:fam, String.t())
+      end
+
+      field(:site, String.t())
+    end
+  end
+
+  test "nested macro field" do
+    IO.inspect(TestNestedStruct.__struct__())
+    IO.inspect(TestNestedStruct.Oop.__struct__())
+
+    assert %TestNestedStruct.Oop{
+             fam: nil,
+             title: nil
+           } = TestNestedStruct.Oop.__struct__()
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do

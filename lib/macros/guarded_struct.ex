@@ -300,6 +300,24 @@ defmodule GuardedStruct do
   end
 
   @doc false
+  defmacro sub_field(name, _type, opts \\ [], do: block) do
+    ast = register_struct(block, opts)
+
+    name =
+      name
+      |> Atom.to_string()
+      |> Macro.camelize()
+      |> String.to_atom()
+      |> then(&Module.concat(__CALLER__.module, &1))
+
+    quote do
+      defmodule unquote(name) do
+        unquote(ast)
+      end
+    end
+  end
+
+  @doc false
   def __field__(name, type, opts, %Macro.Env{module: mod} = _env)
       when is_atom(name) do
     if Keyword.has_key?(Module.get_attribute(mod, :gs_fields), name) do
@@ -316,7 +334,8 @@ defmodule GuardedStruct do
 
     nullable? = !has_default? && !enforce?
 
-    custom_validator = !is_nil(opts[:validator]) && !is_nil(custom_validator(opts[:validator]))
+    custom_validator =
+      !is_nil(opts[:validator]) && !is_nil(custom_validator(opts[:validator]))
 
     if !is_nil(opts[:derive]),
       do:
