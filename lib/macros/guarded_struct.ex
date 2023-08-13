@@ -300,9 +300,9 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  defmacro sub_field(name, type, opts \\ [], do: block) do
+  defmacro sub_field(name, _type, opts \\ [], do: block) do
     ast = register_struct(block, opts)
-    type = Macro.escape(type)
+    type = Macro.escape(quote do: struct())
 
     converted_name =
       name
