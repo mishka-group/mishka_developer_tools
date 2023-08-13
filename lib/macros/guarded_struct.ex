@@ -300,10 +300,11 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  defmacro sub_field(name, _type, opts \\ [], do: block) do
+  defmacro sub_field(name, type, opts \\ [], do: block) do
     ast = register_struct(block, opts)
+    type = Macro.escape(type)
 
-    name =
+    converted_name =
       name
       |> Atom.to_string()
       |> Macro.camelize()
@@ -311,7 +312,9 @@ defmodule GuardedStruct do
       |> then(&Module.concat(__CALLER__.module, &1))
 
     quote do
-      defmodule unquote(name) do
+      GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__)
+
+      defmodule unquote(converted_name) do
         unquote(ast)
       end
     end
@@ -494,6 +497,10 @@ defmodule GuardedStruct do
   @doc false
   defmacro delete_temporary_revaluation(%Macro.Env{module: module}) do
     Enum.each(unquote(@temporary_revaluation), &Module.delete_attribute(module, &1))
+  end
+
+  defmacro add_parent_field_of_sub_field(%Macro.Env{module: mod}) do
+    Module.put_attribute(mod, :test, {})
   end
 
   defp exists_validator?(mod, modfn, attr_name, arity \\ 1) do

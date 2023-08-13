@@ -518,9 +518,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       field(:title, String.t())
       field(:subject, String.t())
 
-      sub_field(:oop, String.t(), enforce: true) do
+      sub_field(:oop, struct(), enforce: true) do
         field(:title, String.t())
         field(:fam, String.t())
+
+        sub_field(:soos, struct(), enforce: true) do
+          field(:fam, String.t())
+        end
+
+        field(:site, String.t())
       end
 
       field(:site, String.t())
@@ -528,8 +534,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "nested macro field" do
+    IO.puts("--------------------------------")
     IO.inspect(TestNestedStruct.__struct__())
+    IO.inspect(TestNestedStruct.keys())
+    IO.inspect(TestNestedStruct.__info__(:functions))
+    IO.puts("--------------------------------")
     IO.inspect(TestNestedStruct.Oop.__struct__())
+    IO.inspect(TestNestedStruct.Oop.keys())
+    IO.inspect(TestNestedStruct.Oop.__info__(:functions))
+    IO.puts("--------------------------------")
+    IO.inspect(TestNestedStruct.Oop.Soos.__struct__())
+    IO.inspect(TestNestedStruct.Oop.Soos.keys())
+    IO.inspect(TestNestedStruct.Oop.Soos.__info__(:functions))
+    IO.puts("--------------------------------")
 
     assert %TestNestedStruct.Oop{
              fam: nil,
