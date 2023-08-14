@@ -425,7 +425,10 @@ defmodule GuardedStruct do
   end
 
   def field_validating({true, _keys}, attrs, gs_validator, gs_fields, module) do
-    allowed_data = Map.take(attrs, gs_fields)
+    {sub_modules_builders, sub_modules_builders_errors, unsub_fields} =
+      required_fields_and_validate_sub_field(attrs, module, gs_fields)
+
+    allowed_data = Map.take(attrs, unsub_fields)
 
     validated =
       allowed_data
@@ -446,7 +449,7 @@ defmodule GuardedStruct do
         allowed_data
       end
 
-    {validated_errors, validated_allowed_data}
+    {validated_errors, validated_allowed_data, sub_modules_builders, sub_modules_builders_errors}
   end
 
   @doc false
@@ -455,7 +458,12 @@ defmodule GuardedStruct do
   end
 
   def main_validating(
-        {validated_errors, validated_allowed_data},
+        {
+          validated_errors,
+          validated_allowed_data,
+          sub_modules_builders,
+          sub_modules_builders_errors
+        },
         main_validator,
         gs_main_validator,
         module
@@ -473,11 +481,13 @@ defmodule GuardedStruct do
           {:ok, validated_allowed_data}
       end
 
-    if status == :ok and length(validated_errors) == 0 do
+    if status == :ok and length(validated_errors) == 0 and
+         length(sub_modules_builders_errors) == 0 do
       {:ok, struct(module, main_error_or_data)}
     else
       {:error, :bad_parameters,
-       validated_errors ++ if(status == :error, do: [main_error_or_data], else: [])}
+       validated_errors ++
+         sub_modules_builders ++ if(status == :error, do: [main_error_or_data], else: [])}
     end
   end
 
@@ -497,10 +507,6 @@ defmodule GuardedStruct do
   @doc false
   defmacro delete_temporary_revaluation(%Macro.Env{module: module}) do
     Enum.each(unquote(@temporary_revaluation), &Module.delete_attribute(module, &1))
-  end
-
-  defmacro add_parent_field_of_sub_field(%Macro.Env{module: mod}) do
-    Module.put_attribute(mod, :test, {})
   end
 
   defp exists_validator?(mod, modfn, attr_name, arity \\ 1) do
@@ -526,5 +532,72 @@ defmodule GuardedStruct do
   def required_fields(keys, attrs) do
     missing_keys = Enum.reject(keys, &Map.has_key?(attrs, &1))
     {Enum.empty?(missing_keys), missing_keys}
+  end
+
+  defp required_fields_and_validate_sub_field(attrs, module, gs_fields) do
+    allowed_fields = Map.take(attrs, gs_fields) |> Map.keys()
+    sub_modules = get_fields_sub_module(module, allowed_fields)
+
+    sub_modules_builders =
+      sub_modules
+      |> Enum.map(fn %{field: field, module: module} ->
+        {field, module.builder(Map.get(attrs, field))}
+      end)
+
+    {
+      sub_modules_builders_data(sub_modules_builders),
+      sub_modules_builders_errors(sub_modules_builders),
+      reject_sub_module_fields(allowed_fields, sub_modules)
+    }
+  end
+
+  def get_fields_sub_module(module, fields, list \\ false) do
+    Enum.map(fields, fn field ->
+      case Code.ensure_loaded(Module.concat([module, atom_to_module(field)])) do
+        {:module, module} ->
+          if !list, do: %{field: field, module: module}, else: field
+
+        _ ->
+          nil
+      end
+    end)
+    |> Enum.reject(&is_nil(&1))
+  end
+
+  defp atom_to_module(field) do
+    field
+    |> Atom.to_string()
+    |> String.split("_")
+    |> Enum.map(fn item ->
+      String.capitalize(String.at(item, 0)) <> String.slice(item, 1..-1)
+    end)
+    |> Enum.join()
+    |> String.to_atom()
+  end
+
+  defp reject_sub_module_fields(fields, sub_modules) do
+    fields
+    |> Enum.reject(fn field ->
+      Enum.any?(sub_modules, fn
+        %{field: ^field} -> true
+        _ -> false
+      end)
+    end)
+  end
+
+  defp sub_modules_builders_data(sub_modules_builders) do
+    sub_modules_builders
+    |> Enum.filter(fn {_field, output} -> elem(output, 0) == :ok end)
+    |> Enum.map(fn {field, {_, data}} ->
+      %{field: field, data: data}
+    end)
+  end
+
+  defp sub_modules_builders_errors(sub_modules_builders) do
+    sub_modules_builders
+    |> Enum.filter(fn {_field, output} -> elem(output, 0) == :error end)
+    |> Enum.map(fn {field, {_, _, error}} ->
+      %{field: field, errors: error}
+    end)
   end
 end
