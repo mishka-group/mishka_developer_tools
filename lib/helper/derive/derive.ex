@@ -1,9 +1,12 @@
 defmodule MishkaDeveloperTools.Helper.Derive do
   alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDerive, ValidationDerive}
 
-  def derive({:error, _, _} = error, _derive_input), do: error
+  def derive({:error, _, _} = error, _derive_inputs), do: error
 
-  def derive({:ok, data}, derive_inputs) do
+  def derive({:error, _, :nested, builders_errors, data}, derive_inputs),
+    do: derive({:ok, data}, derive_inputs, builders_errors)
+
+  def derive({:ok, data}, derive_inputs, extra_error \\ []) do
     reduced_fields =
       Enum.reduce(derive_inputs, %{}, fn map, acc ->
         parsed_derive = Parser.parser(map.derive)
@@ -24,12 +27,12 @@ defmodule MishkaDeveloperTools.Helper.Derive do
         end
       end)
 
-    {:error, :bad_parameters, get_error} = error = error_handler(reduced_fields)
+    {:error, :bad_parameters, get_error} = error = error_handler(reduced_fields, extra_error)
 
     if length(get_error) == 0, do: {:ok, Map.merge(data, reduced_fields)}, else: error
   end
 
-  def error_handler(reduced_fields) do
+  def error_handler(reduced_fields, extra_error \\ []) do
     get_error =
       reduced_fields
       |> Map.values()
@@ -37,6 +40,6 @@ defmodule MishkaDeveloperTools.Helper.Derive do
       |> Enum.map(fn {:error, errors} -> errors end)
       |> Enum.concat()
 
-    {:error, :bad_parameters, get_error}
+    {:error, :bad_parameters, get_error ++ extra_error}
   end
 end

@@ -484,18 +484,28 @@ defmodule GuardedStruct do
           {:ok, validated_allowed_data}
       end
 
-    if status == :ok and length(validated_errors) == 0 and
-         length(sub_modules_builders_errors) == 0 do
-      merged_struct =
-        Enum.reduce(sub_modules_builders, struct(module, main_error_or_data), fn item, acc ->
-          Map.merge(acc, item)
-        end)
+    cond do
+      status == :ok and length(validated_errors) == 0 and length(sub_modules_builders_errors) == 0 ->
+        merged_struct =
+          Enum.reduce(sub_modules_builders, struct(module, main_error_or_data), fn item, acc ->
+            Map.merge(acc, item)
+          end)
 
-      {:ok, merged_struct}
-    else
-      {:error, :bad_parameters,
-       validated_errors ++
-         sub_modules_builders_errors ++ if(status == :error, do: [main_error_or_data], else: [])}
+        {:ok, merged_struct}
+
+      length(validated_errors) == 0 and status == :ok and length(sub_modules_builders_errors) > 0 ->
+        {
+          :error,
+          :bad_parameters,
+          :nested,
+          sub_modules_builders_errors,
+          struct(module, main_error_or_data)
+        }
+
+      true ->
+        {:error, :bad_parameters,
+         validated_errors ++
+           sub_modules_builders_errors ++ if(status == :error, do: [main_error_or_data], else: [])}
     end
   end
 

@@ -515,21 +515,21 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     use GuardedStruct
 
     guardedstruct do
-      field(:title, String.t())
+      field(:title, String.t(), derive: "validate(not_empty)")
       field(:subject, String.t())
 
       sub_field(:oop, struct()) do
-        field(:title, String.t(), enforce: true, validator: {TestNestedStruct, :validator})
+        field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
         field(:fam, String.t(), enforce: true)
 
         sub_field(:soos, struct()) do
-          field(:fam, String.t(), validator: {TestNestedStruct, :validator})
+          field(:fam, String.t(), derive: "validate(not_empty)")
         end
 
         field(:site, String.t())
       end
 
-      field(:site, String.t())
+      field(:site, String.t(), derive: "validate(not_empty)")
     end
 
     def validator(:fam, _value) do
@@ -544,7 +544,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   test "nested macro field" do
     TestNestedStruct.builder(%{
       title: "",
-      oop: %{title: "", fam: "tavakkoli", soos: %{fam: "alijani"}}
+      site: "",
+      oop: %{title: "", fam: "", soos: %{fam: ""}}
     })
     |> IO.inspect(label: "TestNestedStruct.builder")
 
