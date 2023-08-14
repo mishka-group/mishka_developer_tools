@@ -337,9 +337,6 @@ defmodule GuardedStruct do
 
     nullable? = !has_default? && !enforce?
 
-    custom_validator =
-      !is_nil(opts[:validator]) && !is_nil(custom_validator(opts[:validator]))
-
     if !is_nil(opts[:derive]),
       do:
         Module.put_attribute(mod, :gs_derive, %{
@@ -347,10 +344,10 @@ defmodule GuardedStruct do
           derive: opts[:derive]
         })
 
-    if custom_validator do
+    if !is_nil(opts[:validator]) do
       Module.put_attribute(mod, :gs_validator, %{
         field: name,
-        validator: custom_validator(opts[:validator])
+        validator: opts[:validator]
       })
     end
 
@@ -420,6 +417,12 @@ defmodule GuardedStruct do
   end
 
   @doc false
+  def required_fields(keys, attrs) do
+    missing_keys = Enum.reject(keys, &Map.has_key?(attrs, &1))
+    {Enum.empty?(missing_keys), missing_keys}
+  end
+
+  @doc false
   def field_validating({false, keys}, _attrs, _gs_validator, _gs_fields, _module) do
     {:error, :required_fields, keys}
   end
@@ -483,11 +486,16 @@ defmodule GuardedStruct do
 
     if status == :ok and length(validated_errors) == 0 and
          length(sub_modules_builders_errors) == 0 do
-      {:ok, struct(module, main_error_or_data)}
+      merged_struct =
+        Enum.reduce(sub_modules_builders, struct(module, main_error_or_data), fn item, acc ->
+          Map.merge(acc, item)
+        end)
+
+      {:ok, merged_struct}
     else
       {:error, :bad_parameters,
        validated_errors ++
-         sub_modules_builders ++ if(status == :error, do: [main_error_or_data], else: [])}
+         sub_modules_builders_errors ++ if(status == :error, do: [main_error_or_data], else: [])}
     end
   end
 
@@ -515,23 +523,10 @@ defmodule GuardedStruct do
     end
   end
 
-  defp custom_validator({module, func}) do
-    check? = Module.safe_concat([module]) |> function_exported?(func, 2)
-    if check?, do: {module, func}, else: nil
-  end
-
-  defp custom_validator(nil), do: nil
-
   defp convert_list_tuple_to_map(list) do
     Enum.reduce(list, %{}, fn {_, key, value}, acc ->
       Map.put(acc, key, value)
     end)
-  end
-
-  @doc false
-  def required_fields(keys, attrs) do
-    missing_keys = Enum.reject(keys, &Map.has_key?(attrs, &1))
-    {Enum.empty?(missing_keys), missing_keys}
   end
 
   defp required_fields_and_validate_sub_field(attrs, module, gs_fields) do
@@ -588,16 +583,14 @@ defmodule GuardedStruct do
   defp sub_modules_builders_data(sub_modules_builders) do
     sub_modules_builders
     |> Enum.filter(fn {_field, output} -> elem(output, 0) == :ok end)
-    |> Enum.map(fn {field, {_, data}} ->
-      %{field: field, data: data}
-    end)
+    |> Enum.map(fn {field, {_, data}} -> Map.new([{field, data}]) end)
   end
 
   defp sub_modules_builders_errors(sub_modules_builders) do
     sub_modules_builders
     |> Enum.filter(fn {_field, output} -> elem(output, 0) == :error end)
-    |> Enum.map(fn {field, {_, _, error}} ->
-      %{field: field, errors: error}
+    |> Enum.map(fn {field, {_status, type, message}} ->
+      %{field: field, errors: {type, message}}
     end)
   end
 end

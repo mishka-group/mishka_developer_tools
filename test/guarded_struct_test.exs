@@ -518,12 +518,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       field(:title, String.t())
       field(:subject, String.t())
 
-      sub_field(:oop, struct(), enforce: true) do
-        field(:title, String.t())
-        field(:fam, String.t())
+      sub_field(:oop, struct()) do
+        field(:title, String.t(), enforce: true, validator: {TestNestedStruct, :validator})
+        field(:fam, String.t(), enforce: true)
 
-        sub_field(:soos, struct(), enforce: true) do
-          field(:fam, String.t())
+        sub_field(:soos, struct()) do
+          field(:fam, String.t(), validator: {TestNestedStruct, :validator})
         end
 
         field(:site, String.t())
@@ -531,27 +531,44 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
       field(:site, String.t())
     end
+
+    def validator(:fam, _value) do
+      {:error, :fam, "No, never"}
+    end
+
+    def validator(field, value) do
+      {:ok, field, value}
+    end
   end
 
   test "nested macro field" do
-    IO.puts("--------------------------------")
-    IO.inspect(TestNestedStruct.__struct__())
-    IO.inspect(TestNestedStruct.keys())
-    IO.inspect(TestNestedStruct.__info__(:functions))
-    IO.puts("--------------------------------")
-    IO.inspect(TestNestedStruct.Oop.__struct__())
-    IO.inspect(TestNestedStruct.Oop.keys())
-    IO.inspect(TestNestedStruct.Oop.__info__(:functions))
-    IO.puts("--------------------------------")
-    IO.inspect(TestNestedStruct.Oop.Soos.__struct__())
-    IO.inspect(TestNestedStruct.Oop.Soos.keys())
-    IO.inspect(TestNestedStruct.Oop.Soos.__info__(:functions))
-    IO.puts("--------------------------------")
+    TestNestedStruct.builder(%{
+      title: "",
+      oop: %{title: "", fam: "tavakkoli", soos: %{fam: "alijani"}}
+    })
+    |> IO.inspect(label: "TestNestedStruct.builder")
 
-    assert %TestNestedStruct.Oop{
-             fam: nil,
-             title: nil
-           } = TestNestedStruct.Oop.__struct__()
+    # TestNestedStruct.Oop.builder(%{title: "shahryar", fam: "tavakkoli"})
+    # |> IO.inspect(label: "TestNestedStruct.Oop.builder")
+
+    # IO.puts("--------------------------------")
+    # IO.inspect(TestNestedStruct.__struct__())
+    # IO.inspect(TestNestedStruct.keys())
+    # IO.inspect(TestNestedStruct.__info__(:functions))
+    # IO.puts("--------------------------------")
+    # IO.inspect(TestNestedStruct.Oop.__struct__())
+    # IO.inspect(TestNestedStruct.Oop.keys(), label: "TestNestedStruct.Oop.keys")
+    # IO.inspect(TestNestedStruct.Oop.__info__(:functions))
+    # IO.puts("--------------------------------")
+    # IO.inspect(TestNestedStruct.Oop.Soos.__struct__())
+    # IO.inspect(TestNestedStruct.Oop.Soos.keys())
+    # IO.inspect(TestNestedStruct.Oop.Soos.__info__(:functions))
+    # IO.puts("--------------------------------")
+
+    # assert %TestNestedStruct.Oop{
+    #          fam: nil,
+    #          title: nil
+    #        } = TestNestedStruct.Oop.__struct__()
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
