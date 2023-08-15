@@ -548,15 +548,30 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "nested macro field" do
-    TestNestedStruct.builder(%{
-      title: "",
-      site: "",
-      jiiz: %{site: "hey"},
-      oop: %{title: "", fam: "", soos: %{fam: "", title: ""}}
-    })
-    |> IO.inspect(label: "TestNestedStruct.builder")
+    # TestNestedStruct.builder(%{
+    #   title: "",
+    #   site: "",
+    #   jiiz: %{site: "hey"},
+    #   oop: %{title: "", fam: "", soos: %{fam: "", title: ""}}
+    # })
+    # |> IO.inspect(label: "TestNestedStruct.builder")
 
-    TestNestedStruct.Jiiz.builder(%{site: "shahryar", fam: "tavakkoli"})
+    # TestNestedStruct.Jiiz.builder(%{site: "shahryar", fam: "tavakkoli"})
+
+    errors_list = [
+      %{field: :id, action: :trim, message: "sa"},
+      %{field: :user, action: :space, message: "sa"},
+      %{field: :admin, action: :url, message: "sa"},
+      %{field: :uu, action: :url, message: "sa"},
+      %{field: :bb, action: :email, message: "sa"},
+      %{field: :ccbb, action: :note, message: "sa"}
+    ]
+
+    Enum.reduce_while(errors_list, [], fn item, acc ->
+      if Map.get(item, :status) == :halt, do: {:halt, acc}, else: {:cont, acc ++ [item]}
+    end)
+    |> IO.inspect()
+
     # |> IO.inspect(label: "TestNestedStruct.Jiiz.builder")
 
     # IO.puts("--------------------------------")

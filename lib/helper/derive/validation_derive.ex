@@ -7,11 +7,26 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     validated_errors =
       Enum.reduce(validated, [], fn map, acc ->
         if is_tuple(map) and elem(map, 0) == :error do
-          [%{field: field, action: elem(map, 2), message: elem(map, 3)}] ++ acc
+          converted_map = %{field: field, action: elem(map, 2), message: elem(map, 3)}
+
+          map_list =
+            case map do
+              {:error, _, _, _} ->
+                [converted_map]
+
+              {:error, _, _, _, :halt} ->
+                [Map.merge(converted_map, %{status: :halt})]
+            end
+
+          map_list ++ acc
         else
           acc
         end
       end)
+
+    # Enum.reduce_while(errors_list, [], fn item, acc ->
+    #   if Map.get(item, :status) == :halt, do: {:halt, acc}, else: {:cont, acc ++ [item]}
+    # end)
 
     {List.first(validated), validated_errors}
   end
