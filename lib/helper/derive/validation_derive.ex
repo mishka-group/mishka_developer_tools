@@ -24,10 +24,6 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
         end
       end)
 
-    # Enum.reduce_while(errors_list, [], fn item, acc ->
-    #   if Map.get(item, :status) == :halt, do: {:halt, acc}, else: {:cont, acc ++ [item]}
-    # end)
-
     {List.first(validated), validated_errors}
   end
 

@@ -47,6 +47,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
             |> Enum.filter(&(is_tuple(&1) && elem(&1, 0) == :error))
             |> Enum.map(fn {:error, errors} -> errors end)
             |> Enum.concat()
+            |> halt_errors()
 
           get_error ++ extra_error
 
@@ -55,5 +56,14 @@ defmodule MishkaDeveloperTools.Helper.Derive do
       end
 
     {:error, :bad_parameters, errors}
+  end
+
+  defp halt_errors(errors_list) do
+    errors_list
+    |> Enum.reduce_while([], fn item, acc ->
+      if Map.get(item, :status) == :halt,
+        do: {:halt, acc ++ [Map.delete(item, :status)]},
+        else: {:cont, acc ++ [item]}
+    end)
   end
 end

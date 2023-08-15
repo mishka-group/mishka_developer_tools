@@ -563,12 +563,14 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       %{field: :user, action: :space, message: "sa"},
       %{field: :admin, action: :url, message: "sa"},
       %{field: :uu, action: :url, message: "sa"},
-      %{field: :bb, action: :email, message: "sa"},
+      %{field: :bb, action: :email, message: "sa", status: :halt},
       %{field: :ccbb, action: :note, message: "sa"}
     ]
 
     Enum.reduce_while(errors_list, [], fn item, acc ->
-      if Map.get(item, :status) == :halt, do: {:halt, acc}, else: {:cont, acc ++ [item]}
+      if Map.get(item, :status) == :halt,
+        do: {:halt, acc ++ [Map.delete(item, :status)]},
+        else: {:cont, acc ++ [item]}
     end)
     |> IO.inspect()
 
