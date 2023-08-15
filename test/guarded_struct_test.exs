@@ -520,17 +520,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
       sub_field(:oop, struct()) do
         field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
-        field(:fam, String.t(), enforce: true)
+        field(:fam, String.t(), enforce: true, derive: "validate(not_empty)")
 
         sub_field(:soos, struct()) do
-          field(:fam, String.t(),
-            validator: {TestNestedStruct, :validator},
-            derive: "validate(not_empty)"
-          )
-
+          field(:fam, String.t(), derive: "validate(not_empty)")
           field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
         end
 
+        field(:site, String.t())
+      end
+
+      sub_field(:jiiz, struct()) do
+        field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
         field(:site, String.t())
       end
 
@@ -550,12 +551,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     TestNestedStruct.builder(%{
       title: "",
       site: "",
-      oop: %{title: "", fam: "", soos: %{fam: ""}}
+      jiiz: %{site: "hey"},
+      oop: %{title: "", fam: "", soos: %{fam: "", title: ""}}
     })
     |> IO.inspect(label: "TestNestedStruct.builder")
 
-    # TestNestedStruct.Oop.builder(%{title: "shahryar", fam: "tavakkoli"})
-    # |> IO.inspect(label: "TestNestedStruct.Oop.builder")
+    TestNestedStruct.Jiiz.builder(%{site: "shahryar", fam: "tavakkoli"})
+    # |> IO.inspect(label: "TestNestedStruct.Jiiz.builder")
 
     # IO.puts("--------------------------------")
     # IO.inspect(TestNestedStruct.__struct__())
@@ -567,7 +569,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     # IO.inspect(TestNestedStruct.Oop.__info__(:functions))
     # IO.puts("--------------------------------")
     # IO.inspect(TestNestedStruct.Oop.Soos.__struct__())
-    IO.inspect(TestNestedStruct.Oop.Soos.builder(%{fam: ""}), label: "Oop.Soos.builder")
+    # IO.inspect(TestNestedStruct.Oop.Soos.builder(%{fam: ""}), label: "Oop.Soos.builder")
     # IO.inspect(TestNestedStruct.Oop.Soos.keys())
     # IO.inspect(TestNestedStruct.Oop.Soos.__info__(:functions))
     # IO.puts("--------------------------------")

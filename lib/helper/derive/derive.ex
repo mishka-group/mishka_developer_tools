@@ -1,8 +1,8 @@
 defmodule MishkaDeveloperTools.Helper.Derive do
   alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDerive, ValidationDerive}
 
-  def derive({:error, :required_fields, keys, :halt}, _derive_inputs) do
-    {:error, :required_fields, keys}
+  def derive({:error, type, message, :halt}, _derive_inputs) do
+    {:error, type, message}
   end
 
   def derive({:error, _, :nested, builders_errors, data}, derive_inputs),
@@ -37,13 +37,23 @@ defmodule MishkaDeveloperTools.Helper.Derive do
   end
 
   def error_handler(reduced_fields, extra_error \\ []) do
-    get_error =
-      reduced_fields
-      |> Map.values()
-      |> Enum.filter(&(is_tuple(&1) && elem(&1, 0) == :error))
-      |> Enum.map(fn {:error, errors} -> errors end)
-      |> Enum.concat()
+    errors =
+      Enum.find(extra_error, fn %{field: _, errors: {type, _}} -> type == :required_fields end)
+      |> case do
+        nil ->
+          get_error =
+            reduced_fields
+            |> Map.values()
+            |> Enum.filter(&(is_tuple(&1) && elem(&1, 0) == :error))
+            |> Enum.map(fn {:error, errors} -> errors end)
+            |> Enum.concat()
 
-    {:error, :bad_parameters, get_error ++ extra_error}
+          get_error ++ extra_error
+
+        _ ->
+          extra_error
+      end
+
+    {:error, :bad_parameters, errors}
   end
 end
