@@ -18,6 +18,34 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     _e -> nil
   end
 
+  def convert_to_atom_map(map) when is_map(map) do
+    for {key, value} <- map, into: %{}, do: {convert_key(key), convert_value(value)}
+  end
+
+  defp convert_key(key) when is_binary(key) do
+    String.to_atom(key)
+  end
+
+  defp convert_key(key) do
+    key
+  end
+
+  defp convert_value(%{} = map) do
+    convert_to_atom_map(map)
+  end
+
+  defp convert_value([]) do
+    []
+  end
+
+  defp convert_value(list) when is_list(list) do
+    Enum.map(list, &convert_value/1)
+  end
+
+  defp convert_value(value) do
+    value
+  end
+
   defp convert_parameters(key, parameters) do
     converted =
       parameters

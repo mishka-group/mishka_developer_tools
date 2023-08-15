@@ -7,7 +7,8 @@
 - [x] Add custom validator and main validator from finding in a module
 - [x] Add `__struct__`, `keys`, `enforce_keys` and `builder` functions
 - [x] Add `required_fields` validation with `:halt` status
-- [x] add calling nested fields and struct from another module
+- [x] Add calling nested fields and struct from another module
+- [x] Add `Derive.Parser.convert_to_atom_map` to Change string map to atom map
 - [x] Add `derive` for sanitizing and validating `Trim`
 - [x] Add `derive` for sanitizing and validating `Lowercase`
 - [x] Add `derive` for sanitizing and validating `Uppercase`

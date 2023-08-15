@@ -28,7 +28,7 @@ defmodule GuardedStruct do
   **Note:** If the license changes during the support of this project, this file will always remain on MIT
 
   """
-  alias MishkaDeveloperTools.Helper.Derive
+  alias MishkaDeveloperTools.Helper.{Derive, Derive.Parser}
 
   @temporary_revaluation [
     :gs_fields,
@@ -410,14 +410,15 @@ defmodule GuardedStruct do
   def builder(attrs, module, gs_main_validator, gs_validator, gs_fields, enforce_keys, gs_derive) do
     main_validator = Enum.find(gs_main_validator, &is_tuple(&1))
 
-    GuardedStruct.required_fields(enforce_keys, attrs)
+    Parser.convert_to_atom_map(attrs)
+    |> GuardedStruct.required_fields(enforce_keys)
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
     |> Derive.derive(gs_derive)
   end
 
   @doc false
-  def required_fields(keys, attrs) do
+  def required_fields(attrs, keys) do
     missing_keys = Enum.reject(keys, &Map.has_key?(attrs, &1))
     {Enum.empty?(missing_keys), missing_keys, :halt}
   end
