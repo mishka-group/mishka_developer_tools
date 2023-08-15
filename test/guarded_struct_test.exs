@@ -523,7 +523,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         field(:fam, String.t(), enforce: true)
 
         sub_field(:soos, struct()) do
-          field(:fam, String.t(), derive: "validate(not_empty)")
+          field(:fam, String.t(),
+            validator: {TestNestedStruct, :validator},
+            derive: "validate(not_empty)"
+          )
+
+          field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
         end
 
         field(:site, String.t())
@@ -562,6 +567,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     # IO.inspect(TestNestedStruct.Oop.__info__(:functions))
     # IO.puts("--------------------------------")
     # IO.inspect(TestNestedStruct.Oop.Soos.__struct__())
+    IO.inspect(TestNestedStruct.Oop.Soos.builder(%{fam: ""}), label: "Oop.Soos.builder")
     # IO.inspect(TestNestedStruct.Oop.Soos.keys())
     # IO.inspect(TestNestedStruct.Oop.Soos.__info__(:functions))
     # IO.puts("--------------------------------")

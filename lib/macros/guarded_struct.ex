@@ -419,15 +419,15 @@ defmodule GuardedStruct do
   @doc false
   def required_fields(keys, attrs) do
     missing_keys = Enum.reject(keys, &Map.has_key?(attrs, &1))
-    {Enum.empty?(missing_keys), missing_keys}
+    {Enum.empty?(missing_keys), missing_keys, :halt}
   end
 
   @doc false
-  def field_validating({false, keys}, _attrs, _gs_validator, _gs_fields, _module) do
-    {:error, :required_fields, keys}
+  def field_validating({false, keys, :halt}, _attrs, _gs_validator, _gs_fields, _module) do
+    {:error, :required_fields, keys, :halt}
   end
 
-  def field_validating({true, _keys}, attrs, gs_validator, gs_fields, module) do
+  def field_validating({true, _keys, _}, attrs, gs_validator, gs_fields, module) do
     {sub_modules_builders, sub_modules_builders_errors, unsub_fields} =
       required_fields_and_validate_sub_field(attrs, module, gs_fields)
 
@@ -456,9 +456,9 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def main_validating({:error, _, _} = error, _, _, _) do
-    error
-  end
+  def main_validating({:error, _, _, :halt} = error, _, _, _), do: error
+
+  def main_validating({:error, _, _} = error, _, _, _), do: error
 
   def main_validating(
         {
@@ -599,8 +599,8 @@ defmodule GuardedStruct do
   defp sub_modules_builders_errors(sub_modules_builders) do
     sub_modules_builders
     |> Enum.filter(fn {_field, output} -> elem(output, 0) == :error end)
-    |> Enum.map(fn {field, {_status, type, message}} ->
-      %{field: field, errors: {type, message}}
+    |> Enum.map(fn {field, error} ->
+      %{field: field, errors: {elem(error, 1), elem(error, 2)}}
     end)
   end
 end

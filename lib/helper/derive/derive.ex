@@ -1,10 +1,14 @@
 defmodule MishkaDeveloperTools.Helper.Derive do
   alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDerive, ValidationDerive}
 
-  def derive({:error, _, _} = error, _derive_inputs), do: error
+  def derive({:error, :required_fields, keys, :halt}, _derive_inputs) do
+    {:error, :required_fields, keys}
+  end
 
   def derive({:error, _, :nested, builders_errors, data}, derive_inputs),
     do: derive({:ok, data}, derive_inputs, builders_errors)
+
+  def derive({:error, _, _} = error, _derive_inputs), do: error
 
   def derive({:ok, data}, derive_inputs, extra_error \\ []) do
     reduced_fields =
