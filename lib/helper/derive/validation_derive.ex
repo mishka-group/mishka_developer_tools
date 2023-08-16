@@ -325,6 +325,27 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     _ -> {:error, field, :regex, "Invalid format in the #{field} field"}
   end
 
+  def validate(:ipv4, input, field) when is_binary(input) do
+    segments = String.split(input, ".")
+
+    if length(segments) != 4 do
+      {:error, field, :ipv4, "Invalid format in the #{field} field"}
+    else
+      Enum.all?(segments, &(String.to_integer(&1) in 0..255))
+      |> case do
+        true -> input
+        false -> {:error, field, :ipv4, "Invalid format in the #{field} field"}
+      end
+    end
+  rescue
+    _ ->
+      {:error, field, :ipv4, "Invalid format in the #{field} field"}
+  end
+
+  def validate(:ipv4, _input, field) do
+    {:error, field, :ipv4, "Invalid format in the #{field} field"}
+  end
+
   def validate(_, _input, field) do
     {:error, field, :type, "Unexpected type error in #{field} field"}
   end
