@@ -33,7 +33,33 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
     def sanitize(:strip_tags, input) when is_binary(input), do: HtmlSanitizeEx.strip_tags(input)
   end
 
-  def sanitize(_, input) do
-    input
+  def sanitize(action, input) do
+    case Application.get_env(:guarded_struct, :sanitize_derive) do
+      nil ->
+        input
+
+      derive_module when is_list(derive_module) ->
+        custom_derive(derive_module, action, input)
+
+      derive_module ->
+        derive_module.sanitize(action, input)
+    end
+  rescue
+    _ -> input
+  end
+
+  defp custom_derive(derive_list, action, input) do
+    Enum.reduce_while(derive_list, nil, fn item, _acc ->
+      case validate_pattern(item, action, input) do
+        nil -> {:cont, input}
+        ouput -> {:halt, if(is_nil(ouput), do: input, else: ouput)}
+      end
+    end)
+  end
+
+  def validate_pattern(module, action, input) do
+    apply(module, :sanitize, [action, input])
+  rescue
+    _ -> nil
   end
 end

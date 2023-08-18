@@ -347,7 +347,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate(action, input, field) do
-    case Application.get_env(:guarded_struct, :derive) do
+    case Application.get_env(:guarded_struct, :validate_derive) do
       nil ->
         {:error, field, :type, "Unexpected type error in #{field} field"}
 
