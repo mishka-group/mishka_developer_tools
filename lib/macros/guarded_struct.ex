@@ -243,6 +243,8 @@ defmodule GuardedStruct do
 
   @doc false
   def register_struct(block, opts) do
+    Application.put_env(:guarded_struct, :derive, Keyword.get(opts, :derive))
+
     quote do
       Enum.each(unquote(@temporary_revaluation), fn attr ->
         Module.register_attribute(__MODULE__, attr, accumulate: true)

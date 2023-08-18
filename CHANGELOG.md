@@ -26,6 +26,7 @@
 - [x] Add `derive` for sanitizing and validating `Regex` runner
 - [x] Add `derive` for sanitizing and validating `Range`
 - [x] Add `derive` for sanitizing and validating Validate `URL`
+- [x] Add `derive` for sanitizing and validating Validate `IPV4`
 - [x] Add a `:halt` error to filter validations output from showing after `halt` error
 - [x] Update all dependencies to last version
 - [x] Fix tests for Elixir `1.15`

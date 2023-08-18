@@ -346,8 +346,20 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     {:error, field, :ipv4, "Invalid format in the #{field} field"}
   end
 
-  def validate(_, _input, field) do
-    {:error, field, :type, "Unexpected type error in #{field} field"}
+  def validate(action, input, field) do
+    case Application.get_env(:guarded_struct, :derive) do
+      nil ->
+        {:error, field, :type, "Unexpected type error in #{field} field"}
+
+      derive_module when is_list(derive_module) ->
+        custom_derive(derive_module, action, input, field)
+
+      derive_module ->
+        derive_module.validate(action, input, field)
+    end
+  rescue
+    _ ->
+      {:error, field, :type, "Unexpected type error in #{field} field"}
   end
 
   defp location(geo_link, field, action) do
@@ -377,5 +389,24 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   rescue
     _ -> {:error, :unexpected_regex}
+  end
+
+  defp custom_derive(derive_list, action, input, field) do
+    Enum.reduce_while(derive_list, nil, fn item, _acc ->
+      case validate_pattern(item, action, input, field) do
+        nil -> {:cont, nil}
+        ouput -> {:halt, ouput}
+      end
+    end)
+    |> case do
+      nil -> {:error, field, :type, "Unexpected type error in #{field} field"}
+      data -> data
+    end
+  end
+
+  defp validate_pattern(module, action, input, field) do
+    apply(module, :validate, [action, input, field])
+  rescue
+    _ -> nil
   end
 end
