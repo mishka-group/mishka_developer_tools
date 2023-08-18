@@ -243,7 +243,9 @@ defmodule GuardedStruct do
 
   @doc false
   def register_struct(block, opts) do
-    Application.put_env(:guarded_struct, :derive, Keyword.get(opts, :derive))
+    if is_nil(Application.get_env(:guarded_struct, :derive)) do
+      Application.put_env(:guarded_struct, :derive, Keyword.get(opts, :derive))
+    end
 
     quote do
       Enum.each(unquote(@temporary_revaluation), fn attr ->
