@@ -484,8 +484,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
   end
 
   test "validate(:not_exist, input, field)" do
-    # {:error, :title, :type, "Unexpected type error in title field"} =
-    #   assert ValidationDerive.validate(:not_exist, "Mishka", :title)
+    {:error, :title, :type, "Unexpected type error in title field"} =
+      assert ValidationDerive.validate(:not_exist, "Mishka", :title)
   end
 
   defmodule TestValidate do
@@ -496,21 +496,31 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     end
   end
 
+  defmodule TestSanitize do
+    def sanitize(:capitalize_v1, input) do
+      if is_binary(input), do: String.capitalize(input), else: input
+    end
+  end
+
   defmodule TestExistCustomValidateDerive do
     use GuardedStruct
 
-    guardedstruct validate_derive: TestValidate do
+    guardedstruct validate_derive: TestValidate, sanitize_derive: TestSanitize do
       field(:id, integer(), derive: "validate(not_exist)")
       field(:title, String.t(), derive: "validate(string)")
+      field(:name, String.t(), derive: "sanitize(capitalize_v2)")
     end
   end
 
   defmodule TestCustomValidateDerive do
     use GuardedStruct
 
-    guardedstruct validate_derive: TestValidate do
+    guardedstruct validate_derive: TestValidate, sanitize_derive: TestSanitize do
       field(:id, integer())
       field(:title, String.t(), derive: "validate(not_empty, testv1)")
+      field(:name, String.t(), derive: "validate(string, not_empty) sanitize(trim, capitalize)")
+      field(:last_name, String.t(), derive: "sanitize(capitalize_v1")
+      field(:nikname, String.t(), derive: "sanitize(not_exist")
     end
   end
 
@@ -524,8 +534,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     {:ok,
      %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomValidateDerive{
        title: "Mishka",
-       id: 1
-     }} = assert TestCustomValidateDerive.builder(%{id: 1, title: "Mishka"})
+       id: 1,
+       name: "Shahryar",
+       last_name: "Tavakkoli",
+       nikname: "test"
+     }} =
+      assert TestCustomValidateDerive.builder(%{
+               id: 1,
+               title: "Mishka",
+               name: " shahryar ",
+               last_name: "tavakkoli",
+               nikname: "test"
+             })
 
     {:error, :bad_parameters,
      [
