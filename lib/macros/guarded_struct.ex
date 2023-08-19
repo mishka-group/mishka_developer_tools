@@ -243,14 +243,14 @@ defmodule GuardedStruct do
 
   @doc false
   def register_struct(block, opts) do
-    [:validate_derive, :sanitize_derive]
-    |> Enum.each(fn item ->
-      if is_nil(Application.get_env(:guarded_struct, item)) do
-        Application.put_env(:guarded_struct, item, Keyword.get(opts, item))
-      end
-    end)
-
     quote do
+      [:validate_derive, :sanitize_derive]
+      |> Enum.each(fn item ->
+        if is_nil(Application.compile_env(:guarded_struct, item)) do
+          Application.put_env(:guarded_struct, item, Keyword.get(unquote(opts), item))
+        end
+      end)
+
       Enum.each(unquote(@temporary_revaluation), fn attr ->
         Module.register_attribute(__MODULE__, attr, accumulate: true)
       end)

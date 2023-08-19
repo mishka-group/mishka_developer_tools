@@ -37,6 +37,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     "Hi Shahryar" = assert SanitizerDerive.sanitize(:strip_tags, "<p>Hi Shahryar</p>")
   end
 
+  test "sanitize(:not_exist, input)" do
+    "<p>Hi Shahryar</p>" = assert SanitizerDerive.sanitize(:not_exist, "<p>Hi Shahryar</p>")
+  end
+
   ############## (▰˘◡˘▰) Validation Derive (▰˘◡˘▰) ##############
   test "validate(:string, input, field)" do
     "Mishka" = assert ValidationDerive.validate(:string, "Mishka", :title)
@@ -477,5 +481,56 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
       |> Enum.all?()
 
     true = assert !invalidated_ips
+  end
+
+  test "validate(:not_exist, input, field)" do
+    # {:error, :title, :type, "Unexpected type error in title field"} =
+    #   assert ValidationDerive.validate(:not_exist, "Mishka", :title)
+  end
+
+  defmodule TestValidate do
+    def validate(:testv1, input, field) do
+      if is_binary(input),
+        do: input,
+        else: {:error, field, :testv1, "The #{field} field must not be empty"}
+    end
+  end
+
+  defmodule TestExistCustomValidateDerive do
+    use GuardedStruct
+
+    guardedstruct validate_derive: TestValidate do
+      field(:id, integer(), derive: "validate(not_exist)")
+      field(:title, String.t(), derive: "validate(string)")
+    end
+  end
+
+  defmodule TestCustomValidateDerive do
+    use GuardedStruct
+
+    guardedstruct validate_derive: TestValidate do
+      field(:id, integer())
+      field(:title, String.t(), derive: "validate(not_empty, testv1)")
+    end
+  end
+
+  test "validate(:not_exist, input, field) in custom validate" do
+    {:error, :bad_parameters,
+     [%{message: "Unexpected type error in id field", field: :id, action: :type}]} =
+      assert TestExistCustomValidateDerive.builder(%{id: 1, title: "Mishka"})
+  end
+
+  test "validate(:custom_validate_derive, input, field) in custom validate" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomValidateDerive{
+       title: "Mishka",
+       id: 1
+     }} = assert TestCustomValidateDerive.builder(%{id: 1, title: "Mishka"})
+
+    {:error, :bad_parameters,
+     [
+       %{message: _msg, field: :title, action: :testv1},
+       %{message: _msg1, field: :title, action: :not_empty}
+     ]} = assert TestCustomValidateDerive.builder(%{id: 1, title: 1})
   end
 end
