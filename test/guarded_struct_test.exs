@@ -515,31 +515,52 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     use GuardedStruct
 
     guardedstruct do
-      field(:title, String.t(), derive: "validate(not_empty)")
-      field(:subject, String.t())
+      field(:name, String.t(),
+        derive:
+          "sanitize(strip_tags, trim, capitalize) validate(string, not_empty, max_len=20, min_len=3)"
+      )
 
-      sub_field(:oop, struct()) do
-        field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
-        field(:fam, String.t(), enforce: true, derive: "validate(not_empty)")
+      field(:family, String.t(),
+        derive:
+          "sanitize(basic_html, trim, capitalize) validate(string, not_empty, max_len=20, min_len=3)"
+      )
 
-        sub_field(:soos, struct()) do
-          field(:fam, String.t(), derive: "validate(not_empty)")
-          field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
+      field(:age, integer(), enforce: true, derive: "validate(integer, max_len=110, min_len=18)")
+
+      sub_field(:auth, struct(), enforce: true) do
+        field(:server, String.t(), derive: "validate(regex='^[a-zA-Z]+@mishka\.group$')")
+
+        field(:identity_provider, String.t(),
+          derive: "sanitize(strip_tags, trim, lowercase) validate(not_empty)"
+        )
+
+        sub_field(:role, struct(), enforce: true) do
+          field(:name, String.t(),
+            derive: "sanitize(strip_tags, trim, lowercase) validate(string, not_empty)"
+          )
+
+          field(:action, String.t(), derive: "validate(string_boolean)")
         end
 
-        field(:site, String.t())
+        field(:last_activity, String.t(), derive: "sanitize(strip_tags, trim) validate(datetime)")
       end
 
-      sub_field(:jiiz, struct()) do
-        field(:title, String.t(), enforce: true, derive: "validate(not_empty)")
-        field(:site, String.t())
+      sub_field(:profile, struct()) do
+        field(:site, String.t(), derive: "validate(url)")
+
+        field(:nickname, String.t(), validator: {TestNestedStruct, :validator})
       end
 
-      field(:site, String.t(), derive: "validate(not_empty)")
+      field(:username, String.t(),
+        enforce: true,
+        derive: "sanitize(strip_tags, trim) validate(not_empty, max_len=20, min_len=3)"
+      )
     end
 
-    def validator(:fam, _value) do
-      {:error, :fam, "No, never"}
+    def validator(:nickname, value) do
+      if is_binary(value),
+        do: {:ok, :nickname, value},
+        else: {:error, :nickname, "Invalid nickname"}
     end
 
     def validator(field, value) do
@@ -548,6 +569,100 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "nested macro field" do
+    [:username, :profile, :auth, :age, :family, :name] = assert TestNestedStruct.keys()
+    [:username, :auth, :age] = assert TestNestedStruct.enforce_keys()
+    {:error, :required_fields, [:username, :auth, :age]} = assert TestNestedStruct.builder(%{})
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct{
+       username: "mishka",
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Profile{
+         nickname: "mishka",
+         site: "https://elixir-lang.org"
+       },
+       auth: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Auth{
+         last_activity: "2023-08-20 16:54:07.841434Z",
+         role: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Auth.Role{
+           action: "true",
+           name: "admin"
+         },
+         identity_provider: "google",
+         server: "users@mishka.group"
+       },
+       age: 18,
+       family: "Group",
+       name: "Mishka"
+     }} =
+      assert TestNestedStruct.builder(%{
+               username: "mishka",
+               auth: %{
+                 server: "users@mishka.group",
+                 identity_provider: "google",
+                 role: %{
+                   name: "admin",
+                   action: "true"
+                 },
+                 last_activity: "2023-08-20 16:54:07.841434Z"
+               },
+               age: 18,
+               family: "group",
+               name: "mishka",
+               profile: %{
+                 site: "https://elixir-lang.org",
+                 nickname: "mishka"
+               }
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :profile,
+         errors: {:bad_parameters, [%{message: "Invalid nickname", field: :nickname}]}
+       },
+       %{
+         field: :auth,
+         errors:
+           {:bad_parameters,
+            [
+              %{
+                message: "Invalid DateTime format in the last_activity field",
+                field: :last_activity,
+                action: :datetime
+              },
+              %{
+                field: :role,
+                errors:
+                  {:bad_parameters,
+                   [
+                     %{
+                       message: "Invalid boolean format in the action field",
+                       field: :action,
+                       action: :string_boolean
+                     }
+                   ]}
+              }
+            ]}
+       }
+     ]} =
+      assert TestNestedStruct.builder(%{
+               username: "mishka",
+               auth: %{
+                 server: "users@mishka.group",
+                 identity_provider: "google",
+                 role: %{
+                   name: "admin",
+                   action: "test"
+                 },
+                 last_activity: "20213-08-20 16:54:07.841434Z"
+               },
+               age: 18,
+               family: "group",
+               name: "mishka",
+               profile: %{
+                 site: "https://elixir-lang.org",
+                 nickname: :test
+               }
+             })
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############

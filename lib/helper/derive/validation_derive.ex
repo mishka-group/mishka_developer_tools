@@ -191,8 +191,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       %URI{port: port, scheme: scheme, host: host}
       when port in [80, 443] and scheme in ["https", "http"] ->
         case :inet.gethostbyname(Kernel.to_charlist(host)) do
-          {:ok, _} -> input
-          _ -> {:error, field, :url, "Invalid url host in the #{field} field"}
+          {:ok, _} ->
+            input
+
+          _ ->
+            {:error, field, :url, "Invalid url host in the #{field} field"}
         end
 
       _ ->
