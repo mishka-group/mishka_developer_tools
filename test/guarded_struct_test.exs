@@ -548,53 +548,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "nested macro field" do
-    # TestNestedStruct.builder(%{
-    #   title: "",
-    #   site: "",
-    #   jiiz: %{site: "hey"},
-    #   oop: %{title: "", fam: "", soos: %{fam: "", title: ""}}
-    # })
-    # |> IO.inspect(label: "TestNestedStruct.builder")
-
-    # TestNestedStruct.Jiiz.builder(%{site: "shahryar", fam: "tavakkoli"})
-
-    errors_list = [
-      %{field: :id, action: :trim, message: "sa"},
-      %{field: :user, action: :space, message: "sa"},
-      %{field: :admin, action: :url, message: "sa"},
-      %{field: :uu, action: :url, message: "sa"},
-      %{field: :bb, action: :email, message: "sa", status: :halt},
-      %{field: :ccbb, action: :note, message: "sa"}
-    ]
-
-    Enum.reduce_while(errors_list, [], fn item, acc ->
-      if Map.get(item, :status) == :halt,
-        do: {:halt, acc ++ [Map.delete(item, :status)]},
-        else: {:cont, acc ++ [item]}
-    end)
-    |> IO.inspect()
-
-    # |> IO.inspect(label: "TestNestedStruct.Jiiz.builder")
-
-    # IO.puts("--------------------------------")
-    # IO.inspect(TestNestedStruct.__struct__())
-    # IO.inspect(TestNestedStruct.keys())
-    # IO.inspect(TestNestedStruct.__info__(:functions))
-    # IO.puts("--------------------------------")
-    # IO.inspect(TestNestedStruct.Oop.__struct__())
-    # IO.inspect(TestNestedStruct.Oop.keys(), label: "TestNestedStruct.Oop.keys")
-    # IO.inspect(TestNestedStruct.Oop.__info__(:functions))
-    # IO.puts("--------------------------------")
-    # IO.inspect(TestNestedStruct.Oop.Soos.__struct__())
-    # IO.inspect(TestNestedStruct.Oop.Soos.builder(%{fam: ""}), label: "Oop.Soos.builder")
-    # IO.inspect(TestNestedStruct.Oop.Soos.keys())
-    # IO.inspect(TestNestedStruct.Oop.Soos.__info__(:functions))
-    # IO.puts("--------------------------------")
-
-    # assert %TestNestedStruct.Oop{
-    #          fam: nil,
-    #          title: nil
-    #        } = TestNestedStruct.Oop.__struct__()
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############

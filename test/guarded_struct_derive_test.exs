@@ -496,8 +496,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     end
   end
 
+  defmodule TestValidate2 do
+    def validate(:testv2, input, field) do
+      if is_binary(input),
+        do: input,
+        else: {:error, field, :testv1, "The #{field} field must not be empty"}
+    end
+  end
+
   defmodule TestSanitize do
     def sanitize(:capitalize_v1, input) do
+      if is_binary(input), do: String.capitalize(input), else: input
+    end
+  end
+
+  defmodule TestSanitize2 do
+    def sanitize(:capitalize_v2, input) do
       if is_binary(input), do: String.capitalize(input), else: input
     end
   end
@@ -512,7 +526,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     end
   end
 
-  defmodule TestCustomValidateDerive do
+  defmodule TestCustomeDerive do
     use GuardedStruct
 
     guardedstruct validate_derive: TestValidate, sanitize_derive: TestSanitize do
@@ -532,14 +546,14 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
 
   test "validate(:custom_validate_derive, input, field) in custom validate" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomValidateDerive{
+     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomeDerive{
        title: "Mishka",
        id: 1,
        name: "Shahryar",
        last_name: "Tavakkoli",
        nikname: "test"
      }} =
-      assert TestCustomValidateDerive.builder(%{
+      assert TestCustomeDerive.builder(%{
                id: 1,
                title: "Mishka",
                name: " shahryar ",
@@ -551,6 +565,44 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
      [
        %{message: _msg, field: :title, action: :testv1},
        %{message: _msg1, field: :title, action: :not_empty}
-     ]} = assert TestCustomValidateDerive.builder(%{id: 1, title: 1})
+     ]} = assert TestCustomeDerive.builder(%{id: 1, title: 1})
+  end
+
+  Application.put_env(:guarded_struct, :validate_derive, nil)
+  Application.put_env(:guarded_struct, :sanitize_derive, nil)
+
+  defmodule TestCustomListDerive do
+    use GuardedStruct
+
+    guardedstruct validate_derive: [TestValidate, TestValidate2],
+                  sanitize_derive: [TestSanitize, TestSanitize2] do
+      field(:id, integer())
+      field(:title, String.t(), derive: "validate(not_empty, testv2)")
+
+      field(:name, String.t(),
+        derive: "validate(string, not_empty) sanitize(trim, capitalize_v2)"
+      )
+
+      field(:last_name, String.t(), derive: "sanitize(capitalize_v1")
+      field(:nikname, String.t(), derive: "sanitize(not_exist")
+    end
+  end
+
+  test "test custom validate and sanitize list derive" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomListDerive{
+       title: "Mishka",
+       id: 1,
+       name: "Shahryar",
+       last_name: "Tavakkoli",
+       nikname: "test"
+     }} =
+      assert TestCustomListDerive.builder(%{
+               id: 1,
+               title: "Mishka",
+               name: " shahryar ",
+               last_name: "tavakkoli",
+               nikname: "test"
+             })
   end
 end
