@@ -19,7 +19,7 @@ jobs:
         include:
           - pair:
               elixir: '1.15.1'
-              otp: '24.2'
+              otp: '26.0.2'
               postgres: '14.1-alpine'
 
     runs-on: ubuntu-latest
@@ -63,4 +63,4 @@ jobs:
         env:
           DATABASE_DEVELOPERT_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
         run: |
-          mix test
+          mix test --trace

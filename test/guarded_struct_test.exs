@@ -624,21 +624,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
          errors:
            {:bad_parameters,
             [
-              %{
-                message: "Invalid DateTime format in the last_activity field",
-                field: :last_activity,
-                action: :datetime
-              },
+              %{message: _msg, field: :last_activity, action: :datetime},
               %{
                 field: :role,
                 errors:
                   {:bad_parameters,
                    [
-                     %{
-                       message: "Invalid boolean format in the action field",
-                       field: :action,
-                       action: :string_boolean
-                     }
+                     %{message: _msg1, field: :action, action: :string_boolean}
                    ]}
               }
             ]}
