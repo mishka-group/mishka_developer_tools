@@ -536,10 +536,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
         sub_field(:role, struct(), enforce: true) do
           field(:name, String.t(),
-            derive: "sanitize(strip_tags, trim, lowercase) validate(string, not_empty)"
+            derive:
+              "sanitize(strip_tags, trim, lowercase) validate(enum=Atom[admin::user::banned])"
           )
 
           field(:action, String.t(), derive: "validate(string_boolean)")
+
+          field(:status, String.t(),
+            derive: "validate(enum=Map[%{status: 1}::%{status: 2}::%{status: 3}])"
+          )
         end
 
         field(:last_activity, String.t(), derive: "sanitize(strip_tags, trim) validate(datetime)")
@@ -584,7 +589,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
          last_activity: "2023-08-20 16:54:07.841434Z",
          role: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Auth.Role{
            action: "true",
-           name: "admin"
+           name: :user,
+           status: %{status: 2}
          },
          identity_provider: "google",
          server: "users@mishka.group"
@@ -599,8 +605,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
                  server: "users@mishka.group",
                  identity_provider: "google",
                  role: %{
-                   name: "admin",
-                   action: "true"
+                   name: :user,
+                   action: "true",
+                   status: %{status: 2}
                  },
                  last_activity: "2023-08-20 16:54:07.841434Z"
                },
@@ -642,8 +649,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
                  server: "users@mishka.group",
                  identity_provider: "google",
                  role: %{
-                   name: "admin",
-                   action: "test"
+                   name: :admin,
+                   action: "test",
+                   status: %{status: 2}
                  },
                  last_activity: "20213-08-20 16:54:07.841434Z"
                },

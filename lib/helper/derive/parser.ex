@@ -47,6 +47,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
         {:=, _, [{key, _, nil}, value]} when is_integer(value) or is_list(value) ->
           {key, value}
 
+        {:=, _, [{key, _, nil}, {_, _, [{:__aliases__, _, [type]} | _t]} = value]}
+        when is_tuple(value) and is_atom(type) ->
+          {key, Macro.to_string(value)}
+
         _ ->
           nil
       end)

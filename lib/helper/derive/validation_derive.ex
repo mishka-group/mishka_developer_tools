@@ -345,6 +345,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       {:error, field, :ipv4, "Invalid format in the #{field} field"}
   end
 
+  def validate(:ipv4, _input, field) do
+    {:error, field, :ipv4, "Invalid format in the #{field} field"}
+  end
+
   def validate(:not_empty_string, input, field) do
     if is_binary(input) and input != "" do
       input
@@ -363,8 +367,51 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
-  def validate(:ipv4, _input, field) do
-    {:error, field, :ipv4, "Invalid format in the #{field} field"}
+  def validate({:enum, "String" <> list}, input, field) when is_binary(input) do
+    convert_enum(list)
+    |> convert_enum_output(input, field)
+  end
+
+  def validate({:enum, "Atom" <> list}, input, field) when is_atom(input) do
+    convert_enum(list)
+    |> Enum.map(&String.to_atom(&1))
+    |> convert_enum_output(input, field)
+  end
+
+  def validate({:enum, "Integer" <> list}, input, field) when is_integer(input) do
+    convert_enum(list)
+    |> Enum.map(&String.to_integer(&1))
+    |> convert_enum_output(input, field)
+  end
+
+  def validate({:enum, "Float" <> list}, input, field) when is_float(input) do
+    convert_enum(list)
+    |> Enum.map(&String.to_float(&1))
+    |> convert_enum_output(input, field)
+  end
+
+  def validate({:enum, "Map" <> list}, input, field) when is_map(input) do
+    convert_enum(list)
+    |> convert_enum_code_eval()
+    |> convert_enum_output(input, field)
+  end
+
+  def validate({:enum, "Tuple" <> list}, input, field) when is_tuple(input) do
+    convert_enum(list)
+    |> convert_enum_code_eval()
+    |> convert_enum_output(input, field)
+  end
+
+  def validate({:enum, _}, _input, field) do
+    {:error, field, :enum, "Invalid format in the #{field} field"}
+  end
+
+  def validate({:equal, value}, input, field) do
+    if value === input do
+      input
+    else
+      {:error, field, :equal, "Invalid value in the #{field} field"}
+    end
   end
 
   def validate(action, input, field) do
@@ -429,5 +476,32 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     apply(module, :validate, [action, input, field])
   rescue
     _ -> nil
+  end
+
+  defp convert_enum(list) do
+    list
+    |> String.replace(["[", "]"], "")
+    |> String.split("::", trim: true)
+    |> Enum.map(&String.trim(&1))
+  end
+
+  defp convert_enum_output(list, input, field) do
+    list
+    |> Enum.find(&(&1 == input))
+    |> case do
+      nil ->
+        {:error, field, :enum, "Your sent data form #{field} field is not in the allowed list"}
+
+      data ->
+        data
+    end
+  end
+
+  defp convert_enum_code_eval(list) do
+    list
+    |> Enum.map(fn item ->
+      {converted, []} = Code.eval_string(item)
+      converted
+    end)
   end
 end

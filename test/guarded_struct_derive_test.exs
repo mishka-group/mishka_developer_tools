@@ -377,6 +377,64 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     {:error, :id, :uuid, _msg2} = assert ValidationDerive.validate(:uuid, "test", :id)
   end
 
+  test "validate(:enum, input, field)" do
+    "admin" =
+      assert ValidationDerive.validate({:enum, "String[admin::user::moderator]"}, "admin", :role)
+
+    {:error, :role, :enum, _msg5} =
+      assert ValidationDerive.validate(
+               {:enum, "String[admin::user::moderator]"},
+               "none_role",
+               :role
+             )
+
+    1 = assert ValidationDerive.validate({:enum, "Integer[1::2::3]"}, 1, :role)
+
+    {:error, :role, :enum, _msg4} =
+      assert ValidationDerive.validate({:enum, "Integer[1::2::3]"}, 99, :role)
+
+    :user =
+      assert ValidationDerive.validate({:enum, "Atom[admin::user::moderator]"}, :user, :role)
+
+    {:error, :role, :enum, _msg3} =
+      assert ValidationDerive.validate({:enum, "Atom[admin::user::moderator]"}, :banned, :role)
+
+    {1, :admin} =
+      assert ValidationDerive.validate(
+               {:enum, "Tuple[{1,:admin}::{2, :user}::{3, :moderator}]"},
+               {1, :admin},
+               :role
+             )
+
+    {:error, :role, :enum, _msg2} =
+      assert ValidationDerive.validate(
+               {:enum, "Tuple[{1,:admin}::{2, :user}::{3, :moderator}]"},
+               {9, :admin},
+               :role
+             )
+
+    %{id: 3, role: :moderator} =
+      assert ValidationDerive.validate(
+               {:enum,
+                "Map[%{id: 1,role: :admin}::%{id: 2, role: :user}::%{id: 3, role: :moderator}]"},
+               %{id: 3, role: :moderator},
+               :role
+             )
+
+    {:error, :role, :enum, _msg1} =
+      assert ValidationDerive.validate(
+               {:enum,
+                "Map[%{id: 1,role: :admin}::%{id: 2, role: :user}::%{id: 3, role: :moderator}]"},
+               %{id: 5, role: :moderator},
+               :role
+             )
+
+    3.5 = assert ValidationDerive.validate({:enum, "Float[1.5::2.2::3.5]"}, 3.5, :role)
+
+    {:error, :role, :enum, _msg} =
+      assert ValidationDerive.validate({:enum, "Float[1.5::2.2::3.5]"}, 5.5, :role)
+  end
+
   test "validate(:ipv4, input, field)" do
     valid_ip = [
       "192.168.0.1",
