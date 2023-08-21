@@ -353,6 +353,16 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     end
   end
 
+  def validate(:uuid, input, field) do
+    uuid_regex = ~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+    if is_binary(input) and Regex.match?(uuid_regex, String.downcase(input)) do
+      input
+    else
+      {:error, field, :uuid, "Invalid UUID format in the #{field} field"}
+    end
+  end
+
   def validate(:ipv4, _input, field) do
     {:error, field, :ipv4, "Invalid format in the #{field} field"}
   end
