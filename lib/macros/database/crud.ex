@@ -84,7 +84,7 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   crud_add(map_of_info like: %{"name" => "Mishka"}, ["name"])
   ```
   """
-  if Code.ensure_loaded?(Ecto) or Code.ensure_loaded?(EctoEnum) or Code.ensure_loaded?(Postgrex) do
+  if Code.ensure_loaded?(Ecto) and Code.ensure_loaded?(EctoEnum) and Code.ensure_loaded?(Postgrex) do
     defmacro crud_add(attrs) do
       quote do
         initial = get_initial_macro_data(@interface_module)
