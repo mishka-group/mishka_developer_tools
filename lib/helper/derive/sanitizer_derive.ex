@@ -31,6 +31,13 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
       do: HtmlSanitizeEx.markdown_html(input)
 
     def sanitize(:strip_tags, input) when is_binary(input), do: HtmlSanitizeEx.strip_tags(input)
+
+    def sanitize({:tag, type}, input) when is_binary(input) do
+      sanitize(:trim, input)
+      |> then(&sanitize(if(is_binary(type), do: String.to_atom(type), else: type), &1))
+      |> then(&sanitize(:downcase, &1))
+      |> then(&sanitize(:trim, &1))
+    end
   end
 
   def sanitize(action, input) do

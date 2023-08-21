@@ -553,7 +553,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
       field(:username, String.t(),
         enforce: true,
-        derive: "sanitize(strip_tags, trim) validate(not_empty, max_len=20, min_len=3)"
+        derive: "sanitize(tag=strip_tags) validate(not_empty, max_len=20, min_len=3)"
       )
     end
 
@@ -594,7 +594,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
        name: "Mishka"
      }} =
       assert TestNestedStruct.builder(%{
-               username: "mishka",
+               username: " <p>Mishka   </p>",
                auth: %{
                  server: "users@mishka.group",
                  identity_provider: "google",
