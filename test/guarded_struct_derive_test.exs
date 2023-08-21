@@ -366,6 +366,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
       assert ValidationDerive.validate(:not_empty_string, "", :name)
   end
 
+  test "validate(:uuid, input, field)" do
+    "d528ba1e-cd85-4f61-954c-7c8aa8e8decc" =
+      assert ValidationDerive.validate(:uuid, "d528ba1e-cd85-4f61-954c-7c8aa8e8decc", :name)
+
+    {:error, :id, :uuid, _msg} =
+      assert ValidationDerive.validate(:uuid, "d528ba1e-cd85-4f61-954c1-7c8aa8e8decc", :id)
+
+    {:error, :id, :uuid, _msg1} = assert ValidationDerive.validate(:uuid, :test, :id)
+    {:error, :id, :uuid, _msg2} = assert ValidationDerive.validate(:uuid, "test", :id)
+  end
+
   test "validate(:ipv4, input, field)" do
     valid_ip = [
       "192.168.0.1",
