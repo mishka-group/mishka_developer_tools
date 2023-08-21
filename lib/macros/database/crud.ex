@@ -63,28 +63,28 @@ defmodule MishkaDeveloperTools.DB.CRUD do
     end
   end
 
-  @doc """
-  ### Creating a record macro
-
-  ## Example
-  ```elixir
-  crud_add(map_of_info like: %{"name" => "Mishka"})
-  ```
-  The input of this macro is a map and its output are a map. For example
-
-  ```elixir
-  {:error, :add, repo_error()}
-  {:ok, :add, repo_data()}
-  ```
-
-  If you want only the selected parameters to be separated from the list of submitted parameters and sent to the database, use the same macro with input 2
-
-  ###  Example
-  ```elixir
-  crud_add(map_of_info like: %{"name" => "Mishka"}, ["name"])
-  ```
-  """
   if Code.ensure_loaded?(Ecto) and Code.ensure_loaded?(EctoEnum) and Code.ensure_loaded?(Postgrex) do
+    @doc """
+    ### Creating a record macro
+
+    ## Example
+    ```elixir
+    crud_add(map_of_info like: %{"name" => "Mishka"})
+    ```
+    The input of this macro is a map and its output are a map. For example
+
+    ```elixir
+    {:error, :add, repo_error()}
+    {:ok, :add, repo_data()}
+    ```
+
+    If you want only the selected parameters to be separated from the list of submitted parameters and sent to the database, use the same macro with input 2
+
+    ###  Example
+    ```elixir
+    crud_add(map_of_info like: %{"name" => "Mishka"}, ["name"])
+    ```
+    """
     defmacro crud_add(attrs) do
       quote do
         initial = get_initial_macro_data(@interface_module)
