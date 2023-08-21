@@ -84,305 +84,313 @@ defmodule MishkaDeveloperTools.DB.CRUD do
   crud_add(map_of_info like: %{"name" => "Mishka"}, ["name"])
   ```
   """
-  defmacro crud_add(attrs) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
-      create_record(unquote(attrs), initial.module_selected, initial.repo)
+  if Code.ensure_loaded?(Ecto) or Code.ensure_loaded?(EctoEnum) or Code.ensure_loaded?(Postgrex) do
+    defmacro crud_add(attrs) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
+        create_record(unquote(attrs), initial.module_selected, initial.repo)
+      end
     end
-  end
 
-  defmacro crud_add(attrs, allowed_fields) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
+    defmacro crud_add(attrs, allowed_fields) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
 
-      create_record(
-        Map.take(unquote(attrs), unquote(allowed_fields)),
-        initial.module_selected,
-        initial.repo
-      )
+        create_record(
+          Map.take(unquote(attrs), unquote(allowed_fields)),
+          initial.module_selected,
+          initial.repo
+        )
+      end
     end
-  end
 
-  @doc """
-  ### Edit a record in a database Macro
+    @doc """
+    ### Edit a record in a database Macro
 
-  With the help of this macro, you can edit a record in the database with its ID. For this purpose, you must send the requested record ID along with the new Map parameters. Otherwise the macro returns the ID error.
+    With the help of this macro, you can edit a record in the database with its ID. For this purpose, you must send the requested record ID along with the new Map parameters. Otherwise the macro returns the ID error.
 
-  ## Example
-  ```elixir
-  crud_edit(map_of_info like: %{"id" => "6d80d5f4-781b-4fa8-9796-1821804de6ba", "name" => "Mishka"})
-  ```
-  > Note that the sending ID must be of UUID type.
+    ## Example
+    ```elixir
+    crud_edit(map_of_info like: %{"id" => "6d80d5f4-781b-4fa8-9796-1821804de6ba", "name" => "Mishka"})
+    ```
+    > Note that the sending ID must be of UUID type.
 
-  The input of this macro is a map and its output are a map. For example
+    The input of this macro is a map and its output are a map. For example
 
-  ```elixir
-  {:error, :edit, repo_error()}
-  {:ok, :edit, repo_data()}
-  {:error, :edit, {:error, :uuid | :not_found, String.t()}}
-  ```
+    ```elixir
+    {:error, :edit, repo_error()}
+    {:ok, :edit, repo_data()}
+    {:error, :edit, {:error, :uuid | :not_found, String.t()}}
+    ```
 
-  It should be noted that if you want only the selected fields to be separated from the submitted parameters and sent to the database, use the macro with dual input.
+    It should be noted that if you want only the selected fields to be separated from the submitted parameters and sent to the database, use the macro with dual input.
 
-  ## Example
-  ```elixir
-  crud_edit(map_of_info like: %{"id" => "6d80d5f4-781b-4fa8-9796-1821804de6ba", "name" => "Mishka"}, , ["id", "name"])
-  ```
-  """
-  defmacro crud_edit(attrs) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
-      converted_attrs = unquote(attrs)
+    ## Example
+    ```elixir
+    crud_edit(map_of_info like: %{"id" => "6d80d5f4-781b-4fa8-9796-1821804de6ba", "name" => "Mishka"}, , ["id", "name"])
+    ```
+    """
+    defmacro crud_edit(attrs) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
+        converted_attrs = unquote(attrs)
 
-      edit_record_by_fetch(
-        {initial.id_type, converted_attrs["id"]},
-        unquote(attrs),
-        initial.module_selected,
-        initial.repo
-      )
+        edit_record_by_fetch(
+          {initial.id_type, converted_attrs["id"]},
+          unquote(attrs),
+          initial.module_selected,
+          initial.repo
+        )
+      end
     end
-  end
 
-  defmacro crud_edit(attrs, allowed_fields) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
-      converted_attrs = unquote(attrs)
+    defmacro crud_edit(attrs, allowed_fields) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
+        converted_attrs = unquote(attrs)
 
-      edit_record_by_fetch(
-        {initial.id_type, converted_attrs["id"]},
-        Map.take(converted_attrs, unquote(allowed_fields)),
-        initial.module_selected,
-        initial.repo
-      )
+        edit_record_by_fetch(
+          {initial.id_type, converted_attrs["id"]},
+          Map.take(converted_attrs, unquote(allowed_fields)),
+          initial.module_selected,
+          initial.repo
+        )
+      end
     end
-  end
 
-  @doc """
-  ### delete a record from the database with the help of ID Macro
+    @doc """
+    ### delete a record from the database with the help of ID Macro
 
-  With the help of this macro, you can delete your requested record from the database.
-  The input of this macro is a UUID and its output is a map
+    With the help of this macro, you can delete your requested record from the database.
+    The input of this macro is a UUID and its output is a map
 
 
-  ## Example
-  ```elixir
-  crud_delete("6d80d5f4-781b-4fa8-9796-1821804de6ba")
-  crud_delete("6d80d5f4-781b-4fa8-9796-1821804de6ba", [:comment, :post])
-  ```
-  Output:
-  You should note that this macro prevents the orphan data of the record requested to be deleted. So, use this macro when the other data is not dependent on the data with the ID sent by you.
+    ## Example
+    ```elixir
+    crud_delete("6d80d5f4-781b-4fa8-9796-1821804de6ba")
+    crud_delete("6d80d5f4-781b-4fa8-9796-1821804de6ba", [:comment, :post])
+    ```
+    Output:
+    You should note that this macro prevents the orphan data of the record requested to be deleted. So, use this macro when the other data is not dependent on the data with the ID sent by you.
 
-  Outputs:
+    Outputs:
 
-  ```elixir
-  {:error, :delete, repo_error()}
-  {:error, :delete, {:error, :uuid | :not_found | :force_constraint, String.t()}}
-  {:ok, :delete, repo_data()}
-  ```
-  """
-  defmacro crud_delete(id) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
+    ```elixir
+    {:error, :delete, repo_error()}
+    {:error, :delete, {:error, :uuid | :not_found | :force_constraint, String.t()}}
+    {:ok, :delete, repo_data()}
+    ```
+    """
+    defmacro crud_delete(id) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
 
-      delete_record_by_force_constraint(
-        {initial.id_type, unquote(id)},
-        initial.module_selected,
-        initial.repo
-      )
+        delete_record_by_force_constraint(
+          {initial.id_type, unquote(id)},
+          initial.module_selected,
+          initial.repo
+        )
+      end
     end
-  end
 
-  defmacro crud_delete(id, assoc) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
+    defmacro crud_delete(id, assoc) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
 
-      delete_record_by_no_assoc_constraint(
-        {initial.id_type, unquote(id)},
-        initial.module_selected,
-        unquote(assoc),
-        initial.repo
-      )
+        delete_record_by_no_assoc_constraint(
+          {initial.id_type, unquote(id)},
+          initial.module_selected,
+          unquote(assoc),
+          initial.repo
+        )
+      end
     end
-  end
 
-  @doc """
-  ### Macro Finding a record in a database with the help of ID
+    @doc """
+    ### Macro Finding a record in a database with the help of ID
 
-  With the help of this macro, you can send an ID that is of UUID type and call it if there is a record in the database.
-  The output of this macro is map.
+    With the help of this macro, you can send an ID that is of UUID type and call it if there is a record in the database.
+    The output of this macro is map.
 
 
-  # Example
-  ```elixir
-  crud_get_record("6d80d5f4-781b-4fa8-9796-1821804de6ba")
-  ```
+    # Example
+    ```elixir
+    crud_get_record("6d80d5f4-781b-4fa8-9796-1821804de6ba")
+    ```
 
-  Outputs:
+    Outputs:
 
-  ```
-  {:error, :not_found, String.t()} | struct()
-  ```
+    ```
+    {:error, :not_found, String.t()} | struct()
+    ```
 
-  """
-  defmacro crud_get_record(id) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
-      fetch_record_by_id(unquote(id), initial.module_selected, initial.repo)
+    """
+    defmacro crud_get_record(id) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
+        fetch_record_by_id(unquote(id), initial.module_selected, initial.repo)
+      end
     end
-  end
 
-  @doc """
-  ### Macro Find a record in the database with the help of the requested field
+    @doc """
+    ### Macro Find a record in the database with the help of the requested field
 
-  With the help of this macro, you can find a field with the value you want, if it exists in the database. It should be noted that the field name must be entered as a String.
+    With the help of this macro, you can find a field with the value you want, if it exists in the database. It should be noted that the field name must be entered as a String.
 
 
-  # Example
-  ```elixir
-  crud_get_by_field("email", "info@trangell.com")
-  ```
+    # Example
+    ```elixir
+    crud_get_by_field("email", "info@trangell.com")
+    ```
 
-  Outputs:
+    Outputs:
 
-  ```
-  {:error, :not_found, String.t()} | struct()
-  ```
+    ```
+    {:error, :not_found, String.t()} | struct()
+    ```
 
-  """
-  defmacro crud_get_by_field(field, value) do
-    quote do
-      initial = get_initial_macro_data(@interface_module)
-      fetch_record_by_field(unquote(field), unquote(value), initial.module_selected, initial.repo)
+    """
+    defmacro crud_get_by_field(field, value) do
+      quote do
+        initial = get_initial_macro_data(@interface_module)
+
+        fetch_record_by_field(
+          unquote(field),
+          unquote(value),
+          initial.module_selected,
+          initial.repo
+        )
+      end
     end
-  end
 
-  ###  Functions to create macro
+    ###  Functions to create macro
 
-  @spec create_record(record_input(), module(), module()) ::
-          {:error, :add, repo_error()} | {:ok, :add, repo_data()}
-  @doc false
-  def create_record(attrs, module, repo) do
-    module.changeset(module.__struct__, attrs)
-    |> repo.insert()
-    |> case do
-      {:ok, data} -> {:ok, :add, data}
-      {:error, error_data} -> {:error, :add, error_data}
+    @spec create_record(record_input(), module(), module()) ::
+            {:error, :add, repo_error()} | {:ok, :add, repo_data()}
+    @doc false
+    def create_record(attrs, module, repo) do
+      module.changeset(module.__struct__, attrs)
+      |> repo.insert()
+      |> case do
+        {:ok, data} -> {:ok, :add, data}
+        {:error, error_data} -> {:error, :add, error_data}
+      end
     end
-  end
 
-  @spec edit_record_by_fetch(
-          {:uuid | any(), String.t() | non_neg_integer()},
-          record_input(),
-          module(),
-          module()
-        ) ::
-          {:error, :edit, repo_error()}
-          | {:ok, :edit, repo_data()}
-          | {:error, :edit, {:error, :uuid | :not_found, String.t()}}
-  @doc false
-  def edit_record_by_fetch({_type, _id} = id_info, attrs, module, repo) do
-    with {:ok, valid_id} <- record_id_check(id_info),
-         data_received when is_struct(data_received) <-
-           fetch_record_by_id(valid_id, module, repo),
-         created_changeset <- module.changeset(data_received, attrs),
-         {:edit, {:ok, data}} <- {:edit, repo.update(created_changeset)} do
-      {:ok, :edit, data}
-    else
-      {:edit, {:error, error_data}} -> {:error, :edit, error_data}
-      {:error, _action, _extra} = error_data -> {:error, :edit, error_data}
+    @spec edit_record_by_fetch(
+            {:uuid | any(), String.t() | non_neg_integer()},
+            record_input(),
+            module(),
+            module()
+          ) ::
+            {:error, :edit, repo_error()}
+            | {:ok, :edit, repo_data()}
+            | {:error, :edit, {:error, :uuid | :not_found, String.t()}}
+    @doc false
+    def edit_record_by_fetch({_type, _id} = id_info, attrs, module, repo) do
+      with {:ok, valid_id} <- record_id_check(id_info),
+           data_received when is_struct(data_received) <-
+             fetch_record_by_id(valid_id, module, repo),
+           created_changeset <- module.changeset(data_received, attrs),
+           {:edit, {:ok, data}} <- {:edit, repo.update(created_changeset)} do
+        {:ok, :edit, data}
+      else
+        {:edit, {:error, error_data}} -> {:error, :edit, error_data}
+        {:error, _action, _extra} = error_data -> {:error, :edit, error_data}
+      end
     end
-  end
 
-  @spec delete_record_by_force_constraint(
-          {:uuid | any, String.t() | non_neg_integer()},
-          module(),
-          module()
-        ) ::
-          {:error, :delete, repo_error()}
-          | {:error, :delete, {:error, :uuid | :not_found | :force_constraint, String.t()}}
-          | {:ok, :delete, repo_data()}
-  @doc false
-  def delete_record_by_force_constraint({_type, _id} = id_info, module, repo) do
-    with {:ok, valid_id} <- record_id_check(id_info),
-         data_received when is_struct(data_received) <-
-           fetch_record_by_id(valid_id, module, repo),
-         {:delete, {:ok, data}} <- {:delete, repo.delete(data_received)} do
-      {:ok, :delete, data}
-    else
-      {:delete, {:error, error_data}} -> {:error, :delete, error_data}
-      {:error, _action, _extra} = error_data -> {:error, :delete, error_data}
+    @spec delete_record_by_force_constraint(
+            {:uuid | any, String.t() | non_neg_integer()},
+            module(),
+            module()
+          ) ::
+            {:error, :delete, repo_error()}
+            | {:error, :delete, {:error, :uuid | :not_found | :force_constraint, String.t()}}
+            | {:ok, :delete, repo_data()}
+    @doc false
+    def delete_record_by_force_constraint({_type, _id} = id_info, module, repo) do
+      with {:ok, valid_id} <- record_id_check(id_info),
+           data_received when is_struct(data_received) <-
+             fetch_record_by_id(valid_id, module, repo),
+           {:delete, {:ok, data}} <- {:delete, repo.delete(data_received)} do
+        {:ok, :delete, data}
+      else
+        {:delete, {:error, error_data}} -> {:error, :delete, error_data}
+        {:error, _action, _extra} = error_data -> {:error, :delete, error_data}
+      end
+    rescue
+      _e ->
+        {:error, :delete,
+         {:error, :force_constraint, "There are one or more dependencies to delete this record."}}
     end
-  rescue
-    _e ->
-      {:error, :delete,
-       {:error, :force_constraint, "There are one or more dependencies to delete this record."}}
-  end
 
-  @spec delete_record_by_no_assoc_constraint(
-          {:uuid | any, String.t() | non_neg_integer()},
-          module(),
-          list(atom()),
-          module()
-        ) ::
-          {:error, :delete, {:error, :uuid | :not_found, String.t()}}
-          | {:error, :delete, repo_error()}
-          | {:ok, :delete, repo_data()}
-  @doc false
-  def delete_record_by_no_assoc_constraint({_type, _id} = id_info, module, assoc, repo) do
-    with {:ok, valid_id} <- record_id_check(id_info),
-         data_received when is_struct(data_received) <-
-           fetch_record_by_id(valid_id, module, repo),
-         created_change <- Ecto.Changeset.change(struct(module, %{id: data_received.id})),
-         created_assoc <-
-           Enum.reduce(assoc, created_change, fn item, acc ->
-             Ecto.Changeset.no_assoc_constraint(acc, item)
-           end),
-         {:delete, {:ok, data}} <- {:delete, repo.delete(created_assoc)} do
-      {:ok, :delete, data}
-    else
-      {:delete, {:error, error_data}} -> {:error, :delete, error_data}
-      {:error, _action, _extra} = error_data -> {:error, :delete, error_data}
+    @spec delete_record_by_no_assoc_constraint(
+            {:uuid | any, String.t() | non_neg_integer()},
+            module(),
+            list(atom()),
+            module()
+          ) ::
+            {:error, :delete, {:error, :uuid | :not_found, String.t()}}
+            | {:error, :delete, repo_error()}
+            | {:ok, :delete, repo_data()}
+    @doc false
+    def delete_record_by_no_assoc_constraint({_type, _id} = id_info, module, assoc, repo) do
+      with {:ok, valid_id} <- record_id_check(id_info),
+           data_received when is_struct(data_received) <-
+             fetch_record_by_id(valid_id, module, repo),
+           created_change <- Ecto.Changeset.change(struct(module, %{id: data_received.id})),
+           created_assoc <-
+             Enum.reduce(assoc, created_change, fn item, acc ->
+               Ecto.Changeset.no_assoc_constraint(acc, item)
+             end),
+           {:delete, {:ok, data}} <- {:delete, repo.delete(created_assoc)} do
+        {:ok, :delete, data}
+      else
+        {:delete, {:error, error_data}} -> {:error, :delete, error_data}
+        {:error, _action, _extra} = error_data -> {:error, :delete, error_data}
+      end
     end
-  end
 
-  @doc false
-  defp record_id_check({:uuid, id}) do
-    with :error <- Ecto.UUID.cast(id) do
-      {:error, :uuid, "The submitted ID is not valid."}
+    @doc false
+    defp record_id_check({:uuid, id}) do
+      with :error <- Ecto.UUID.cast(id) do
+        {:error, :uuid, "The submitted ID is not valid."}
+      end
     end
-  end
 
-  defp record_id_check({_, id}), do: {:ok, id}
+    defp record_id_check({_, id}), do: {:ok, id}
 
-  @spec fetch_record_by_id(String.t() | integer(), module(), module()) ::
-          {:error, :not_found, String.t()} | struct()
-  @doc false
-  def fetch_record_by_id(id, module, repo) do
-    with nil <- repo.get(module, id) do
-      {:error, :not_found, "There is no data for this request."}
+    @spec fetch_record_by_id(String.t() | integer(), module(), module()) ::
+            {:error, :not_found, String.t()} | struct()
+    @doc false
+    def fetch_record_by_id(id, module, repo) do
+      with nil <- repo.get(module, id) do
+        {:error, :not_found, "There is no data for this request."}
+      end
     end
-  end
 
-  @spec fetch_record_by_field(String.t() | atom(), any, module(), module()) ::
-          {:error, :not_found, String.t()} | struct()
-  @doc false
-  def fetch_record_by_field(field, value, module, repo) do
-    with nil <- repo.get_by(module, "#{field}": value) do
-      {:error, :not_found, "There is no data for this request."}
+    @spec fetch_record_by_field(String.t() | atom(), any, module(), module()) ::
+            {:error, :not_found, String.t()} | struct()
+    @doc false
+    def fetch_record_by_field(field, value, module, repo) do
+      with nil <- repo.get_by(module, "#{field}": value) do
+        {:error, :not_found, "There is no data for this request."}
+      end
     end
-  end
 
-  @spec get_initial_macro_data(keyword) :: %{
-          id_type: atom(),
-          module_selected: module(),
-          repo: module()
-        }
-  @doc false
-  def get_initial_macro_data(interface_module) do
-    %{
-      module_selected: Keyword.get(interface_module, :module),
-      repo: Keyword.get(interface_module, :repo),
-      id_type: Keyword.get(interface_module, :id)
-    }
+    @spec get_initial_macro_data(keyword) :: %{
+            id_type: atom(),
+            module_selected: module(),
+            repo: module()
+          }
+    @doc false
+    def get_initial_macro_data(interface_module) do
+      %{
+        module_selected: Keyword.get(interface_module, :module),
+        repo: Keyword.get(interface_module, :repo),
+        id_type: Keyword.get(interface_module, :id)
+      }
+    end
   end
 end
