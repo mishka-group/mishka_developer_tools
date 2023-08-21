@@ -356,6 +356,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
       assert ValidationDerive.validate({:regex, ~c"1"}, "info@gmail.com", :email)
   end
 
+  test "validate(:not_empty_string, input, field)" do
+    "mishka" = assert ValidationDerive.validate(:not_empty_string, "mishka", :name)
+
+    {:error, :name, :not_empty_string, _msg} =
+      assert ValidationDerive.validate(:not_empty_string, :test, :name)
+
+    {:error, :name, :not_empty_string, _msg1} =
+      assert ValidationDerive.validate(:not_empty_string, "", :name)
+  end
+
   test "validate(:ipv4, input, field)" do
     valid_ip = [
       "192.168.0.1",

@@ -345,6 +345,14 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       {:error, field, :ipv4, "Invalid format in the #{field} field"}
   end
 
+  def validate(:not_empty_string, input, field) do
+    if is_binary(input) and input != "" do
+      input
+    else
+      {:error, field, :not_empty_string, "Invalid format in the #{field} field"}
+    end
+  end
+
   def validate(:ipv4, _input, field) do
     {:error, field, :ipv4, "Invalid format in the #{field} field"}
   end
