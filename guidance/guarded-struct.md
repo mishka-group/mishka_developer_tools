@@ -146,6 +146,67 @@ end
 
 **It should be noted that in the following tables you can see that in order to use some derives, you need to add its dependency on your project.**
 
+
+##### Sanitize
+
+| How to use | Dependencies | Description |
+| ---------- | ------------ | ----------- |
+| `"sanitize(trim)"` | NO | Trim your string |
+| `"sanitize(upcase)"` | NO | Upcase your string |
+| `"sanitize(downcase)"` | NO | Downcase your string |
+| `"sanitize(capitalize)"` | NO | Capitalize your string |
+| `"sanitize(basic_html)"` | `:html_sanitize_ex` | Sanitize your string base on `basic_html` |
+| `"sanitize(html5)"` | `:html_sanitize_ex` | Sanitize your string base on `html5` |
+| `"sanitize(markdown_html)"` | `:html_sanitize_ex` | Sanitize your string base on `markdown_html` |
+| `"sanitize(strip_tags)"` | `:html_sanitize_ex` | Sanitize your string base on `strip_tags` |
+| `"sanitize(tag)"` | `:html_sanitize_ex` | Sanitize your string base on `html_sanitize_ex` selection |
+
+##### Validate
+
+| How to use | Dependencies | Description |
+| ---------- | ------------ | ----------- |
+| `"validate(string)"` | NO | Validate if the data is string|
+| `"validate(integer)"` | NO | Validate if the data is integer|
+| `"validate(list)"` | NO | Validate if the data is list|
+| `"validate(atom)"` | NO | Validate if the data is atom|
+| `"validate(bitstring)"` | NO | Validate if the data is bitstring|
+| `"validate(boolean)"` | NO | Validate if the data is boolean|
+| `"validate(exception)"` | NO | Validate if the data is exception|
+| `"validate(float)"` | NO | Validate if the data is float|
+| `"validate(function)"` | NO | Validate if the data is function|
+| `"validate(map)"` | NO | Validate if the data is map|
+| `"validate(nil_value)"` | NO | Validate if the data is nil value|
+| `"validate(not_nil_value)"` | NO | Validate if the data is not nil value|
+| `"validate(number)"` | NO | Validate if the data is number|
+| `"validate(pid)"` | NO | Validate if the data is Elixir pid|
+| `"validate(port)"` | NO | Validate if the data is Elixir port|
+| `"validate(reference)"` | NO | Validate if the data is Elixir reference|
+| `"validate(struct)"` | NO | Validate if the data is struct|
+| `"validate(tuple)"` | NO | Validate if the data is tuple|
+| `"validate(not_empty)"` | NO | Validate if the data is not empty - binary, map, list|
+| `"validate(max_len=10)"` | NO | Validate if the data is more than 10 - Range, integer, binary|
+| `"validate(min_len=10)"` | NO | Validate if the data is less than 10 - Range, integer, binary|
+| `"validate(url)"` | NO | Validate if the data is url|
+| `"validate(geo_url)"` | `ex_url` | Validate if the data is geo url|
+| `"validate(tell)"` | `ex_url` | Validate if the data is tell|
+| `"validate(tell=98)"` | `ex_url` | Validate if the data is tell with country code|
+| `"validate(email)"` | `email_checker` | Validate if the data is email|
+| `"validate(location)"` | `ex_url` | Validate if the data is location|
+| `"validate(string_boolean)"` | NO | Validate if the data is string boolean|
+| `"validate(datetime)"` | NO | Validate if the data is datetime|
+| `"validate(range)"` | NO | Validate if the data is datetime|
+| `"validate(date)"` | NO | Validate if the data is datetime|
+| `"validate(regex='^[a-zA-Z]+@mishka\.group$')"` | NO | Validate if the data is match with regex|
+| `"validate(ipv4)"` | NO | Validate if the data is ipv4|
+| `"validate(not_empty_string)"` | NO | Validate if the data is not empty string|
+| `"validate(uuid)"` | NO | Validate if the data is uuid|
+| `"validate(enum=String[admin::user::banned])"` | NO | Validate if the data is one of the enum value, which is String|
+| `"validate(enum=Atom[admin::user::banned])"` | NO | Validate if the data is one of the enum value, which is Atom|
+| `"validate(enum=Integer[1::2::3])"` | NO | Validate if the data is one of the enum value, which is Integer|
+| `"validate(enum=Float[1.5::2.0::4.5])"` | NO | Validate if the data is one of the enum value, which is Float|
+| `"validate(enum=Map[%{status: 1}::%{status: 2}::%{status: 3}])"` | NO | Validate if the data is one of the enum value, which is Map|
+| `"validate(enum=Tuple[{:admin, 1}::{:user, 2}::{:banned, 3}])"` | NO | Validate if the data is one of the enum value, which is Tuple|
+
 ---
 
 6. #### Extending `derive` section
