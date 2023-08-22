@@ -27,6 +27,11 @@
 - [x] Add `derive` for sanitizing and validating `Range`
 - [x] Add `derive` for sanitizing and validating Validate `URL`
 - [x] Add `derive` for sanitizing and validating Validate `IPV4`
+- [x] Add `derive` for sanitizing and validating Validate `Enum`
+- [x] Add `derive` for sanitizing and validating Validate `Tag`
+- [x] Add `derive` for sanitizing and validating Validate `UUID`
+- [x] Add `derive` for sanitizing and validating Validate `Not empty string`
+- [x] Add `derive` for sanitizing and validating Validate `Equal`
 - [x] Add a `:halt` error to filter validations output from showing after `halt` error
 - [x] Update all dependencies to last version
 - [x] Fix tests for Elixir `1.15`
