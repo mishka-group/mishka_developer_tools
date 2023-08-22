@@ -53,7 +53,7 @@ defmodule MishkaDeveloperTools.MixProject do
   defp elixirc_paths(_), do: ["lib"]
 
   defp description() do
-    "Mishka developer tools provides some macros and modules to make creating your elixir site as easy as possible"
+    "Mishka developer tools provides some macros and modules to make creating your elixir application as easy as possible"
   end
 
   defp package() do
