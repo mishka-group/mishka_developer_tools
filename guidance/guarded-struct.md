@@ -147,7 +147,7 @@ end
 **It should be noted that in the following tables you can see that in order to use some derives, you need to add its dependency on your project.**
 
 
-##### Sanitize
+#### Sanitize
 
 | How to use | Dependencies | Description |
 | ---------- | ------------ | ----------- |
@@ -161,7 +161,7 @@ end
 | `"sanitize(strip_tags)"` | `:html_sanitize_ex` | Sanitize your string base on `strip_tags` |
 | `"sanitize(tag)"` | `:html_sanitize_ex` | Sanitize your string base on `html_sanitize_ex` selection |
 
-##### Validate
+#### Validate
 
 | How to use | Dependencies | Description |
 | ---------- | ------------ | ----------- |
@@ -207,6 +207,18 @@ end
 | `"validate(enum=Map[%{status: 1}::%{status: 2}::%{status: 3}])"` | NO | Validate if the data is one of the enum value, which is Map|
 | `"validate(enum=Tuple[{:admin, 1}::{:user, 2}::{:banned, 3}])"` | NO | Validate if the data is one of the enum value, which is Tuple|
 
+```elixir
+defmodule MyModule do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:id, integer(), derive: "sanitize(trim) validate(integer, max_len=20, min_len=5)")
+    field(:title, String.t(), derive: "sanitize(trim, upcase) validate(not_empty_string)")
+    field(:name, String.t(), derive: "sanitize(trim, capitalize) validate(string, not_empty, max_len=20)")
+  end
+end
+```
+
 ---
 
 6. #### Extending `derive` section
@@ -214,6 +226,58 @@ end
     ##### Options
     * `validate_derive` - It can be just one module or a list of modules
     * `sanitize_derive` - It can be just one module or a list of modules
+
+```elixir
+defmodule TestValidate do
+  def validate(:testv1, input, field) do
+    if is_binary(input),
+      do: input,
+      else: {:error, field, :testv1, "The #{field} field must not be empty"}
+  end
+end
+
+defmodule TestValidate2 do
+  def validate(:testv2, input, field) do
+    if is_binary(input),
+      do: input,
+      else: {:error, field, :testv1, "The #{field} field must not be empty"}
+  end
+end
+
+defmodule TestSanitize do
+  def sanitize(:capitalize_v1, input) do
+    if is_binary(input), do: String.capitalize(input), else: input
+  end
+end
+
+defmodule TestSanitize2 do
+  def sanitize(:capitalize_v2, input) do
+    if is_binary(input), do: String.capitalize(input), else: input
+  end
+end
+
+defmodule MyModule do
+  use GuardedStruct
+
+  guardedstruct validate_derive: TestValidate, sanitize_derive: TestSanitize do
+    field(:id, integer(), derive: "sanitize(trim) validate(not_exist)")
+    field(:title, String.t(), derive: "sanitize(trim) validate(string)")
+    field(:name, String.t(), derive: "sanitize(capitalize_v2) validate(string)")
+  end
+end
+
+# OR you can extend with list of modules
+
+defmodule MyModule do
+  use GuardedStruct
+
+  guardedstruct validate_derive: [TestValidate, TestValidate2], sanitize_derive: [TestSanitize, TestSanitize2] do
+    field(:id, integer(), derive: "validate(ineteger)")
+    field(:title, String.t(), derive: "sanitize(trim) validate(string)")
+    field(:name, String.t(), derive: "sanitize(capitalize_v2) validate(string)")
+  end
+end
+```
 ---
 
 7. #### Struct definition with `validator` and `derive` simultaneously
