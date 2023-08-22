@@ -181,6 +181,32 @@ end
     * `validator` - if set as tuple like this {ModuleName, :function_name} for each field,
     in fact you have a `builder` function that check the validation.
 
+```elixir
+# First, it looks at whether a validator has been set for each field,
+# otherwise it looks inside the module.
+defmodule MyModule do
+  alias MyModule.AnotherModule
+  use GuardedStruct
+
+  guardedstruct do
+    field(:name, String.t(), validator: {AnotherModule, :validator})
+    field(:title, String.t())
+  end
+
+  def validator(:title, value) do
+    {:ok, :title, value}
+  end
+
+  # You can not use it, but it is mentioned here for test clarity
+  def validator(name, value) do
+    {:ok, name, value}
+  end
+end
+```
+
+- Output without error: `{:ok, :field_name, value}`
+- Output with error: `{:error, :field_name, ERROR MESSAGE}`
+
 ---
 
 4. #### Define the struct by calling the `main_validator` for full access on the output
@@ -188,6 +214,28 @@ end
     ##### Options
     * `main_validator` - if set as tuple like this {ModuleName, :function_name},
     for guardedstruct, in fact you have a global validation.
+
+```elixir
+# First, it looks at whether a main_validator has been set for each field,
+# otherwise it looks inside the module.
+defmodule MyModule do
+  alias MyModule.AnotherModule
+  use GuardedStruct
+
+  guardedstruct main_validator: {AnotherModule, :main_validator} do
+  field(:name, String.t())
+  field(:title, String.t())
+  end
+
+  # if `guardedstruct` has no `main_validator` which is configed
+  def main_validator(value) do
+    {:ok, value}
+  end
+end
+```
+
+- Output without error: `{:ok, value}`
+- Output with error: `{:error, :generalـreason, errors_list}`
 
 ---
 
