@@ -489,3 +489,56 @@ defmodule TestNestedStruct do
   end
 end
 ```
+
+9. #### Error and data output sample
+
+```elixir
+# Error
+{:error, :bad_parameters,
+ [
+   %{
+     field: :profile,
+     errors: {:bad_parameters, [%{message: "Invalid nickname", field: :nickname}]}
+   },
+   %{
+     field: :auth,
+     errors:
+       {:bad_parameters,
+        [
+          %{message: _msg, field: :last_activity, action: :datetime},
+          %{
+            field: :role,
+            errors:
+              {:bad_parameters,
+               [
+                 %{message: _msg1, field: :action, action: :string_boolean}
+               ]}
+          }
+        ]}
+   }
+ ]}
+
+# Data
+
+{:ok,
+ %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct{
+   username: "mishka",
+   profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Profile{
+     nickname: "mishka",
+     site: "https://elixir-lang.org"
+   },
+   auth: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Auth{
+     last_activity: "2023-08-20 16:54:07.841434Z",
+     role: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Auth.Role{
+       action: "true",
+       name: :user,
+       status: %{status: 2}
+     },
+     identity_provider: "google",
+     server: "users@mishka.group"
+   },
+   age: 18,
+   family: "Group",
+   name: "Mishka"
+ }}
+```
