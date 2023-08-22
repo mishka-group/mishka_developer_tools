@@ -121,6 +121,57 @@ end
     * `opaque` - if set to true, creates an opaque type for the struct.
     * `module` - if set, creates the struct in a submodule named `module`.
 
+```elixir
+defmodule MyModule do
+  use GuardedStruct
+
+  guardedstruct enforce: true do
+    field(:enforced_by_default, term())
+    field(:not_enforced, term(), enforce: false)
+    field(:with_default, integer(), default: 1)
+    field(:with_false_default, boolean(), default: false)
+    field(:with_nil_default, term(), default: nil)
+  end
+end
+
+# OR opaque
+
+defmodule MyModule do
+  use GuardedStruct
+
+  guardedstruct opaque: true do
+    field(:enforced_by_default, term())
+    field(:not_enforced, term(), enforce: false)
+    field(:with_default, integer(), default: 1)
+    field(:with_false_default, boolean(), default: false)
+    field(:with_nil_default, term(), default: nil)
+  end
+end
+
+# OR opaque
+
+defmodule MyModule do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:enforced_by_default, term())
+    field(:not_enforced, term(), enforce: true)
+    field(:with_default, integer(), default: 1)
+    field(:with_false_default, boolean(), default: false)
+    field(:with_nil_default, term(), default: nil)
+  end
+end
+
+# OR create sub module
+
+defmodule TestModule do
+  use GuardedStruct
+
+  guardedstruct module: Struct do
+    field(:field, term())
+  end
+end
+```
 
 ---
 
@@ -282,6 +333,47 @@ end
 
 7. #### Struct definition with `validator` and `derive` simultaneously
 
+```elixir
+# In this code, name field has not custom validator module and function
+# Then it see the caller module for it
+defmodule MyModule do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:name, String.t(),
+      enforce: true,
+      derive: "sanitize(trim, upcase) validate(not_empty)"
+    )
+
+    field(:title, String.t(), derive: "sanitize(trim, capitalize) validate(not_empty)")
+  end
+
+  def validator(:name, value) do
+    if is_binary(value), do: {:ok, :name, "Mishka   "}, else: {:error, :name, "No, never"}
+  end
+
+  def validator(name, value) do
+    {:ok, name, value}
+  end
+end
+
+# OR with custom validator
+
+defmodule MyModule do
+  alias MyModule.AnotherModule
+  use GuardedStruct
+
+  guardedstruct do
+    field(:name, String.t(), enforce: true, derive: "sanitize(trim, capitalize) validate(not_empty)" validator: {AnotherModule, :validator})
+    field(:title, String.t(), derive: "sanitize(trim, capitalize) validate(not_empty)")
+  end
+
+  # You can not use it, but it is mentioned here for test clarity
+  def validator(name, value) do
+    {:ok, name, value}
+  end
+end
+```
 ---
 
 8. #### Define a nested and complex struct
