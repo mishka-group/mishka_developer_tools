@@ -4,8 +4,9 @@ We tried to deliver a series of our client's [**CMS**](https://github.com/mishka
 
 ---
 
-- ### GuardedStruct
-- ### Basic CRUD
+- #### [GuardedStruct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md)
+
+- #### [Basic CRUD](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/crud.md)
 
 ---
 

@@ -91,3 +91,136 @@ Implement the program's logic, regardless of what it might be.
 > Note that each nested struct can be used on its own and possesses all of the capabilities that have been discussed thus far. For instance, if you have module `A` and you utilized the `sub_field` that is named `auth` in it, you may now use it separately from the `A.Auth` Use. Use.
 
 ---
+
+### Examples
+
+1. #### Defining a struct layer without additional options
+
+```elixir
+defmodule MyStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field :field_one, String.t()
+    field :field_two, integer(), enforce: true
+    field :field_three, boolean(), enforce: true
+    field :field_four, atom(), default: :hey
+  end
+end
+```
+
+---
+
+2. #### Define a struct with settings related to essential keys or `opaque` type
+
+    ##### Options
+
+    * `enforce` - if set to true, sets `enforce: true` to all fields by default.
+    This can be overridden by setting `enforce: false` or a default value on
+    individual fields.
+    * `opaque` - if set to true, creates an opaque type for the struct.
+    * `module` - if set, creates the struct in a submodule named `module`.
+
+
+---
+
+3. #### Defining the struct by calling the validation module or calling from the module that contains the struct
+
+    ##### Options
+    * `validator` - if set as tuple like this {ModuleName, :function_name} for each field,
+    in fact you have a `builder` function that check the validation.
+
+---
+
+4. #### Define the struct by calling the `main_validator` for full access on the output
+
+    ##### Options
+    * `main_validator` - if set as tuple like this {ModuleName, :function_name},
+    for guardedstruct, in fact you have a global validation.
+
+---
+
+5. #### Define struct with `derive`
+
+> derive is divided into two parts: `validate` and `sanitize`, which is priority with `sanitize`
+
+**It should be noted that in the following tables you can see that in order to use some derives, you need to add its dependency on your project.**
+
+---
+
+6. #### Extending `derive` section
+
+    ##### Options
+    * `validate_derive` - It can be just one module or a list of modules
+    * `sanitize_derive` - It can be just one module or a list of modules
+---
+
+7. #### Struct definition with `validator` and `derive` simultaneously
+
+---
+
+8. #### Define a nested and complex struct
+
+```elixir
+defmodule TestNestedStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:name, String.t(),
+      derive:
+        "sanitize(strip_tags, trim, capitalize) validate(string, not_empty, max_len=20, min_len=3)"
+    )
+
+    field(:family, String.t(),
+      derive:
+        "sanitize(basic_html, trim, capitalize) validate(string, not_empty, max_len=20, min_len=3)"
+    )
+
+    field(:age, integer(), enforce: true, derive: "validate(integer, max_len=110, min_len=18)")
+
+    sub_field(:auth, struct(), enforce: true) do
+      field(:server, String.t(), derive: "validate(regex='^[a-zA-Z]+@mishka\.group$')")
+
+      field(:identity_provider, String.t(),
+        derive: "sanitize(strip_tags, trim, lowercase) validate(not_empty)"
+      )
+
+      sub_field(:role, struct(), enforce: true) do
+        field(:name, String.t(),
+          derive:
+            "sanitize(strip_tags, trim, lowercase) validate(enum=Atom[admin::user::banned])"
+        )
+
+        field(:action, String.t(), derive: "validate(string_boolean)")
+
+        field(:status, String.t(),
+          derive: "validate(enum=Map[%{status: 1}::%{status: 2}::%{status: 3}])"
+        )
+      end
+
+      field(:last_activity, String.t(), derive: "sanitize(strip_tags, trim) validate(datetime)")
+    end
+
+    sub_field(:profile, struct()) do
+      field(:site, String.t(), derive: "validate(url)")
+
+      field(:nickname, String.t(), validator: {TestNestedStruct, :validator})
+    end
+
+    field(:username, String.t(),
+      enforce: true,
+      derive: "sanitize(tag=strip_tags) validate(not_empty, max_len=20, min_len=3)"
+    )
+  end
+
+  def validator(:nickname, value) do
+    if is_binary(value),
+      do: {:ok, :nickname, value},
+      else: {:error, :nickname, "Invalid nickname"}
+  end
+
+  def validator(field, value) do
+    {:ok, field, value}
+  end
+end
+```
