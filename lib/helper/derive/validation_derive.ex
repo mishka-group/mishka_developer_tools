@@ -439,6 +439,25 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     |> vlidate_equal(input, field)
   end
 
+  def validate(%{either: list}, input, field) do
+    Enum.any?(list, fn item ->
+      output = validate(item, input, field)
+      if is_tuple(output) and elem(output, 0) == :error, do: false, else: true
+    end)
+    |> case do
+      true ->
+        input
+
+      _ ->
+        {:error, field, :either,
+         "None of the conditions for checking the #{field} field is correct"}
+    end
+  rescue
+    _ ->
+      {:error, field, :either,
+       "None of the conditions for checking the #{field} field is correct"}
+  end
+
   def validate(action, input, field) do
     case Application.get_env(:guarded_struct, :validate_derive) do
       nil ->

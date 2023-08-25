@@ -34,7 +34,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   defp convert_value(value), do: value
 
-  defp convert_parameters(key, parameters) do
+  defp convert_parameters(derive_key, parameters) do
     converted =
       parameters
       |> Enum.map(fn
@@ -44,8 +44,13 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
         {:=, _, [{key, _, nil}, {value, _, nil}]} when is_atom(value) ->
           {key, Atom.to_string(value)}
 
-        {:=, _, [{key, _, nil}, value]} when is_integer(value) or is_list(value) ->
+        {:=, _, [{key, _, nil}, value]} when is_integer(value) ->
           {key, value}
+
+        {:=, _, [{key, _, nil}, value]} when is_list(value) ->
+          if Enum.any?(value, &is_tuple(&1)),
+            do: convert_parameters(key, value),
+            else: {key, value}
 
         {:=, _, [{key, _, nil}, {_, _, [{:__aliases__, _, [type]} | _t]} = value]}
         when is_tuple(value) and is_atom(type) ->
@@ -56,7 +61,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
       end)
       |> Enum.reject(&is_nil(&1))
 
-    if converted == [], do: nil, else: Map.put(%{}, key, converted)
+    if converted == [], do: nil, else: Map.put(%{}, derive_key, converted)
   end
 
   defp merge_parser_list([]), do: nil

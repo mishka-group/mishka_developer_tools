@@ -714,4 +714,35 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
                nikname: "test"
              })
   end
+
+  defmodule TestEitherValidationDerive do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:test, String.t(), derive: "validate(either=[integer, max_len=4])")
+      field(:test1, String.t(), derive: "validate(either=[string, enum=Integer[1::2::3]])")
+    end
+  end
+
+  test "validate(:either, input, field)" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestEitherValidationDerive{
+       test: 12
+     }} = assert TestEitherValidationDerive.builder(%{test: 12})
+
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "None of the conditions for checking the test field is correct",
+         field: :test,
+         action: :either
+       }
+     ]} = assert TestEitherValidationDerive.builder(%{test: "mishka"})
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestEitherValidationDerive{
+       test1: 3,
+       test: nil
+     }} = assert TestEitherValidationDerive.builder(%{test1: 3})
+  end
 end
