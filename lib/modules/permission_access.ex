@@ -14,7 +14,7 @@ defmodule PermissionAccess do
     )
   end
 
-  @spec is_permitted?([{:action, action()} | {:permission, binary}, ...]) :: boolean
+  @spec is_permitted?([{:action, action()} | {:permission, binary}]) :: boolean
   def is_permitted?(action: action, permission: permission) do
     permission_chunks = String.split(permission, @separator)
 

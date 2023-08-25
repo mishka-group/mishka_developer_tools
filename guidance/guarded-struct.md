@@ -305,6 +305,7 @@ end
 | `"validate(enum=Float[1.5::2.0::4.5])"` | NO | Validate if the data is one of the enum value, which is Float|
 | `"validate(enum=Map[%{status: 1}::%{status: 2}::%{status: 3}])"` | NO | Validate if the data is one of the enum value, which is Map|
 | `"validate(enum=Tuple[{:admin, 1}::{:user, 2}::{:banned, 3}])"` | NO | Validate if the data is one of the enum value, which is Tuple|
+| `"validate(equal=some_thing)"` | NO | Validate if the data is equal with validation value, which is any type|
 
 ```elixir
 defmodule MyModule do

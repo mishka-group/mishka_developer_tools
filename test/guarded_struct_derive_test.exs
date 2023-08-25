@@ -566,6 +566,32 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     true = assert !invalidated_ips
   end
 
+  test "validate(:equal, input, field)" do
+    "name" = assert ValidationDerive.validate({:equal, "String::name"}, "name", :test)
+    :name = assert ValidationDerive.validate({:equal, "Atom::name"}, :name, :test)
+    1 = assert ValidationDerive.validate({:equal, "Integer::1"}, 1, :test)
+    1.5 = assert ValidationDerive.validate({:equal, "Float::1.5"}, 1.5, :test)
+
+    {:error, :test, :equal, _msg1} =
+      assert ValidationDerive.validate({:equal, "Float::1.5"}, 1.6, :test)
+
+    {:error, :test, :equal, _msg2} =
+      assert ValidationDerive.validate({:equal, "Atom::name"}, :family, :test)
+
+    {:error, :test, :equal, _msg3} =
+      assert ValidationDerive.validate({:equal, "Float::1.5"}, "test", :test)
+
+    %{name: "mishka"} =
+      assert ValidationDerive.validate(
+               {:equal, "Map::%{name: \"mishka\"}"},
+               %{name: "mishka"},
+               :test
+             )
+
+    {"mishka"} =
+      assert ValidationDerive.validate({:equal, "Tuple::{\"mishka\"}"}, {"mishka"}, :test)
+  end
+
   test "validate(:not_exist, input, field)" do
     {:error, :title, :type, "Unexpected type error in title field"} =
       assert ValidationDerive.validate(:not_exist, "Mishka", :title)

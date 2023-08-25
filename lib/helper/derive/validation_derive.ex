@@ -406,12 +406,37 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     {:error, field, :enum, "Invalid format in the #{field} field"}
   end
 
-  def validate({:equal, value}, input, field) do
-    if value === input do
-      input
-    else
-      {:error, field, :equal, "Invalid value in the #{field} field"}
-    end
+  def validate({:equal, "String::" <> value}, input, field) do
+    vlidate_equal(value, input, field)
+  end
+
+  def validate({:equal, "Integer::" <> value}, input, field) do
+    String.to_integer(value)
+    |> vlidate_equal(input, field)
+  end
+
+  def validate({:equal, "Float::" <> value}, input, field) do
+    String.to_float(value)
+    |> vlidate_equal(input, field)
+  end
+
+  def validate({:equal, "Atom::" <> value}, input, field) do
+    String.to_atom(value)
+    |> vlidate_equal(input, field)
+  end
+
+  def validate({:equal, "Map::" <> value}, input, field) do
+    {converted, []} = Code.eval_string(value)
+
+    converted
+    |> vlidate_equal(input, field)
+  end
+
+  def validate({:equal, "Tuple::" <> value}, input, field) do
+    {converted, []} = Code.eval_string(value)
+
+    converted
+    |> vlidate_equal(input, field)
   end
 
   def validate(action, input, field) do
@@ -503,5 +528,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       {converted, []} = Code.eval_string(item)
       converted
     end)
+  end
+
+  defp vlidate_equal(validator, input, field) do
+    if validator === input,
+      do: input,
+      else: {:error, field, :equal, "Invalid value in the #{field} field"}
   end
 end
