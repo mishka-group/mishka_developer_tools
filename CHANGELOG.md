@@ -1,3 +1,8 @@
+# Changelog for MishkaDeveloperTools 0.1.1
+
+- [x] Add `derive` for sanitizing and validating `Either`
+- [x] Add `derive` for sanitizing and validating `equal`
+
 # Changelog for MishkaDeveloperTools 0.1.0
 
 - [x] Add Guardedstruct macro

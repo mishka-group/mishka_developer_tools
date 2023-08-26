@@ -648,12 +648,7 @@ defmodule GuardedStruct do
     ast = register_struct(block, opts)
     type = Macro.escape(quote do: struct())
 
-    converted_name =
-      name
-      |> Atom.to_string()
-      |> Macro.camelize()
-      |> String.to_atom()
-      |> then(&Module.concat(__CALLER__.module, &1))
+    converted_name = create_module_name(name, __CALLER__)
 
     quote do
       GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__)
@@ -736,12 +731,20 @@ defmodule GuardedStruct do
         unquote(gs_enforce_keys)
       end
 
+      def enforce_keys(:all) do
+        GuardedStruct.show_nested_keys(unquote(module), :enforce_keys)
+      end
+
       def enforce_keys(key) do
         Enum.member?(unquote(gs_enforce_keys), key)
       end
 
       def keys() do
         unquote(gs_fields)
+      end
+
+      def keys(:all) do
+        GuardedStruct.show_nested_keys(unquote(module))
       end
 
       def keys(key) do
@@ -759,6 +762,27 @@ defmodule GuardedStruct do
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
     |> Derive.derive(gs_derive)
+  end
+
+  def show_nested_keys(module, type \\ :keys) do
+    apply(module, type, [])
+    |> Enum.map(fn item ->
+      sub_module = create_module_name(item, module, :direct)
+
+      if Code.ensure_loaded?(sub_module) do
+        Map.new([{item, show_nested_keys(sub_module)}])
+      else
+        item
+      end
+    end)
+  end
+
+  def create_module_name(name, module_name, type \\ :macro) do
+    name
+    |> Atom.to_string()
+    |> Macro.camelize()
+    |> String.to_atom()
+    |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
   end
 
   @doc false
