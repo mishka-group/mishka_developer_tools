@@ -35,6 +35,7 @@ defmodule GuardedStruct do
 
   """
   alias MishkaDeveloperTools.Helper.{Derive, Derive.Parser}
+  defexception [:term]
 
   @temporary_revaluation [
     :gs_fields,
@@ -44,6 +45,11 @@ defmodule GuardedStruct do
     :gs_main_validator,
     :gs_derive
   ]
+
+  @impl true
+  def message(exception) do
+    "There is at least one validation problem with your data: #{inspect(exception.term)}"
+  end
 
   defmacro __using__(_) do
     quote do
@@ -716,15 +722,15 @@ defmodule GuardedStruct do
 
     quote do
       def builder(attrs) do
-        GuardedStruct.builder(
-          attrs,
-          unquote(module),
-          unquote(gs_main_validator),
-          unquote(gs_validator),
-          unquote(gs_fields),
-          unquote(gs_enforce_keys),
-          unquote(gs_derive)
-        )
+        GuardedStruct.builder(%{
+          attrs: attrs,
+          module: unquote(module),
+          gs_main_validator: unquote(gs_main_validator),
+          gs_validator: unquote(gs_validator),
+          gs_fields: unquote(gs_fields),
+          gs_enforce_keys: unquote(gs_enforce_keys),
+          gs_derive: unquote(gs_derive)
+        })
       end
 
       def enforce_keys() do
@@ -754,15 +760,26 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def builder(attrs, module, gs_main_validator, gs_validator, gs_fields, enforce_keys, gs_derive) do
-    main_validator = Enum.find(gs_main_validator, &is_tuple(&1))
+  def builder(actions) do
+    %{attrs: attrs, gs_validator: gs_validator, gs_fields: gs_fields, module: module} = actions
+    main_validator = Enum.find(actions.gs_main_validator, &is_tuple(&1))
 
     Parser.convert_to_atom_map(attrs)
-    |> GuardedStruct.required_fields(enforce_keys)
+    |> GuardedStruct.required_fields(actions.gs_enforce_keys)
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
-    |> GuardedStruct.main_validating(main_validator, gs_main_validator, module)
-    |> Derive.derive(gs_derive)
+    |> GuardedStruct.main_validating(main_validator, actions.gs_main_validator, module)
+    |> Derive.derive(actions.gs_derive)
+    |> exceptions_handler(module)
   end
+
+  def exceptions_handler(ouput, module, exception \\ false)
+
+  def exceptions_handler({:ok, _} = successful_output, _, _), do: successful_output
+
+  def exceptions_handler({:error, _, _} = error_output, _module, false), do: error_output
+
+  def exceptions_handler({:error, _, error_list}, _module, true),
+    do: raise(%GuardedStruct{term: error_list})
 
   def show_nested_keys(module, type \\ :keys) do
     apply(module, type, [])
