@@ -566,19 +566,41 @@ defmodule GuardedStruct do
   """
   defmacro guardedstruct(opts \\ [], do: block) do
     ast = register_struct(block, opts)
-
+    is_error = !is_nil(Keyword.get(opts, :error))
     # It helps you create module inside module to define types
     case opts[:module] do
       nil ->
         quote do
           # Create a lexical scope.
           (fn -> unquote(ast) end).()
+
+          if unquote(is_error) do
+            defmodule Error do
+              defexception [:term]
+
+              @impl true
+              def message(exception) do
+                "There is at least one validation problem with your data: #{inspect(exception.term)}"
+              end
+            end
+          end
         end
 
       module ->
         quote do
           defmodule unquote(module) do
             unquote(ast)
+
+            if unquote(is_error) do
+              defmodule Error do
+                defexception [:term]
+
+                @impl true
+                def message(exception) do
+                  "There is at least one validation problem with your data: #{inspect(exception.term)}"
+                end
+              end
+            end
           end
         end
     end
@@ -653,6 +675,7 @@ defmodule GuardedStruct do
   defmacro sub_field(name, _type, opts \\ [], do: block) do
     ast = register_struct(block, opts)
     type = Macro.escape(quote do: struct())
+    is_error = !is_nil(Keyword.get(opts, :error))
 
     converted_name = create_module_name(name, __CALLER__)
 
@@ -661,6 +684,17 @@ defmodule GuardedStruct do
 
       defmodule unquote(converted_name) do
         unquote(ast)
+
+        if unquote(is_error) do
+          defmodule Error do
+            defexception [:term]
+
+            @impl true
+            def message(exception) do
+              "There is at least one validation problem with your data: #{inspect(exception.term)}"
+            end
+          end
+        end
       end
     end
   end

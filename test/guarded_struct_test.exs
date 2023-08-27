@@ -693,6 +693,30 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       assert TestCallNestedKeys.enforce_keys(:all)
   end
 
+  test "call nested struct with error true" do
+    defmodule TestCallNestedStructWithError do
+      use GuardedStruct
+
+      guardedstruct error: true do
+        field(:name, String.t(), derive: "sanitize(trim, upcase)")
+
+        sub_field(:auth, struct(), enforce: true, error: true) do
+          field(:action, String.t(), derive: "validate(not_empty)")
+
+          sub_field(:path, struct(), error: true) do
+            field(:name, String.t())
+          end
+        end
+      end
+    end
+
+    [%{auth: [%{path: [:mobile, :name]}, :action, :role]}, :nickname, :title, :name] =
+      assert TestCallNestedKeys.keys(:all)
+
+    [%{auth: [%{path: [:mobile, :name]}, :action, :role]}, :name] =
+      assert TestCallNestedKeys.enforce_keys(:all)
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do
