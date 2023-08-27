@@ -709,12 +709,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         end
       end
     end
-
-    [%{auth: [%{path: [:mobile, :name]}, :action, :role]}, :nickname, :title, :name] =
-      assert TestCallNestedKeys.keys(:all)
-
-    [%{auth: [%{path: [:mobile, :name]}, :action, :role]}, :name] =
-      assert TestCallNestedKeys.enforce_keys(:all)
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############

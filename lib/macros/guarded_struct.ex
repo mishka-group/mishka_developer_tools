@@ -574,16 +574,7 @@ defmodule GuardedStruct do
           # Create a lexical scope.
           (fn -> unquote(ast) end).()
 
-          if unquote(is_error) do
-            defmodule Error do
-              defexception [:term]
-
-              @impl true
-              def message(exception) do
-                "There is at least one validation problem with your data: #{inspect(exception.term)}"
-              end
-            end
-          end
+          if unquote(is_error), do: GuardedStruct.create_error_module()
         end
 
       module ->
@@ -591,18 +582,22 @@ defmodule GuardedStruct do
           defmodule unquote(module) do
             unquote(ast)
 
-            if unquote(is_error) do
-              defmodule Error do
-                defexception [:term]
-
-                @impl true
-                def message(exception) do
-                  "There is at least one validation problem with your data: #{inspect(exception.term)}"
-                end
-              end
-            end
+            if unquote(is_error), do: GuardedStruct.create_error_module()
           end
         end
+    end
+  end
+
+  defmacro create_error_module() do
+    quote do
+      defmodule Error do
+        defexception [:term]
+
+        @impl true
+        def message(exception) do
+          "There is at least one validation problem with your data: #{inspect(exception.term)}"
+        end
+      end
     end
   end
 
@@ -685,16 +680,7 @@ defmodule GuardedStruct do
       defmodule unquote(converted_name) do
         unquote(ast)
 
-        if unquote(is_error) do
-          defmodule Error do
-            defexception [:term]
-
-            @impl true
-            def message(exception) do
-              "There is at least one validation problem with your data: #{inspect(exception.term)}"
-            end
-          end
-        end
+        if unquote(is_error), do: GuardedStruct.create_error_module()
       end
     end
   end
