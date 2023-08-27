@@ -591,11 +591,15 @@ defmodule GuardedStruct do
   defmacro create_error_module() do
     quote do
       defmodule Error do
-        defexception [:term]
+        defexception [:term, :errors]
 
         @impl true
         def message(exception) do
-          "There is at least one validation problem with your data: #{inspect(exception.term)}"
+          """
+          There is at least one validation problem with your data:
+           Term: #{inspect(exception.term)}
+           Errors: #{inspect(exception.errors)}
+          """
         end
       end
     end
@@ -741,16 +745,19 @@ defmodule GuardedStruct do
     gs_derive = Macro.escape(Module.get_attribute(module, :gs_derive))
 
     quote do
-      def builder(attrs) do
-        GuardedStruct.builder(%{
-          attrs: attrs,
-          module: unquote(module),
-          gs_main_validator: unquote(gs_main_validator),
-          gs_validator: unquote(gs_validator),
-          gs_fields: unquote(gs_fields),
-          gs_enforce_keys: unquote(gs_enforce_keys),
-          gs_derive: unquote(gs_derive)
-        })
+      def builder(attrs, error \\ false) do
+        GuardedStruct.builder(
+          %{
+            attrs: attrs,
+            module: unquote(module),
+            gs_main_validator: unquote(gs_main_validator),
+            gs_validator: unquote(gs_validator),
+            gs_fields: unquote(gs_fields),
+            gs_enforce_keys: unquote(gs_enforce_keys),
+            gs_derive: unquote(gs_derive)
+          },
+          error
+        )
       end
 
       def enforce_keys() do
@@ -780,7 +787,7 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def builder(actions) do
+  def builder(actions, error \\ false) do
     %{attrs: attrs, gs_validator: gs_validator, gs_fields: gs_fields, module: module} = actions
     main_validator = Enum.find(actions.gs_main_validator, &is_tuple(&1))
 
@@ -789,7 +796,7 @@ defmodule GuardedStruct do
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, actions.gs_main_validator, module)
     |> Derive.derive(actions.gs_derive)
-    |> exceptions_handler(module)
+    |> exceptions_handler(module, error)
   end
 
   def exceptions_handler(ouput, module, exception \\ false)
@@ -798,8 +805,10 @@ defmodule GuardedStruct do
 
   def exceptions_handler({:error, _, _} = error_output, _module, false), do: error_output
 
-  def exceptions_handler({:error, _, error_list}, _module, true),
-    do: raise(%GuardedStruct{term: error_list})
+  def exceptions_handler({:error, term, error_list}, module, true) do
+    concated = Module.safe_concat([module, Error])
+    raise(concated, term: term, errors: error_list)
+  end
 
   def show_nested_keys(module, type \\ :keys) do
     apply(module, type, [])

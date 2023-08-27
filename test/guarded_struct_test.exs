@@ -698,9 +698,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       use GuardedStruct
 
       guardedstruct error: true do
-        field(:name, String.t(), derive: "sanitize(trim, upcase)")
+        field(:name, String.t(), derive: "validate(string)")
 
-        sub_field(:auth, struct(), enforce: true, error: true) do
+        sub_field(:auth, struct(), error: true) do
           field(:action, String.t(), derive: "validate(not_empty)")
 
           sub_field(:path, struct(), error: true) do
@@ -708,6 +708,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
           end
         end
       end
+    end
+
+    assert_raise TestCallNestedStructWithError.Error, fn ->
+      TestCallNestedStructWithError.builder(%{name: 1}, true)
     end
   end
 
