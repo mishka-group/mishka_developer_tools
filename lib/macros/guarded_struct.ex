@@ -43,7 +43,8 @@ defmodule GuardedStruct do
     :gs_enforce_keys,
     :gs_validator,
     :gs_main_validator,
-    :gs_derive
+    :gs_derive,
+    :gs_authorized_fields
   ]
 
   @impl true
@@ -620,6 +621,7 @@ defmodule GuardedStruct do
       end)
 
       Module.put_attribute(__MODULE__, :gs_enforce?, unquote(!!opts[:enforce]))
+      Module.put_attribute(__MODULE__, :gs_authorized_fields, unquote(!!opts[:authorized_fields]))
 
       main_validator = unquote(opts[:main_validator])
 
@@ -743,6 +745,7 @@ defmodule GuardedStruct do
     gs_enforce_keys = Module.get_attribute(module, :gs_enforce_keys)
     gs_fields = Macro.escape(Module.get_attribute(module, :gs_fields) |> Enum.map(&elem(&1, 0)))
     gs_derive = Macro.escape(Module.get_attribute(module, :gs_derive))
+    authorized_fields = Macro.escape(Module.get_attribute(module, :gs_authorized_fields))
 
     quote do
       def builder(attrs, error \\ false) do
@@ -754,7 +757,8 @@ defmodule GuardedStruct do
             gs_validator: unquote(gs_validator),
             gs_fields: unquote(gs_fields),
             gs_enforce_keys: unquote(gs_enforce_keys),
-            gs_derive: unquote(gs_derive)
+            gs_derive: unquote(gs_derive),
+            authorized_fields: unquote(authorized_fields)
           },
           error
         )
@@ -792,7 +796,11 @@ defmodule GuardedStruct do
     main_validator = Enum.find(actions.gs_main_validator, &is_tuple(&1))
 
     Parser.convert_to_atom_map(attrs)
-    |> GuardedStruct.required_fields(actions.gs_enforce_keys)
+    |> GuardedStruct.required_fields(
+      actions.gs_enforce_keys,
+      gs_fields,
+      actions.authorized_fields
+    )
     |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
     |> GuardedStruct.main_validating(main_validator, actions.gs_main_validator, module)
     |> Derive.derive(actions.gs_derive)
@@ -832,17 +840,38 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def required_fields(attrs, keys) do
-    missing_keys = Enum.reject(keys, &Map.has_key?(attrs, &1))
-    {Enum.empty?(missing_keys), missing_keys, :halt}
+  def required_fields(attrs, keys, gs_fields, authorized_fields) do
+    with {:authorized_fields, true, _} <-
+           check_authorized_fields(attrs, gs_fields, authorized_fields),
+         missing_keys <- Enum.reject(keys, &Map.has_key?(attrs, &1)),
+         {:missing_keys, true, _missing_keys} <-
+           {:missing_keys, Enum.empty?(missing_keys), missing_keys} do
+      {:ok, :required_fields, missing_keys, :halt}
+    else
+      {:missing_keys, false, missing_keys} ->
+        {:error, :required_fields, missing_keys, :halt}
+
+      {:authorized_fields, false, filtered} ->
+        {:error, :authorized_fields, filtered, :halt}
+    end
+  end
+
+  defp check_authorized_fields(attrs, fields, authorized_fields) do
+    case List.first(authorized_fields) do
+      false ->
+        {:authorized_fields, true, []}
+
+      true ->
+        filtered = Enum.filter(Map.keys(attrs), &(&1 not in fields))
+        {:authorized_fields, length(filtered) == 0, filtered}
+    end
   end
 
   @doc false
-  def field_validating({false, keys, :halt}, _attrs, _gs_validator, _gs_fields, _module) do
-    {:error, :required_fields, keys, :halt}
-  end
+  def field_validating({:error, _, _, :halt} = error, _attrs, _gs_validator, _gs_fields, _module),
+    do: error
 
-  def field_validating({true, _keys, _}, attrs, gs_validator, gs_fields, module) do
+  def field_validating({:ok, :required_fields, _, :halt}, attrs, gs_validator, gs_fields, module) do
     {sub_modules_builders, sub_modules_builders_errors, unsub_fields} =
       required_fields_and_validate_sub_field(attrs, module, gs_fields)
 

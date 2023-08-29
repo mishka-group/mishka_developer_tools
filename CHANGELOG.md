@@ -2,6 +2,7 @@
 
 - [x] Add `derive` for sanitizing and validating `Either`
 - [x] Add `derive` for sanitizing and validating `equal`
+- [x] Add `exception` when macro is configed for `error: true`, only can be called inside `sub_field` and `guardedstruct` macro
 
 # Changelog for MishkaDeveloperTools 0.1.0
 
