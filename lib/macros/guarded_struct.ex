@@ -44,7 +44,8 @@ defmodule GuardedStruct do
     :gs_validator,
     :gs_main_validator,
     :gs_derive,
-    :gs_authorized_fields
+    :gs_authorized_fields,
+    :gs_external
   ]
 
   @impl true
@@ -680,6 +681,14 @@ defmodule GuardedStruct do
 
     converted_name = create_module_name(name, __CALLER__)
 
+    if Keyword.has_key?(opts, :structs) do
+      Module.put_attribute(
+        __CALLER__.module,
+        :gs_external,
+        {name, %{module: converted_name, type: :list}}
+      )
+    end
+
     quote do
       GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__)
 
@@ -722,6 +731,14 @@ defmodule GuardedStruct do
       })
     end
 
+    if Keyword.has_key?(opts, :struct) do
+      Module.put_attribute(mod, :gs_external, {name, %{module: opts[:struct], type: :struct}})
+    end
+
+    if Keyword.has_key?(opts, :structs) do
+      Module.put_attribute(mod, :gs_external, {name, %{module: opts[:struct], type: :list}})
+    end
+
     Module.put_attribute(mod, :gs_fields, {name, opts[:default]})
     Module.put_attribute(mod, :gs_types, {name, type_for(type, nullable?)})
     if enforce?, do: Module.put_attribute(mod, :gs_enforce_keys, name)
@@ -746,9 +763,12 @@ defmodule GuardedStruct do
     gs_fields = Macro.escape(Module.get_attribute(module, :gs_fields) |> Enum.map(&elem(&1, 0)))
     gs_derive = Macro.escape(Module.get_attribute(module, :gs_derive))
     authorized_fields = Macro.escape(Module.get_attribute(module, :gs_authorized_fields))
+    gs_external = Macro.escape(Module.get_attribute(module, :gs_external))
 
     quote do
-      def builder(attrs, error \\ false) do
+      def builder(attrs, error \\ false)
+
+      def builder(attrs, error) when is_map(attrs) do
         GuardedStruct.builder(
           %{
             attrs: attrs,
@@ -758,10 +778,15 @@ defmodule GuardedStruct do
             gs_fields: unquote(gs_fields),
             gs_enforce_keys: unquote(gs_enforce_keys),
             gs_derive: unquote(gs_derive),
-            authorized_fields: unquote(authorized_fields)
+            authorized_fields: unquote(authorized_fields),
+            gs_external: unquote(gs_external)
           },
           error
         )
+      end
+
+      def builder(_attrs, _error) do
+        {:error, :bad_parameters, "Your input must be a map"}
       end
 
       def enforce_keys() do
@@ -801,7 +826,7 @@ defmodule GuardedStruct do
       gs_fields,
       actions.authorized_fields
     )
-    |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module)
+    |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module, actions.gs_external)
     |> GuardedStruct.main_validating(main_validator, actions.gs_main_validator, module)
     |> Derive.derive(actions.gs_derive)
     |> exceptions_handler(module, error)
@@ -833,9 +858,7 @@ defmodule GuardedStruct do
 
   def create_module_name(name, module_name, type \\ :macro) do
     name
-    |> Atom.to_string()
-    |> Macro.camelize()
-    |> String.to_atom()
+    |> atom_to_module()
     |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
   end
 
@@ -868,12 +891,19 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def field_validating({:error, _, _, :halt} = error, _attrs, _gs_validator, _gs_fields, _module),
+  def field_validating({:error, _, _, :halt} = error, _, _, _, _, _),
     do: error
 
-  def field_validating({:ok, :required_fields, _, :halt}, attrs, gs_validator, gs_fields, module) do
+  def field_validating(
+        {:ok, :required_fields, _, :halt},
+        attrs,
+        gs_validator,
+        gs_fields,
+        module,
+        external
+      ) do
     {sub_modules_builders, sub_modules_builders_errors, unsub_fields} =
-      required_fields_and_validate_sub_field(attrs, module, gs_fields)
+      required_fields_and_validate_sub_field(attrs, module, gs_fields, external)
 
     allowed_data = Map.take(attrs, unsub_fields)
 
@@ -983,14 +1013,20 @@ defmodule GuardedStruct do
     end)
   end
 
-  defp required_fields_and_validate_sub_field(attrs, module, gs_fields) do
+  defp required_fields_and_validate_sub_field(attrs, module, gs_fields, external) do
     allowed_fields = Map.take(attrs, gs_fields) |> Map.keys()
-    sub_modules = get_fields_sub_module(module, allowed_fields)
+    sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
     sub_modules_builders =
       sub_modules
-      |> Enum.map(fn %{field: field, module: module} ->
-        {field, module.builder(Map.get(attrs, field))}
+      |> Enum.map(fn
+        %{field: field, module: module, type: :list} ->
+          # TODO: it should pass attrs as a list and check is there any error of each item of list
+          # TODO: if yes it should return error, if not pass the value as a list
+          {field, module.builder(Map.get(attrs, field))}
+
+        %{field: field, module: module, type: :struct} ->
+          {field, module.builder(Map.get(attrs, field))}
       end)
 
     {
@@ -1001,11 +1037,23 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def get_fields_sub_module(module, fields, list \\ false) do
+  def get_fields_sub_module(module, fields, external, list \\ false) do
     Enum.map(fields, fn field ->
-      case Code.ensure_loaded(Module.concat([module, atom_to_module(field)])) do
-        {:module, module} ->
-          if !list, do: %{field: field, module: module}, else: field
+      extra_field = Keyword.get(external, field)
+
+      find_module =
+        if(!is_nil(extra_field),
+          do: [Keyword.get(external, field).module],
+          else: [module, atom_to_module(field)]
+        )
+
+      {!is_nil(extra_field), Code.ensure_loaded(Module.concat(find_module))}
+      |> case do
+        {true, {:module, module}} ->
+          if !list, do: %{field: field, module: module, type: extra_field.type}, else: field
+
+        {false, {:module, module}} ->
+          if !list, do: %{field: field, module: module, type: :struct}, else: field
 
         _ ->
           nil
@@ -1017,11 +1065,7 @@ defmodule GuardedStruct do
   defp atom_to_module(field) do
     field
     |> Atom.to_string()
-    |> String.split("_")
-    |> Enum.map(fn item ->
-      String.capitalize(String.at(item, 0)) <> String.slice(item, 1..-1)
-    end)
-    |> Enum.join()
+    |> Macro.camelize()
     |> String.to_atom()
   end
 

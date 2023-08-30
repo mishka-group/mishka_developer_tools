@@ -739,6 +739,38 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       assert TestAuthorizeKeys.builder(%{name: "Shahryar", auth: %{action: "admin", test: "test"}})
   end
 
+  defmodule TestAuthStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:action, String.t(), derive: "validate(not_empty)")
+
+      sub_field(:path, struct()) do
+        field(:name, String.t(), derive: "validate(not_empty)")
+      end
+    end
+  end
+
+  test "Call and put another struct from another module" do
+    defmodule TestUserAuthStruct do
+      use GuardedStruct
+
+      guardedstruct do
+        field(:name, String.t(), derive: "validate(not_empty)")
+        field(:auth_path, struct(), struct: TestAuthStruct)
+      end
+    end
+
+    TestUserAuthStruct.builder(%{
+      name: "shahryar",
+      auth_path: %{
+        action: "*:admin",
+        path: %{name: "1"}
+      }
+    })
+    |> IO.inspect()
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do
