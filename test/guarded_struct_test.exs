@@ -747,6 +747,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
       sub_field(:path, struct()) do
         field(:name, String.t(), derive: "validate(not_empty)")
+        field(:action, String.t(), derive: "validate(not_empty)")
       end
     end
   end
@@ -757,16 +758,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
       guardedstruct do
         field(:name, String.t(), derive: "validate(not_empty)")
-        field(:auth_path, struct(), struct: TestAuthStruct)
+        field(:auth_path, struct(), structs: TestAuthStruct)
       end
     end
 
     TestUserAuthStruct.builder(%{
-      name: "shahryar",
-      auth_path: %{
-        action: "*:admin",
-        path: %{name: "1"}
-      }
+      name: "1",
+      auth_path: [
+        %{
+          action: "*:admin",
+          path: %{name: "1", action: "1"}
+        },
+        %{
+          action: "*:user",
+          path: %{name: "1"}
+        }
+      ]
     })
     |> IO.inspect()
   end

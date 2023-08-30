@@ -731,12 +731,18 @@ defmodule GuardedStruct do
       })
     end
 
-    if Keyword.has_key?(opts, :struct) do
-      Module.put_attribute(mod, :gs_external, {name, %{module: opts[:struct], type: :struct}})
-    end
+    struct? = Keyword.has_key?(opts, :struct)
 
-    if Keyword.has_key?(opts, :structs) do
-      Module.put_attribute(mod, :gs_external, {name, %{module: opts[:struct], type: :list}})
+    if struct? or Keyword.has_key?(opts, :structs) do
+      Module.put_attribute(
+        mod,
+        :gs_external,
+        {name,
+         %{
+           module: if(struct?, do: opts[:struct], else: opts[:structs]),
+           type: if(struct?, do: :struct, else: :list)
+         }}
+      )
     end
 
     Module.put_attribute(mod, :gs_fields, {name, opts[:default]})
@@ -1021,9 +1027,7 @@ defmodule GuardedStruct do
       sub_modules
       |> Enum.map(fn
         %{field: field, module: module, type: :list} ->
-          # TODO: it should pass attrs as a list and check is there any error of each item of list
-          # TODO: if yes it should return error, if not pass the value as a list
-          {field, module.builder(Map.get(attrs, field))}
+          {field, list_builder(attrs, module, field)}
 
         %{field: field, module: module, type: :struct} ->
           {field, module.builder(Map.get(attrs, field))}
@@ -1034,6 +1038,15 @@ defmodule GuardedStruct do
       sub_modules_builders_errors(sub_modules_builders),
       reject_sub_module_fields(allowed_fields, sub_modules)
     }
+  end
+
+  defp list_builder(attrs, module, field) do
+    get_field = Map.get(attrs, field)
+
+    builders_output = Enum.map(get_field, &module.builder(&1))
+    errors = Enum.find(builders_output, &(elem(&1, 0) == :error))
+
+    errors || {:ok, Enum.map(builders_output, &elem(&1, 1))}
   end
 
   @doc false
