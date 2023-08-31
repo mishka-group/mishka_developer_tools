@@ -1043,10 +1043,14 @@ defmodule GuardedStruct do
   defp list_builder(attrs, module, field) do
     get_field = Map.get(attrs, field)
 
-    builders_output = Enum.map(get_field, &module.builder(&1))
-    errors = Enum.find(builders_output, &(elem(&1, 0) == :error))
+    if is_list(get_field) do
+      builders_output = Enum.map(get_field, &module.builder(&1))
+      errors = Enum.find(builders_output, &(elem(&1, 0) == :error))
 
-    errors || {:ok, Enum.map(builders_output, &elem(&1, 1))}
+      errors || {:ok, Enum.map(builders_output, &elem(&1, 1))}
+    else
+      {:error, :bad_parameters, "Your input must be a list of items"}
+    end
   end
 
   @doc false
