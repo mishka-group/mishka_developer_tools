@@ -690,7 +690,7 @@ defmodule GuardedStruct do
     end
 
     quote do
-      GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__)
+      GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__, true)
 
       defmodule unquote(converted_name) do
         unquote(ast)
@@ -701,7 +701,9 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def __field__(name, type, opts, %Macro.Env{module: mod} = _env)
+  def __field__(name, type, opts, env_data, subfield \\ false)
+
+  def __field__(name, type, opts, %Macro.Env{module: mod} = _env, sub_field)
       when is_atom(name) do
     if Keyword.has_key?(Module.get_attribute(mod, :gs_fields), name) do
       raise ArgumentError, "the field #{inspect(name)} is already set"
@@ -733,16 +735,28 @@ defmodule GuardedStruct do
 
     struct? = Keyword.has_key?(opts, :struct)
 
-    if struct? or Keyword.has_key?(opts, :structs) do
+    if !sub_field and (struct? or Keyword.has_key?(opts, :structs)) do
       Module.put_attribute(
         mod,
         :gs_external,
         {name,
          %{
-           module: if(struct?, do: opts[:struct], else: opts[:structs]),
+           module: opts[:struct] || opts[:structs],
            type: if(struct?, do: :struct, else: :list)
          }}
       )
+    end
+
+    if sub_field do
+      converted_name = create_module_name(name, mod, :direct)
+
+      if Keyword.get(opts, :structs) do
+        Module.put_attribute(
+          mod,
+          :gs_external,
+          {name, %{module: converted_name, type: :list}}
+        )
+      end
     end
 
     Module.put_attribute(mod, :gs_fields, {name, opts[:default]})
@@ -750,7 +764,7 @@ defmodule GuardedStruct do
     if enforce?, do: Module.put_attribute(mod, :gs_enforce_keys, name)
   end
 
-  def __field__(name, _type, _opts, _env) do
+  def __field__(name, _type, _opts, _env, _sub_field) do
     raise ArgumentError, "a field name must be an atom, got #{inspect(name)}"
   end
 
@@ -792,7 +806,7 @@ defmodule GuardedStruct do
       end
 
       def builder(_attrs, _error) do
-        {:error, :bad_parameters, "Your input must be a map"}
+        {:error, :bad_parameters, "Your input must be a map or list of maps"}
       end
 
       def enforce_keys() do

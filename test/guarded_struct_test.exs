@@ -771,6 +771,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:name, String.t(), derive: "validate(not_empty)")
       field(:auth_path, struct(), structs: TestAuthStruct)
+
+      sub_field(:profile, list(struct()), structs: true) do
+        field(:github, String.t(), enforce: true, derive: "validate(url)")
+        field(:nickname, String.t(), derive: "validate(not_empty)")
+      end
     end
 
     def validator(:name, value) do
@@ -782,7 +787,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     end
   end
 
-  test "Call struct from another module with validator, derive and main_validator" do
+  test "Call struct from another module with validator, derive and main_validator and list attrs" do
     {:ok, _nested_struct} =
       assert TestUserAuthStruct.builder(%{
                name: "mishka",
@@ -811,10 +816,26 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
-  test "Call struct from another module with validator, derive and main_validator with list attrs" do
-  end
+  test "Call sub_field struct with list attrs and validator, derive and main_validator" do
+    {:error, :bad_parameters, _nested_error2} =
+      assert TestUserAuthStruct.builder(%{
+               name: "mishka",
+               auth_path: [
+                 %{action: "*:admin", path: %{role: "1"}},
+                 %{action: "*:user", path: %{role: "3"}}
+               ],
+               profile: [%{nickname: "mishka"}]
+             })
 
-  test "Call sub_field struct with list values and validator, derive and main_validator" do
+    {:ok, _nested_struct} =
+      assert TestUserAuthStruct.builder(%{
+               name: "mishka",
+               auth_path: [
+                 %{action: "*:admin", path: %{role: "1"}},
+                 %{action: "*:user", path: %{role: "3"}}
+               ],
+               profile: [%{github: "https://github.com/mishka-group"}]
+             })
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
