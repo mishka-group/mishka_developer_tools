@@ -745,37 +745,76 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:action, String.t(), derive: "validate(not_empty)")
 
-      sub_field(:path, struct()) do
-        field(:name, String.t(), derive: "validate(not_empty)")
-        field(:action, String.t(), derive: "validate(not_empty)")
+      sub_field(:path, struct(), main_validator: {TestAuthStruct, :main_validator}) do
+        field(:role, String.t(), validator: {TestAuthStruct, :validator})
+
+        field(:custom_path, String.t(), derive: "validate(not_empty)")
       end
+    end
+
+    def validator(:role, value) do
+      if is_binary(value), do: {:ok, :role, value}, else: {:error, :role, "No, never"}
+    end
+
+    def validator(field, value) do
+      {:ok, field, value}
+    end
+
+    def main_validator(value) do
+      {:ok, value}
     end
   end
 
-  test "Call and put another struct from another module" do
-    defmodule TestUserAuthStruct do
-      use GuardedStruct
+  defmodule TestUserAuthStruct do
+    use GuardedStruct
 
-      guardedstruct do
-        field(:name, String.t(), derive: "validate(not_empty)")
-        field(:auth_path, struct(), structs: TestAuthStruct)
-      end
+    guardedstruct do
+      field(:name, String.t(), derive: "validate(not_empty)")
+      field(:auth_path, struct(), structs: TestAuthStruct)
     end
 
-    TestUserAuthStruct.builder(%{
-      name: "1",
-      auth_path: [
-        %{
-          action: "*:admin",
-          path: %{name: "1", action: "1"}
-        },
-        %{
-          action: "*:user",
-          path: %{name: "1"}
-        }
-      ]
-    })
-    |> IO.inspect()
+    def validator(:name, value) do
+      if is_binary(value), do: {:ok, :name, value}, else: {:error, :name, "No, never"}
+    end
+
+    def validator(field, value) do
+      {:ok, field, value}
+    end
+  end
+
+  test "Call struct from another module with validator, derive and main_validator" do
+    {:ok, _nested_struct} =
+      assert TestUserAuthStruct.builder(%{
+               name: "mishka",
+               auth_path: [
+                 %{action: "*:admin", path: %{role: "1"}},
+                 %{action: "*:user", path: %{role: "3"}}
+               ]
+             })
+
+    {:error, :bad_parameters, _nested_error} =
+      assert TestUserAuthStruct.builder(%{
+               name: "mishka",
+               auth_path: [
+                 %{action: "*:admin", path: %{role: 1}},
+                 %{action: "*:user", path: %{role: "3"}}
+               ]
+             })
+
+    {:error, :bad_parameters, _nested_error1} =
+      assert TestUserAuthStruct.builder(%{
+               name: "mishka",
+               auth_path: [
+                 %{action: "*:user", path: %{role: 2, custom_path: "/user"}},
+                 %{action: "*:admin", path: %{role: "2"}}
+               ]
+             })
+  end
+
+  test "Call struct from another module with validator, derive and main_validator with list attrs" do
+  end
+
+  test "Call sub_field struct with list values and validator, derive and main_validator" do
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############

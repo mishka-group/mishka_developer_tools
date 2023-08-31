@@ -681,7 +681,7 @@ defmodule GuardedStruct do
 
     converted_name = create_module_name(name, __CALLER__)
 
-    if Keyword.has_key?(opts, :structs) do
+    if Keyword.get(opts, :structs) do
       Module.put_attribute(
         __CALLER__.module,
         :gs_external,
