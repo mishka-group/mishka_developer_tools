@@ -681,14 +681,6 @@ defmodule GuardedStruct do
 
     converted_name = create_module_name(name, __CALLER__)
 
-    if Keyword.get(opts, :structs) do
-      Module.put_attribute(
-        __CALLER__.module,
-        :gs_external,
-        {name, %{module: converted_name, type: :list}}
-      )
-    end
-
     quote do
       GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__, true)
 
