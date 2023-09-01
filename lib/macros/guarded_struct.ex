@@ -721,30 +721,16 @@ defmodule GuardedStruct do
     exists_validator?(module, :main_validator, :gs_main_validator)
     exists_validator?(module, :validator, :gs_validator, 2)
 
-    gs_main_validator = Macro.escape(Module.get_attribute(module, :gs_main_validator))
-    gs_validator = Macro.escape(Module.get_attribute(module, :gs_validator))
-    gs_enforce_keys = Module.get_attribute(module, :gs_enforce_keys)
-    gs_fields = Macro.escape(Module.get_attribute(module, :gs_fields) |> Enum.map(&elem(&1, 0)))
-    gs_derive = Macro.escape(Module.get_attribute(module, :gs_derive))
-    authorized_fields = Macro.escape(Module.get_attribute(module, :gs_authorized_fields))
-    gs_external = Macro.escape(Module.get_attribute(module, :gs_external))
+    escaped_list =
+      List.delete(@temporary_revaluation, :gs_types)
+      |> Enum.map(&Macro.escape(Module.get_attribute(module, &1)))
 
     quote do
       def builder(attrs, error \\ false)
 
       def builder(attrs, error) when is_map(attrs) do
         GuardedStruct.builder(
-          %{
-            attrs: attrs,
-            module: unquote(module),
-            gs_main_validator: unquote(gs_main_validator),
-            gs_validator: unquote(gs_validator),
-            gs_fields: unquote(gs_fields),
-            gs_enforce_keys: unquote(gs_enforce_keys),
-            gs_derive: unquote(gs_derive),
-            authorized_fields: unquote(authorized_fields),
-            gs_external: unquote(gs_external)
-          },
+          %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
           error
         )
       end
@@ -754,7 +740,7 @@ defmodule GuardedStruct do
       end
 
       def enforce_keys() do
-        unquote(gs_enforce_keys)
+        unquote(Enum.at(escaped_list, 1))
       end
 
       def enforce_keys(:all) do
@@ -762,11 +748,11 @@ defmodule GuardedStruct do
       end
 
       def enforce_keys(key) do
-        Enum.member?(unquote(gs_enforce_keys), key)
+        Enum.member?(unquote(Enum.at(escaped_list, 1)), key)
       end
 
       def keys() do
-        unquote(gs_fields)
+        unquote(List.first(escaped_list) |> Enum.map(&elem(&1, 0)))
       end
 
       def keys(:all) do
@@ -774,25 +760,23 @@ defmodule GuardedStruct do
       end
 
       def keys(key) do
-        Enum.member?(unquote(gs_fields), key)
+        Enum.member?(unquote(List.first(escaped_list) |> Enum.map(&elem(&1, 0))), key)
       end
     end
   end
 
   @doc false
   def builder(actions, error \\ false) do
-    %{attrs: attrs, gs_validator: gs_validator, gs_fields: gs_fields, module: module} = actions
-    main_validator = Enum.find(actions.gs_main_validator, &is_tuple(&1))
+    %{attrs: attrs, module: module, revaluation: [h | t]} = actions
+    [enforce_keys, validator, main_validator, derive, authorized_fields, external, core_keys] = t
+    found_main_validator = Enum.find(main_validator, &is_tuple(&1))
+    fields = h |> Enum.map(&elem(&1, 0))
 
     Parser.convert_to_atom_map(attrs)
-    |> GuardedStruct.required_fields(
-      actions.gs_enforce_keys,
-      gs_fields,
-      actions.authorized_fields
-    )
-    |> GuardedStruct.field_validating(attrs, gs_validator, gs_fields, module, actions.gs_external)
-    |> GuardedStruct.main_validating(main_validator, actions.gs_main_validator, module)
-    |> Derive.derive(actions.gs_derive)
+    |> GuardedStruct.required_fields(enforce_keys, fields, authorized_fields)
+    |> GuardedStruct.field_validating(attrs, validator, fields, module, external)
+    |> GuardedStruct.main_validating(found_main_validator, main_validator, module)
+    |> Derive.derive(derive)
     |> exceptions_handler(module, error)
   end
 
