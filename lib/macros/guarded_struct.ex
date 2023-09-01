@@ -45,7 +45,8 @@ defmodule GuardedStruct do
     :gs_main_validator,
     :gs_derive,
     :gs_authorized_fields,
-    :gs_external
+    :gs_external,
+    :gs_core_keys
   ]
 
   @impl true
@@ -701,59 +702,9 @@ defmodule GuardedStruct do
       raise ArgumentError, "the field #{inspect(name)} is already set"
     end
 
-    has_default? = Keyword.has_key?(opts, :default)
-    enforce_by_default? = Module.get_attribute(mod, :gs_enforce?)
-
-    enforce? =
-      if is_nil(opts[:enforce]),
-        do: enforce_by_default? && !has_default?,
-        else: !!opts[:enforce]
-
-    nullable? = !has_default? && !enforce?
-
-    if !is_nil(opts[:derive]),
-      do:
-        Module.put_attribute(mod, :gs_derive, %{
-          field: name,
-          derive: opts[:derive]
-        })
-
-    if !is_nil(opts[:validator]) do
-      Module.put_attribute(mod, :gs_validator, %{
-        field: name,
-        validator: opts[:validator]
-      })
-    end
-
-    struct? = Keyword.has_key?(opts, :struct)
-
-    if !sub_field and (struct? or Keyword.has_key?(opts, :structs)) do
-      Module.put_attribute(
-        mod,
-        :gs_external,
-        {name,
-         %{
-           module: opts[:struct] || opts[:structs],
-           type: if(struct?, do: :struct, else: :list)
-         }}
-      )
-    end
-
-    if sub_field do
-      converted_name = create_module_name(name, mod, :direct)
-
-      if Keyword.get(opts, :structs) do
-        Module.put_attribute(
-          mod,
-          :gs_external,
-          {name, %{module: converted_name, type: :list}}
-        )
-      end
-    end
-
-    Module.put_attribute(mod, :gs_fields, {name, opts[:default]})
-    Module.put_attribute(mod, :gs_types, {name, type_for(type, nullable?)})
-    if enforce?, do: Module.put_attribute(mod, :gs_enforce_keys, name)
+    config(:derive, opts, mod, name)
+    config(:struct, opts, sub_field, mod, name)
+    config(:fields_types, opts, mod, name, type)
   end
 
   def __field__(name, _type, _opts, _env, _sub_field) do
@@ -1114,5 +1065,65 @@ defmodule GuardedStruct do
     |> Enum.map(fn {field, error} ->
       %{field: field, errors: {elem(error, 1), elem(error, 2)}}
     end)
+  end
+
+  defp config(:fields_types, opts, mod, name, type) do
+    has_default? = Keyword.has_key?(opts, :default)
+    enforce_by_default? = Module.get_attribute(mod, :gs_enforce?)
+
+    enforce? =
+      if is_nil(opts[:enforce]),
+        do: enforce_by_default? && !has_default?,
+        else: !!opts[:enforce]
+
+    nullable? = !has_default? && !enforce?
+
+    Module.put_attribute(mod, :gs_fields, {name, opts[:default]})
+    Module.put_attribute(mod, :gs_types, {name, type_for(type, nullable?)})
+    if enforce?, do: Module.put_attribute(mod, :gs_enforce_keys, name)
+  end
+
+  defp config(:struct, opts, sub_field, mod, name) do
+    struct? = Keyword.has_key?(opts, :struct)
+
+    if !sub_field and (struct? or Keyword.has_key?(opts, :structs)) do
+      Module.put_attribute(
+        mod,
+        :gs_external,
+        {name,
+         %{
+           module: opts[:struct] || opts[:structs],
+           type: if(struct?, do: :struct, else: :list)
+         }}
+      )
+    end
+
+    if sub_field do
+      converted_name = create_module_name(name, mod, :direct)
+
+      if Keyword.get(opts, :structs) do
+        Module.put_attribute(
+          mod,
+          :gs_external,
+          {name, %{module: converted_name, type: :list}}
+        )
+      end
+    end
+  end
+
+  defp config(:derive, opts, mod, name) do
+    if !is_nil(opts[:derive]),
+      do:
+        Module.put_attribute(mod, :gs_derive, %{
+          field: name,
+          derive: opts[:derive]
+        })
+
+    if !is_nil(opts[:validator]) do
+      Module.put_attribute(mod, :gs_validator, %{
+        field: name,
+        validator: opts[:validator]
+      })
+    end
   end
 end

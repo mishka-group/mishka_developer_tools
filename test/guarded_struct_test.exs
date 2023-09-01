@@ -838,6 +838,23 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
+  defmodule TestDependStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:name, String.t(), derive: "validate(not_empty)")
+      field(:provider, String.t(), derive: "validate(not_empty)")
+
+      sub_field(:profile, list(struct()), structs: true) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:url, String.t(), auto: {Ecto.UUID, :generate, "https://mishka.group.com/"})
+        field(:github, String.t(), on: :provider, derive: "validate(url)")
+        field(:github1, String.t(), on: {:provider, ["admin", "user"]}, derive: "validate(url)")
+        field(:path, String.t(), from: :name, derive: "validate(url)")
+      end
+    end
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do

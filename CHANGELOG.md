@@ -6,7 +6,8 @@
 - [x] Add `authorized_fields` validating option for `sub_field` and `guardedstruct` macro
 - [x] Calling a struct from another module
 - [x] Calling list of structs from another module
-- [x] Add capability of having a field with list of structs
+- [x] Add capability of having a `field` with list of structs
+- [x] Add capability of having a `sub_field` with list of structs
 
 # Changelog for MishkaDeveloperTools 0.1.0
 
