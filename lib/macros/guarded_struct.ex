@@ -702,6 +702,7 @@ defmodule GuardedStruct do
       raise ArgumentError, "the field #{inspect(name)} is already set"
     end
 
+    config(:core_keys, opts, mod, name)
     config(:derive, opts, mod, name)
     config(:struct, opts, sub_field, mod, name)
     config(:fields_types, opts, mod, name, type)
@@ -1125,5 +1126,14 @@ defmodule GuardedStruct do
         validator: opts[:validator]
       })
     end
+  end
+
+  defp config(:core_keys, opts, mod, name) do
+    Enum.each([:on, :from, :auto], fn item ->
+      if Keyword.has_key?(opts, item) do
+        core_key = %{values: opts[item], type: item}
+        Module.put_attribute(mod, :gs_core_keys, {name, core_key})
+      end
+    end)
   end
 end
