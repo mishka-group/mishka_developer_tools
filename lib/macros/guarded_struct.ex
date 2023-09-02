@@ -728,9 +728,19 @@ defmodule GuardedStruct do
     quote do
       def builder(attrs, error \\ false)
 
+      def builder({key, attrs} = input, error)
+          when is_tuple(input) and is_map(attrs) and is_atom(key) do
+        GuardedStruct.builder(
+          %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
+          key,
+          error
+        )
+      end
+
       def builder(attrs, error) when is_map(attrs) do
         GuardedStruct.builder(
           %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
+          :root,
           error
         )
       end
@@ -766,18 +776,46 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def builder(actions, error \\ false) do
+  def builder(actions, key, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
     [enforce_keys, validator, main_validator, derive, authorized_fields, external, core_keys] = t
     found_main_validator = Enum.find(main_validator, &is_tuple(&1))
     fields = h |> Enum.map(&elem(&1, 0))
 
     Parser.convert_to_atom_map(attrs)
-    |> GuardedStruct.required_fields(enforce_keys, fields, authorized_fields)
-    |> GuardedStruct.field_validating(attrs, validator, fields, module, external)
-    |> GuardedStruct.main_validating(found_main_validator, main_validator, module)
+    |> before_revaluation(core_keys, key)
+    |> required_fields(enforce_keys, fields, authorized_fields)
+    |> field_validating(attrs, validator, fields, module, external)
+    |> main_validating(found_main_validator, main_validator, module)
     |> Derive.derive(derive)
     |> exceptions_handler(module, error)
+  end
+
+  defp before_revaluation(attrs, core_keys, key) do
+    attrs
+    |> generate_auto_value(core_keys, key)
+    |> generate_from_value()
+    |> validation_on_value()
+  end
+
+  defp generate_auto_value(attrs, core_keys, :root), do: {attrs, core_keys, :root}
+
+  defp generate_auto_value(attrs, core_keys, key) do
+    {attrs, core_keys, key}
+  end
+
+  defp generate_from_value({attrs, core_keys, :root}), do: {attrs, core_keys, :root}
+
+  defp generate_from_value({attrs, core_keys, key}) do
+    {attrs, core_keys, key}
+  end
+
+  defp validation_on_value({attrs, _core_keys, :root}) do
+    {:ok, attrs}
+  end
+
+  defp validation_on_value({attrs, _core_keys, _key}) do
+    {:ok, attrs}
   end
 
   def exceptions_handler(ouput, module, exception \\ false)
@@ -811,7 +849,7 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def required_fields(attrs, keys, gs_fields, authorized_fields) do
+  def required_fields({:ok, attrs}, keys, gs_fields, authorized_fields) do
     with {:authorized_fields, true, _} <-
            check_authorized_fields(attrs, gs_fields, authorized_fields),
          missing_keys <- Enum.reject(keys, &Map.has_key?(attrs, &1)),
@@ -826,6 +864,8 @@ defmodule GuardedStruct do
         {:error, :authorized_fields, filtered, :halt}
     end
   end
+
+  def required_fields({:error, _, _, :halt} = error, _, _, _), do: error
 
   defp check_authorized_fields(attrs, fields, authorized_fields) do
     case List.first(authorized_fields) do
