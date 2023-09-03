@@ -1,6 +1,6 @@
 defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   use ExUnit.Case, async: true
-
+  alias MishkaDeveloperTools.Helper.Derive.ValidationDerive
   ############## (▰˘◡˘▰) GuardedStructTest Data (▰˘◡˘▰) ##############
   # Store the bytecode so we can get information from it.
   {:module, _name, bytecode, _exports} =
@@ -838,21 +838,58 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
-  defmodule TestDependStruct do
+  defmodule TestAutoValueStruct do
     use GuardedStruct
 
     guardedstruct do
-      field(:name, String.t(), derive: "validate(not_empty)")
-      field(:provider, String.t(), derive: "validate(not_empty)")
+      field(:username, String.t(), derive: "validate(not_empty)")
+      field(:user_id, String.t(), auto: {Ecto.UUID, :generate})
 
-      sub_field(:profile, list(struct()), structs: true) do
+      sub_field(:profile, struct()) do
         field(:id, String.t(), auto: {Ecto.UUID, :generate})
-        field(:url, String.t(), auto: {Ecto.UUID, :generate, "https://mishka.group.com/"})
-        field(:github, String.t(), on: :provider, derive: "validate(url)")
-        field(:github1, String.t(), on: {:provider, ["admin", "user"]}, derive: "validate(url)")
-        field(:path, String.t(), from: :name, derive: "validate(url)")
+        field(:nickname, String.t(), derive: "validate(not_empty)")
+
+        sub_field(:social, struct()) do
+          field(:id, String.t(), auto: {TestAutoValueStruct, :create_uuid, "test-path"})
+          field(:skype, String.t(), from: :name, derive: "validate(string)")
+        end
       end
     end
+
+    def create_uuid(default) do
+      Ecto.UUID.generate() <> "-#{default}"
+    end
+  end
+
+  test "auto generate value nested and root map" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile{
+         social: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile.Social{
+           skype: "mishka_skype",
+           id: social_UUID
+         },
+         nickname: "Mishka",
+         id: profile_UUID
+       },
+       user_id: user_UUID,
+       username: "mishka"
+     }} =
+      TestAutoValueStruct.builder(%{
+        username: "mishka",
+        user_id: "test_to_be_replaced",
+        profile: %{nickname: "Mishka", social: %{skype: "mishka_skype"}}
+      })
+
+    assert String.contains?(social_UUID, "test-path")
+
+    assert ValidationDerive.validate(:uuid, profile_UUID, :test)
+           |> is_binary()
+
+    assert ValidationDerive.validate(:uuid, user_UUID, :test)
+           |> is_binary()
+
+    assert social_UUID != profile_UUID != user_UUID
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
@@ -897,3 +934,24 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     Enum.sort(fields) == get_fields
   end
 end
+
+# TODO: it should be deleted, Sample code
+# defmodule TestDependStruct do
+#   use GuardedStruct
+
+#   guardedstruct do
+#     field(:name, String.t(), derive: "validate(not_empty)")
+#     field(:root_id, String.t(), auto: {Ecto.UUID, :generate})
+
+#     sub_field(:profile, struct()) do
+#       field(:id, String.t(), auto: {Ecto.UUID, :generate})
+#       field(:github, String.t(), on: :provider, derive: "validate(string)")
+#       field(:github1, String.t(), on: {:provider, ["admin", "user"]}, derive: "validate(url)")
+#       field(:path, String.t(), from: :name, derive: "validate(url)")
+
+#       sub_field(:profile1, struct()) do
+#         field(:id, String.t(), auto: {Ecto.UUID, :generate})
+#         field(:home_path, String.t(), from: :name, derive: "validate(string)")
+#       end
+#     end
+#   end

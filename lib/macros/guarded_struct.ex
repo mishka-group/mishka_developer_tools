@@ -785,7 +785,7 @@ defmodule GuardedStruct do
     Parser.convert_to_atom_map(attrs)
     |> before_revaluation(core_keys, key)
     |> required_fields(enforce_keys, fields, authorized_fields)
-    |> field_validating(attrs, validator, fields, module, external)
+    |> field_validating(validator, fields, module, external)
     |> main_validating(found_main_validator, main_validator, module)
     |> Derive.derive(derive)
     |> exceptions_handler(module, error)
@@ -794,27 +794,44 @@ defmodule GuardedStruct do
   defp before_revaluation(attrs, core_keys, key) do
     attrs
     |> generate_auto_value(core_keys, key)
-    |> generate_from_value()
-    |> validation_on_value()
+    |> generate_from_value(key)
+    |> validation_on_value(key)
   end
 
-  defp generate_auto_value(attrs, core_keys, :root), do: {attrs, core_keys, :root}
+  defp generate_auto_value(attrs, core_keys, :root) do
+    reduce_attrs =
+      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
+      |> Enum.reduce(attrs, fn item, acc ->
+        case item do
+          {key, %{type: :auto, values: {module, function}}} ->
+            Map.put(acc, key, apply(module, function, []))
+
+          {key, %{type: :auto, values: {module, function, default}}} ->
+            Map.put(acc, key, apply(module, function, [default]))
+
+          _ ->
+            acc
+        end
+      end)
+
+    {reduce_attrs, core_keys}
+  end
 
   defp generate_auto_value(attrs, core_keys, key) do
-    {attrs, core_keys, key}
+    generate_auto_value(Map.get(attrs, key), core_keys, :root)
   end
 
-  defp generate_from_value({attrs, core_keys, :root}), do: {attrs, core_keys, :root}
+  defp generate_from_value({attrs, core_keys}, :root), do: {attrs, core_keys}
 
-  defp generate_from_value({attrs, core_keys, key}) do
-    {attrs, core_keys, key}
+  defp generate_from_value({attrs, core_keys}, _key) do
+    {attrs, core_keys}
   end
 
-  defp validation_on_value({attrs, _core_keys, :root}) do
+  defp validation_on_value({attrs, _core_keys}, :root) do
     {:ok, attrs}
   end
 
-  defp validation_on_value({attrs, _core_keys, _key}) do
+  defp validation_on_value({attrs, _core_keys}, _key) do
     {:ok, attrs}
   end
 
@@ -855,7 +872,7 @@ defmodule GuardedStruct do
          missing_keys <- Enum.reject(keys, &Map.has_key?(attrs, &1)),
          {:missing_keys, true, _missing_keys} <-
            {:missing_keys, Enum.empty?(missing_keys), missing_keys} do
-      {:ok, :required_fields, missing_keys, :halt}
+      {:ok, :required_fields, attrs, :halt}
     else
       {:missing_keys, false, missing_keys} ->
         {:error, :required_fields, missing_keys, :halt}
@@ -879,12 +896,11 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def field_validating({:error, _, _, :halt} = error, _, _, _, _, _),
+  def field_validating({:error, _, _, :halt} = error, _, _, _, _),
     do: error
 
   def field_validating(
-        {:ok, :required_fields, _, :halt},
-        attrs,
+        {:ok, :required_fields, attrs, :halt},
         gs_validator,
         gs_fields,
         module,
