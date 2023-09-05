@@ -71,4 +71,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
       Map.merge(acc, map)
     end)
   end
+
+  def parse_core_keys_pattern(pattern) do
+    pattern
+    |> String.trim()
+    |> String.split("::", trim: true)
+    |> Enum.map(&String.to_atom/1)
+  end
 end

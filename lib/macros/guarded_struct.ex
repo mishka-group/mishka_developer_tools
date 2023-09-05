@@ -830,37 +830,7 @@ defmodule GuardedStruct do
   end
 
   defp validation_on_value({attrs, core_keys}, full_attrs) do
-    dependent_keys_error =
-      core_keys
-      |> Enum.map(fn
-        {key, %{type: :on, values: pattern}} ->
-          splited_pattern =
-            pattern
-            |> String.trim()
-            |> String.split("::", trim: true)
-            |> Enum.map(&String.to_atom/1)
-
-          [h | t] = splited_pattern
-
-          is_nil(if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern)))
-          |> case do
-            true ->
-              %{
-                message: """
-                The required dependency for field #{Atom.to_string(key)} has not been submitted.
-                You must have field #{List.last(splited_pattern) |> Atom.to_string()} in your input
-                """,
-                field: key
-              }
-
-            false ->
-              nil
-          end
-
-        _ ->
-          nil
-      end)
-      |> Enum.reject(&is_nil(&1))
+    dependent_keys_error = check_dependent_keys(attrs, core_keys, full_attrs)
 
     if length(dependent_keys_error) == 0,
       do: {:ok, attrs},
@@ -1074,7 +1044,7 @@ defmodule GuardedStruct do
     get_field = Map.get(attrs, field)
 
     if is_list(get_field) do
-      builders_output = Enum.map(get_field, &module.builder(&1))
+      builders_output = Enum.map(get_field, &module.builder({field, Map.put(attrs, field, &1)}))
       errors = Enum.find(builders_output, &(elem(&1, 0) == :error))
 
       errors || {:ok, Enum.map(builders_output, &elem(&1, 1))}
@@ -1207,5 +1177,29 @@ defmodule GuardedStruct do
         Module.put_attribute(mod, :gs_core_keys, {name, core_key})
       end
     end)
+  end
+
+  defp check_dependent_keys(attrs, core_keys, full_attrs) do
+    Enum.map(core_keys, fn
+      {key, %{type: :on, values: pattern}} ->
+        splited_pattern = Parser.parse_core_keys_pattern(pattern)
+        [h | t] = splited_pattern
+
+        if !is_nil(
+             if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern))
+           ),
+           do: nil,
+           else: %{
+             message: """
+             The required dependency for field #{Atom.to_string(key)} has not been submitted.
+             You must have field #{List.last(splited_pattern) |> Atom.to_string()} in your input
+             """,
+             field: key
+           }
+
+      _ ->
+        nil
+    end)
+    |> Enum.reject(&is_nil(&1))
   end
 end

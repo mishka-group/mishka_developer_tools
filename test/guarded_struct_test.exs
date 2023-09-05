@@ -898,7 +898,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     use GuardedStruct
 
     guardedstruct do
-      field(:name, String.t(), derive: "validate(ineteger)")
+      field(:name, String.t(), derive: "validate(integer)")
 
       sub_field(:profile, struct()) do
         field(:id, String.t(), auto: {Ecto.UUID, :generate})
