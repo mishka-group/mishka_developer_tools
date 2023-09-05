@@ -794,14 +794,16 @@ defmodule GuardedStruct do
   defp before_revaluation(attrs, core_keys, key) do
     attrs
     |> generate_auto_value(core_keys, key)
-    |> generate_from_value(key)
-    |> validation_on_value(key)
+    |> generate_from_value(attrs)
+    |> validation_on_value(attrs)
   end
 
-  defp generate_auto_value(attrs, core_keys, :root) do
+  defp generate_auto_value(attrs, core_keys, key) do
+    converted = if key == :root, do: attrs, else: Map.get(attrs, key)
+
     reduce_attrs =
       Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
-      |> Enum.reduce(attrs, fn item, acc ->
+      |> Enum.reduce(converted, fn item, acc ->
         case item do
           {key, %{type: :auto, values: {module, function}}} ->
             Map.put(acc, key, apply(module, function, []))
@@ -817,22 +819,52 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
-  defp generate_auto_value(attrs, core_keys, key) do
-    generate_auto_value(Map.get(attrs, key), core_keys, :root)
-  end
+  defp generate_from_value({attrs, core_keys}, _full_attrs) do
+    _reduce_attrs =
+      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
+      |> Enum.reduce(attrs, fn _item, acc ->
+        acc
+      end)
 
-  defp generate_from_value({attrs, core_keys}, :root), do: {attrs, core_keys}
-
-  defp generate_from_value({attrs, core_keys}, _key) do
     {attrs, core_keys}
   end
 
-  defp validation_on_value({attrs, _core_keys}, :root) do
-    {:ok, attrs}
-  end
+  defp validation_on_value({attrs, core_keys}, full_attrs) do
+    dependent_keys_error =
+      core_keys
+      |> Enum.map(fn
+        {key, %{type: :on, values: pattern}} ->
+          splited_pattern =
+            pattern
+            |> String.trim()
+            |> String.split("::", trim: true)
+            |> Enum.map(&String.to_atom/1)
 
-  defp validation_on_value({attrs, _core_keys}, _key) do
-    {:ok, attrs}
+          [h | t] = splited_pattern
+
+          is_nil(if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern)))
+          |> case do
+            true ->
+              %{
+                message: """
+                The required dependency for field #{Atom.to_string(key)} has not been submitted.
+                You must have field #{List.last(splited_pattern) |> Atom.to_string()} in your input
+                """,
+                field: key
+              }
+
+            false ->
+              nil
+          end
+
+        _ ->
+          nil
+      end)
+      |> Enum.reject(&is_nil(&1))
+
+    if length(dependent_keys_error) == 0,
+      do: {:ok, attrs},
+      else: {:error, :dependent_keys, dependent_keys_error, :halt}
   end
 
   def exceptions_handler(ouput, module, exception \\ false)
@@ -1028,7 +1060,7 @@ defmodule GuardedStruct do
           {field, list_builder(attrs, module, field)}
 
         %{field: field, module: module, type: :struct} ->
-          {field, module.builder(Map.get(attrs, field))}
+          {field, module.builder({field, attrs})}
       end)
 
     {

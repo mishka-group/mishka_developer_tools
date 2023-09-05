@@ -844,6 +844,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:username, String.t(), derive: "validate(not_empty)")
       field(:user_id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:parent_id, String.t(), auto: {Ecto.UUID, :generate})
 
       sub_field(:profile, struct()) do
         field(:id, String.t(), auto: {Ecto.UUID, :generate})
@@ -873,7 +874,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
          id: profile_UUID
        },
        user_id: user_UUID,
-       username: "mishka"
+       username: "mishka",
+       parent_id: _parent_id
      }} =
       TestAutoValueStruct.builder(%{
         username: "mishka",
@@ -890,6 +892,28 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
            |> is_binary()
 
     assert social_UUID != profile_UUID != user_UUID
+  end
+
+  defmodule TestOnValueStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:name, String.t(), derive: "validate(ineteger)")
+
+      sub_field(:profile, struct()) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:nickname, String.t(), on: "root::names", derive: "validate(string)")
+        field(:github, String.t(), derive: "validate(string)")
+      end
+    end
+  end
+
+  test "call on value in a nested struct" do
+    TestOnValueStruct.builder(%{
+      name: "mishka",
+      profile: %{nickname: "Mishka", github: "git"}
+    })
+    |> IO.inspect()
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
@@ -934,24 +958,3 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     Enum.sort(fields) == get_fields
   end
 end
-
-# TODO: it should be deleted, Sample code
-# defmodule TestDependStruct do
-#   use GuardedStruct
-
-#   guardedstruct do
-#     field(:name, String.t(), derive: "validate(not_empty)")
-#     field(:root_id, String.t(), auto: {Ecto.UUID, :generate})
-
-#     sub_field(:profile, struct()) do
-#       field(:id, String.t(), auto: {Ecto.UUID, :generate})
-#       field(:github, String.t(), on: :provider, derive: "validate(string)")
-#       field(:github1, String.t(), on: {:provider, ["admin", "user"]}, derive: "validate(url)")
-#       field(:path, String.t(), from: :name, derive: "validate(url)")
-
-#       sub_field(:profile1, struct()) do
-#         field(:id, String.t(), auto: {Ecto.UUID, :generate})
-#         field(:home_path, String.t(), from: :name, derive: "validate(string)")
-#       end
-#     end
-#   end
