@@ -902,18 +902,36 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
       sub_field(:profile, struct()) do
         field(:id, String.t(), auto: {Ecto.UUID, :generate})
-        field(:nickname, String.t(), on: "root::names", derive: "validate(string)")
+        field(:nickname, String.t(), on: "root::name", derive: "validate(string)")
         field(:github, String.t(), derive: "validate(string)")
+
+        sub_field(:identity, struct()) do
+          field(:provider, String.t(), derive: "validate(string)")
+          # field(:provider, String.t(), on: "root::profile::github", derive: "validate(string)")
+        end
       end
     end
   end
 
   test "call on value in a nested struct" do
-    TestOnValueStruct.builder(%{
-      name: "mishka",
-      profile: %{nickname: "Mishka", github: "git"}
-    })
+    TestOnValueStruct.__information__()
     |> IO.inspect()
+
+    TestOnValueStruct.Profile.__information__()
+    |> IO.inspect()
+
+    TestOnValueStruct.Profile.Identity.__information__()
+    |> IO.inspect()
+
+    # TestOnValueStruct.builder(%{
+    #   name: "mishka",
+    #   profile: %{
+    #     nickname: "Mishka",
+    #     github: "test",
+    #     identity: %{provider: "git"}
+    #   }
+    # })
+    # |> IO.inspect()
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############

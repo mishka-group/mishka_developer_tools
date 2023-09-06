@@ -46,7 +46,8 @@ defmodule GuardedStruct do
     :gs_derive,
     :gs_authorized_fields,
     :gs_external,
-    :gs_core_keys
+    :gs_core_keys,
+    :gs_caller
   ]
 
   @impl true
@@ -568,7 +569,7 @@ defmodule GuardedStruct do
   ```
   """
   defmacro guardedstruct(opts \\ [], do: block) do
-    ast = register_struct(block, opts)
+    ast = register_struct(block, opts, :root, __CALLER__.module)
     is_error = !is_nil(Keyword.get(opts, :error))
     # It helps you create module inside module to define types
     case opts[:module] do
@@ -609,7 +610,7 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def register_struct(block, opts) do
+  def register_struct(block, opts, key, caller) do
     quote do
       [:validate_derive, :sanitize_derive]
       |> Enum.each(fn item ->
@@ -623,6 +624,13 @@ defmodule GuardedStruct do
       end)
 
       Module.put_attribute(__MODULE__, :gs_enforce?, unquote(!!opts[:enforce]))
+
+      Module.put_attribute(
+        __MODULE__,
+        :gs_caller,
+        %{key: unquote(key), module: __MODULE__, caller: unquote(caller)}
+      )
+
       Module.put_attribute(__MODULE__, :gs_authorized_fields, unquote(!!opts[:authorized_fields]))
 
       main_validator = unquote(opts[:main_validator])
@@ -676,7 +684,7 @@ defmodule GuardedStruct do
 
   @doc false
   defmacro sub_field(name, _type, opts \\ [], do: block) do
-    ast = register_struct(block, opts)
+    ast = register_struct(block, opts, name, __CALLER__.module)
     type = Macro.escape(quote do: struct())
     is_error = !is_nil(Keyword.get(opts, :error))
 
@@ -772,7 +780,50 @@ defmodule GuardedStruct do
       def keys(key) do
         Enum.member?(unquote(List.first(escaped_list) |> Enum.map(&elem(&1, 0))), key)
       end
+
+      def __information__() do
+        info = unquote(List.last(escaped_list) |> List.first())
+
+        path =
+          if(info.key == :root,
+            do: [],
+            else:
+              info.module
+              |> Module.split()
+              |> GuardedStruct.reverse_module_keys(info.key)
+          )
+
+        Map.merge(info, %{path: path})
+      end
     end
+  end
+
+  def reverse_module_keys(splited_module, key) do
+    path =
+      for {_module, idx} <- Enum.with_index(splited_module) do
+        Enum.join(Enum.take(splited_module, idx + 1), ".")
+      end
+      |> Enum.reverse()
+      |> tl
+      |> Enum.reduce_while([], fn item, acc ->
+        concated = Module.safe_concat(String.split(item, ".", trim: true))
+
+        {Code.ensure_loaded(concated), function_exported?(concated, :__information__, 0)}
+        |> case do
+          {{:module, module}, true} ->
+            module_info = apply(module, :__information__, [])
+
+            if(module_info.key == :root,
+              do: {:halt, acc},
+              else: {:cont, acc ++ [module_info.key]}
+            )
+
+          _ ->
+            {:halt, acc}
+        end
+      end)
+
+    path ++ [key]
   end
 
   @doc false
@@ -785,7 +836,7 @@ defmodule GuardedStruct do
     Parser.convert_to_atom_map(attrs)
     |> before_revaluation(core_keys, key)
     |> required_fields(enforce_keys, fields, authorized_fields)
-    |> field_validating(validator, fields, module, external)
+    |> field_validating(validator, fields, module, external, attrs)
     |> main_validating(found_main_validator, main_validator, module)
     |> Derive.derive(derive)
     |> exceptions_handler(module, error)
@@ -898,7 +949,7 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def field_validating({:error, _, _, :halt} = error, _, _, _, _),
+  def field_validating({:error, _, _, :halt} = error, _, _, _, _, _, _),
     do: error
 
   def field_validating(
@@ -906,10 +957,17 @@ defmodule GuardedStruct do
         gs_validator,
         gs_fields,
         module,
-        external
+        external,
+        full_attrs
       ) do
     {sub_modules_builders, sub_modules_builders_errors, unsub_fields} =
-      required_fields_and_validate_sub_field(attrs, module, gs_fields, external)
+      required_fields_and_validate_sub_field(
+        attrs,
+        module,
+        gs_fields,
+        external,
+        full_attrs
+      )
 
     allowed_data = Map.take(attrs, unsub_fields)
 
@@ -1019,7 +1077,7 @@ defmodule GuardedStruct do
     end)
   end
 
-  defp required_fields_and_validate_sub_field(attrs, module, gs_fields, external) do
+  defp required_fields_and_validate_sub_field(attrs, module, gs_fields, external, full_attrs) do
     allowed_fields = Map.take(attrs, gs_fields) |> Map.keys()
     sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
