@@ -839,7 +839,7 @@ defmodule GuardedStruct do
     Parser.convert_to_atom_map(attrs)
     |> before_revaluation(core_keys, key)
     |> required_fields(enforce_keys, fields, authorized_fields)
-    |> field_validating(validator, fields, module, external, attrs)
+    |> field_validating(validator, fields, module, external, attrs, key)
     |> main_validating(found_main_validator, main_validator, module)
     |> Derive.derive(derive)
     |> exceptions_handler(module, error)
@@ -954,7 +954,7 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def field_validating({:error, _, _, :halt} = error, _, _, _, _, _),
+  def field_validating({:error, _, _, :halt} = error, _, _, _, _, _, _),
     do: error
 
   def field_validating(
@@ -963,7 +963,8 @@ defmodule GuardedStruct do
         gs_fields,
         module,
         external,
-        full_attrs
+        full_attrs,
+        key
       ) do
     {sub_modules_builders, sub_modules_builders_errors, unsub_fields} =
       required_fields_and_validate_sub_field(
@@ -971,7 +972,8 @@ defmodule GuardedStruct do
         module,
         gs_fields,
         external,
-        full_attrs
+        full_attrs,
+        key
       )
 
     allowed_data = Map.take(attrs, unsub_fields)
@@ -1082,7 +1084,7 @@ defmodule GuardedStruct do
     end)
   end
 
-  defp required_fields_and_validate_sub_field(attrs, module, gs_fields, external, full_attrs) do
+  defp required_fields_and_validate_sub_field(attrs, module, gs_fields, external, full_attrs, key) do
     allowed_fields = Map.take(attrs, gs_fields) |> Map.keys()
     sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
@@ -1090,10 +1092,15 @@ defmodule GuardedStruct do
       sub_modules
       |> Enum.map(fn
         %{field: field, module: module, type: :list} ->
-          {field, list_builder(full_attrs, module, field)}
+          {field, list_builder(full_attrs, module, field, key)}
 
         %{field: field, module: module, type: :struct} ->
-          {field, module.builder({reverse_module_keys(Module.split(module), field), full_attrs})}
+          keys =
+            reverse_module_keys(Module.split(module), field)
+            |> combine_parent_field(if(is_list(key), do: key, else: [key]))
+            |> List.delete(:root)
+
+          {field, module.builder({keys, full_attrs})}
       end)
 
     {
@@ -1103,9 +1110,16 @@ defmodule GuardedStruct do
     }
   end
 
-  defp list_builder(attrs, module, field) do
-    field_path = reverse_module_keys(Module.split(module), field)
+  defp list_builder(attrs, module, field, key) do
+    field_path =
+      reverse_module_keys(Module.split(module), field)
+      |> combine_parent_field(if(is_list(key), do: key, else: [key]))
+      |> List.delete(:root)
+
     get_field = get_in(attrs, field_path)
+
+    # IO.inspect(attrs)
+    # IO.inspect(field_path)
 
     if is_list(get_field) do
       builders_output =
@@ -1117,6 +1131,11 @@ defmodule GuardedStruct do
     else
       {:error, :bad_parameters, "Your input must be a list of items"}
     end
+  end
+
+  defp combine_parent_field(module_keys, parent_list) do
+    combined_list = parent_list ++ module_keys
+    Enum.uniq(combined_list)
   end
 
   @doc false
