@@ -910,30 +910,95 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
         sub_field(:identity, struct()) do
           field(:provider, String.t(), on: "root::profile::github", derive: "validate(string)")
+          field(:id, String.t(), auto: {Ecto.UUID, :generate})
+          field(:rel, String.t(), on: "sub_identity::auth_path::action")
+
+          sub_field(:sub_identity, struct()) do
+            field(:id, String.t(), auto: {Ecto.UUID, :generate})
+            field(:auth_path, struct(), struct: TestAuthStruct)
+          end
         end
+      end
+
+      sub_field(:last_activity, list(struct()), structs: true) do
+        field(:action, String.t(), enforce: true, derive: "validate(string)", on: "root::name")
       end
     end
   end
 
-  test "call on value in a nested struct" do
-    # TestOnValueStruct.__information__()
-    # |> IO.inspect()
+  test "call on value in a nested struct and extra module" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct{
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.Profile{
+         identity: %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.Profile.Identity{
+           id: id1,
+           provider: "git",
+           sub_identity: %{id: _id}
+         },
+         github: "test",
+         nickname: "Mishka",
+         id: id2
+       },
+       name: "mishka"
+     }} =
+      assert TestOnValueStruct.builder(%{
+               name: "mishka",
+               profile: %{
+                 nickname: "Mishka",
+                 github: "test",
+                 identity: %{
+                   provider: "git",
+                   sub_identity: %{id: "test", auth_path: %{action: "admin/edit"}}
+                 }
+               }
+             })
 
-    # TestOnValueStruct.Profile.__information__()
-    # |> IO.inspect()
+    assert id1 != id2
+    assert !is_nil(id1)
+    assert !is_nil(id1)
 
-    # TestOnValueStruct.Profile.Identity.__information__()
-    # |> IO.inspect()
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :profile,
+         errors:
+           {:bad_parameters,
+            [
+              %{
+                field: :identity,
+                errors:
+                  {:dependent_keys,
+                   [%{message: _msg2, field: :rel}, %{message: _msg1, field: :provider}]}
+              }
+            ]}
+       }
+     ]} =
+      assert TestOnValueStruct.builder(%{
+               name: "mishka",
+               profile: %{
+                 nickname: "Mishka",
+                 identity: %{provider: "git"}
+               }
+             })
+  end
 
-    TestOnValueStruct.builder(%{
-      name: "mishka",
-      profile: %{
-        nickname: "Mishka",
-        github: "test",
-        identity: %{provider: "git"}
-      }
-    })
-    |> IO.inspect()
+  test "check list struct depend on a key in another struct" do
+    %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct{
+      last_activity: [
+        %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
+          action: "login"
+        },
+        %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
+          action: "logout"
+        }
+      ],
+      profile: nil,
+      name: "mishka"
+    } =
+      assert TestOnValueStruct.builder(%{
+               name: "mishka",
+               last_activity: [%{action: "login"}, %{action: "logout"}]
+             })
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
