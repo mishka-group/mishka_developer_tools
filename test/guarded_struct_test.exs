@@ -983,18 +983,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "check list struct depend on a key in another struct" do
-    %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct{
-      last_activity: [
-        %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
-          action: "login"
-        },
-        %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
-          action: "logout"
-        }
-      ],
-      profile: nil,
-      name: "mishka"
-    } =
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct{
+       last_activity: [
+         %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
+           action: "login"
+         },
+         %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
+           action: "logout"
+         }
+       ],
+       profile: nil,
+       name: "mishka"
+     }} =
       assert TestOnValueStruct.builder(%{
                name: "mishka",
                last_activity: [%{action: "login"}, %{action: "logout"}]
