@@ -852,8 +852,8 @@ defmodule GuardedStruct do
       _ -> Map.get(attrs, key)
     end
     |> generate_auto_value(core_keys)
-    |> generate_from_value(attrs)
     |> validation_on_value(attrs)
+    |> generate_from_value(attrs)
   end
 
   defp generate_auto_value(attrs, core_keys) do
@@ -875,22 +875,31 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
-  defp generate_from_value({attrs, core_keys}, _full_attrs) do
-    _reduce_attrs =
-      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
-      |> Enum.reduce(attrs, fn _item, acc ->
-        acc
-      end)
-
-    {attrs, core_keys}
-  end
-
   defp validation_on_value({attrs, core_keys}, full_attrs) do
     dependent_keys_error = check_dependent_keys(attrs, core_keys, full_attrs)
 
     if length(dependent_keys_error) == 0,
-      do: {:ok, attrs},
+      do: {:ok, attrs, core_keys},
       else: {:error, :dependent_keys, dependent_keys_error, :halt}
+  end
+
+  defp generate_from_value({:error, _, _, _} = error, _full_attrs), do: error
+
+  defp generate_from_value({:ok, attrs, core_keys}, full_attrs) do
+    reduce_attrs =
+      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
+      |> Enum.reduce(attrs, fn {key, %{type: :from, values: pattern}}, acc ->
+        splited_pattern = Parser.parse_core_keys_pattern(pattern)
+        [h | t] = splited_pattern
+
+        if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern))
+        |> case do
+          data when is_nil(data) -> acc
+          data -> Map.put(acc, key, data)
+        end
+      end)
+
+    {:ok, reduce_attrs}
   end
 
   def exceptions_handler(ouput, module, exception \\ false)

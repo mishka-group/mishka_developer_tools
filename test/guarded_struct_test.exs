@@ -855,8 +855,14 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
         sub_field(:social, struct()) do
           field(:id, String.t(), auto: {TestAutoValueStruct, :create_uuid, "test-path"})
-          field(:skype, String.t(), from: :name, derive: "validate(string)")
+          field(:skype, String.t(), derive: "validate(string)")
+          field(:username, String.t(), from: "root::username")
         end
+      end
+
+      sub_field(:items, struct(), structs: true) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:something, String.t(), derive: "validate(string)", from: "root::username")
       end
     end
 
@@ -871,7 +877,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
        profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile{
          social: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile.Social{
            skype: "mishka_skype",
-           id: social_UUID
+           id: social_UUID,
+           username: "mishka"
          },
          nickname: "Mishka",
          id: profile_UUID
@@ -883,7 +890,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       TestAutoValueStruct.builder(%{
         username: "mishka",
         user_id: "test_to_be_replaced",
-        profile: %{nickname: "Mishka", social: %{skype: "mishka_skype"}}
+        profile: %{nickname: "Mishka", social: %{skype: "mishka_skype", username: "none_to_test"}}
       })
 
     assert String.contains?(social_UUID, "test-path")
@@ -999,6 +1006,71 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       assert TestOnValueStruct.builder(%{
                name: "mishka",
                last_activity: [%{action: "login"}, %{action: "logout"}]
+             })
+  end
+
+  test "call from value in a nested struct and extra module" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile{
+         social: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile.Social{
+           username: "user_mishka"
+         }
+       }
+     }} =
+      assert TestAutoValueStruct.builder(%{
+               username: "user_mishka",
+               user_id: "test_to_be_replaced",
+               profile: %{
+                 nickname: "Mishka",
+                 social: %{skype: "mishka_skype", username: "none_to_test"}
+               }
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile{
+         social: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile.Social{
+           username: "user_mishka"
+         }
+       }
+     }} =
+      assert TestAutoValueStruct.builder(%{
+               username: "user_mishka",
+               user_id: "test_to_be_replaced",
+               profile: %{nickname: "Mishka", social: %{skype: "mishka_skype"}}
+             })
+  end
+
+  test "check list struct from a key in another struct" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
+       items: [
+         %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Items{
+           something: "mishka",
+           id: _
+         },
+         %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Items{
+           something: "mishka",
+           id: _
+         },
+         %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Items{
+           something: "mishka",
+           id: _
+         }
+       ],
+       profile: nil,
+       parent_id: _,
+       user_id: _,
+       username: "mishka"
+     }} =
+      assert TestAutoValueStruct.builder(%{
+               username: "mishka",
+               items: [
+                 %{id: "test", something: "test"},
+                 %{something: "test"},
+                 %{}
+               ]
              })
   end
 
