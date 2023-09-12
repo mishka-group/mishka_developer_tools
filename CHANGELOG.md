@@ -1,6 +1,15 @@
+# Changelog for MishkaDeveloperTools 0.1.2
+
+- [ ] Add driver for accepting JSON
+- [ ] Add driver for making JSON outputs
+- [ ] Add derives caller inside parent module
+- [ ] Add Supporting new `Typespecs` for `list(struct())` and previous one `struct()`
+
+
 # Changelog for MishkaDeveloperTools 0.1.1
 
 - [x] Add `derive` for sanitizing and validating `Either`
+- [x] Add `derive` for sanitizing and validating `Enum`, improved
 - [x] Add `derive` for sanitizing and validating `equal`
 - [x] Add `exception` when macro is configed for `error: true`, only can be called inside `sub_field` and `guardedstruct` macro
 - [x] Add `authorized_fields` validating option for `sub_field` and `guardedstruct` macro
@@ -8,6 +17,16 @@
 - [x] Calling list of structs from another module
 - [x] Add capability of having a `field` with list of structs
 - [x] Add capability of having a `sub_field` with list of structs
+- [x] Add Automatic generator for a specific key `on`
+- [x] Add a dependent key to another key `auto`
+- [x] Add a key to get a value from another key `from`
+- [x] Add struct information function
+- [x] Add transmitting whole output of builder function to its children
+- [x] Add new style of builder entries to accept tuple with keys
+- [x] Add `auto`, `on`, `from` core keys for list of structs
+- [x] Re-structured outputs for new capabilities with backward compatibility
+- [x] Add permission access module in runtime
+
 
 # Changelog for MishkaDeveloperTools 0.1.0
 
