@@ -1,28 +1,36 @@
 defmodule GuardedStruct do
   @moduledoc """
-  The creation of this macro will allow you to build `Structs` that provide you with a number of important options, including the following:
+  The creation of this macro will allow you to build `Structs` that provide you with a number of
+  important options, including the following:
 
   1. Validation
   2. Sanitizing
   3. Constructor
   4. It provides the capacity to operate in a nested style simultaneously.
 
-  Suppose you are going to collect a number of pieces of information from the user, and before doing anything else, you are going to sanitize them.
-  After that, you are going to validate each piece of data, and if there are no issues, you will either display it in a proper output or save it somewhere else.
+  Suppose you are going to collect a number of pieces of information from the user,
+  and before doing anything else, you are going to sanitize them.
+  After that, you are going to validate each piece of data, and if there are no issues,
+  you will either display it in a proper output or save it somewhere else.
   All of the characteristics that are associated with this macro revolve around cleaning and validating the data.
 
-  The features that we list below are individually based on a particular strategy and requirement, but thankfully, they may be combined and mixed in any way that you see fit.
+  The features that we list below are individually based on a particular strategy
+  and requirement, but thankfully, they may be combined and mixed in any way that you see fit.
 
   It bestows to you a significant amount of authority in this sphere.
-  After the initial version of this macro was obtained from the source of the `typed_struct` library, many sections of it were rewritten, or new concepts were taken from libraries in Rust and Scala and added to this library in the form of Elixir base.
+  After the initial version of this macro was obtained from the source of the `typed_struct` library,
+  many sections of it were rewritten, or new concepts were taken from libraries in Rust and Scala
+  and added to this library in the form of Elixir base.
 
-  The initial version of this macro can be found in the `typed_struct` library. Its base is a syntax that is very easy to comprehend, especially for non-technical product managers, and highly straightforward.
+  The initial version of this macro can be found in the `typed_struct` library. Its base is a
+  syntax that is very easy to comprehend, especially for non-technical product managers, and highly straightforward.
 
-  Before explaining the copyright, I must point out that the primary library, which is `typed_struct`, is no longer supported for a long time, so please pay attention to the following copyright.
+  Before explaining the copyright, I must point out that the primary library, which is `typed_struct`,
+  is no longer supported for a long time, so please pay attention to the following copyright.
 
   ## Copyright
 
-  The code in this module is based on the 'typed_struct' library (https://github.com/ejpcmac/typed_struct),
+  The code in this module is based on the `typed_struct` library (https://github.com/ejpcmac/typed_struct),
   which is licensed under the MIT License.
 
   Modifications and additions have been made to enhance its capabilities as part of the current project.
@@ -64,26 +72,43 @@ defmodule GuardedStruct do
   @doc """
   ### Defines a guarded struct
 
-  The beginning of the block consists of the introduction of a `Struct` with the `guardedstruct` macro, which is solely responsible for recording a series of information in order to create a struct, as well as all of the fields with the `field` macro, and if you need to create another struct within this struct (in actuality, a module child within another module), you must use the `sub_field` macro.
+  The beginning of the block consists of the introduction of a `Struct` with the `guardedstruct` macro,
+  which is solely responsible for recording a series of information in order to create a struct, as well
+  as all of the fields with the `field` macro, and if you need to create another struct within this struct
+  (in actuality, a module child within another module), you must use the `sub_field` macro.
 
-  **Note:** there is no restriction on the number of times you can call the `sub_field` macro or the field macro within the context of the `sub_field` macro.
+  **Note:** there is no restriction on the number of times you can call the `sub_field` macro or the
+  field macro within the context of the `sub_field` macro.
 
-  **Note:** Because `Stract` does not prioritize the display of keys depending on your requirements, you do not need to follow the priority of the fields and call them in order to utilize the app.
+  **Note:** Because `Stract` does not prioritize the display of keys depending on your requirements,
+  you do not need to follow the priority of the fields and call them in order to utilize the app.
   Implement the program's logic, regardless of what it might be.
 
-  **Note:** Because of different limitations, if you want to write a test, you must first place the module in which you built the struct outside of the test macro. Once the struct has been built, you may then test it by calling it within the test macro itself. The examples it provides can also be found in the testing done by this library itself.
+  **Note:** Because of different limitations, if you want to write a test, you must first
+  place the module in which you built the struct outside of the test macro. Once the struct
+  has been built, you may then test it by calling it within the test macro itself.
+  The examples it provides can also be found in the testing done by this library itself.
 
-  **Note:** this library is only supported on versions of `Elixir 1.15` and higher, as well as `OTP 26`, and that the manufacturer does not offer bug patches for problems that occur in older software versions.
+  **Note:** this library is only supported on versions of `Elixir 1.15` and higher, as well as `OTP 26`, 
+  and that the manufacturer does not offer bug patches for problems that occur in older software versions.
 
-  **Note:** All of this library's dependencies are optional; nonetheless, if you require their use in your program, you will need to include them. We provide further explanation on the topic in the area you're looking for.
+  **Note:** All of this library's dependencies are optional; nonetheless,
+  if you require their use in your program, you will need to include them. We provide further
+  explanation on the topic in the area you're looking for.
 
-  > Before continuing with the discussion about the library section and also offering practical examples in this field, it is important to understand that when you construct a struct in a module, after compilation in the runtime of the program, each module includes the following functional functions:
+  > Before continuing with the discussion about the library section and also offering practical
+  examples in this field, it is important to understand that when you construct a struct in a module,
+  after compilation in the runtime of the program, each module includes the following functional functions:
 
-  1. The `builder()` function is actually an action function, and it requires you to provide it with information in the form of a `map`.
+  1. The `builder()` function is actually an action function, and it requires you to provide it with
+  information in the form of a `map`.
 
-  2. The `enforce_keys()` function: this method returns the necessary keys of the first layer of the struct. However, if you want to display all of the keys of the nested struct, you will need to enter the `:all` input, which is not yet implemented in this version.
+  2. The `enforce_keys()` function: this method returns the necessary keys of the first layer of the
+  struct. However, if you want to display all of the keys of the nested struct,
+  you will need to enter the `:all` input, which is not yet implemented in this version.
 
-  3. The `keys()` function has the same requirements as the `enforce_keys()` function, with the exception that it returns all of the keys, including the ones that aren't necessary.
+  3. The `keys()` function has the same requirements as the `enforce_keys()`
+  function, with the exception that it returns all of the keys, including the ones that aren't necessary.
 
   ---
 
@@ -97,23 +122,38 @@ defmodule GuardedStruct do
 
   4. If you write your own custom validation, each field's validations will be checked.
 
-  > It is important to notice that regardless of the circumstances, this macro also inspects the module itself. If there is a `validator` function but none of the functions are set, it calls the validator function directly from the module itself into the field itself.
+  > It is important to notice that regardless of the circumstances, this macro also inspects the module itself.
+  If there is a `validator` function but none of the functions are set,
+  it calls the validator function directly from the module itself into the field itself.
 
-  5. The output of the complete `struct` is entered into the mother validation, and the programmer is given the opportunity to write for the final output in this validation. This validation also provides the possibility of writing for the output of the struct.
+  5. The output of the complete `struct` is entered into the mother validation,
+  and the programmer is given the opportunity to write for the final output in this validation.
+  This validation also provides the possibility of writing for the output of the struct.
 
-  > This macro will call the struct's `main_validator` directly from the module it has been placed in if, in this section, the `main_validator`  is not set in the struct but is found in the module that contains the struct.
+  > This macro will call the struct's `main_validator` directly from the module
+  it has been placed in if, in this section, the `main_validator`  is not set in the
+  struct but is found in the module that contains the struct.
 
-  6. If there were no problems in the previous phases (it is important to note that options 4 and 5 are not required), it will proceed to the next level of the program, which is the validation and custom Sanitizer stage.
+  6. If there were no problems in the previous phases (it is important to note that options 4 and 5 are not required),
+  it will proceed to the next level of the program, which is the validation and custom Sanitizer stage.
 
-  7. To begin, the Sanitizer will alter the data so that it corresponds to what you have called in each field, and it will not return any errors. Even if the Sanitizer programmer is not utilized in the required type as a result of an accidental oversight, the data will still be passed to the following stage.
+  7. To begin, the Sanitizer will alter the data so that it corresponds to what you have called in each field,
+  and it will not return any errors.
+  Even if the Sanitizer programmer is not utilized in the required type as a result of an accidental oversight,
+  the data will still be passed to the following stage.
 
   8. At this point, it will return an error or data for each field, depending on the validations that you called.
 
-  9. At the end of the process, you will receive a tuple that will either have problems in it or the final data with an ok status.
+  9. At the end of the process, you will receive a tuple that will either have problems in it or
+  the final data with an ok status.
 
-  > It is important to keep in mind that if your `struct` is nested, all of the internal errors of these structs are also included in the list of problems. Additionally, the data will be sent to you when the status is positive, but only if you have called the parent of this struct.
+  > It is important to keep in mind that if your `struct` is nested, all of the internal errors
+  of these structs are also included in the list of problems. Additionally,
+  the data will be sent to you when the status is positive, but only if you have called the parent of this struct.
 
-  > Note that each nested struct can be used on its own and possesses all of the capabilities that have been discussed thus far. For instance, if you have module `A` and you utilized the `sub_field` that is named `auth` in it, you may now use it separately from the `A.Auth` Use. Use.
+  > Note that each nested struct can be used on its own and possesses all of the
+  capabilities that have been discussed thus far. For instance, if you have module `A` and
+  you utilized the `sub_field` that is named `auth` in it, you may now use it separately from the `A.Auth` Use. Use.
 
   ---
 
@@ -330,6 +370,8 @@ defmodule GuardedStruct do
   | `"validate(enum=Float[1.5::2.0::4.5])"` | NO | Validate if the data is one of the enum value, which is Float|
   | `"validate(enum=Map[%{status: 1}::%{status: 2}::%{status: 3}])"` | NO | Validate if the data is one of the enum value, which is Map|
   | `"validate(enum=Tuple[{:admin, 1}::{:user, 2}::{:banned, 3}])"` | NO | Validate if the data is one of the enum value, which is Tuple|
+  | `"validate(equal=some_thing)"` | NO | Validate if the data is equal with validation value, which is any type|
+  | `"validate(either=[string, enum=Integer[1::2::3]])"` | NO | Validate if the data is valid with each derive validation|
 
   ```elixir
   defmodule MyModule do
@@ -437,7 +479,11 @@ defmodule GuardedStruct do
     use GuardedStruct
 
     guardedstruct do
-      field(:name, String.t(), enforce: true, derive: "sanitize(trim, capitalize) validate(not_empty)" validator: {AnotherModule, :validator})
+      field(:name, String.t(),
+        enforce: true,
+        derive: "sanitize(trim, capitalize) validate(not_empty)",
+        validator: {AnotherModule, :validator}
+      )
       field(:title, String.t(), derive: "sanitize(trim, capitalize) validate(not_empty)")
     end
 
@@ -566,6 +612,320 @@ defmodule GuardedStruct do
       family: "Group",
       name: "Mishka"
     }}
+  ```
+
+  10. #### Set config to show error inside `defexception`
+
+  You may want to display the received errors in Elixir's `defexception`. you just need to enable the
+  `error: true` for `guardedstruct` macro or `sub_field`.
+
+  **Note**: When you enable the `error` option. This macro will generate for you a module that
+  is part of the parent module subset, and within that module, it will generate a `defexception` struct.
+
+  ##### Error `defexception` modules
+
+  ```elixir
+  TestCallNestedStructWithError.Error
+  TestCallNestedStructWithError.Auth.Error
+  TestCallNestedStructWithError.Auth.Path.Error
+  ```
+
+  ##### Sample code
+
+  ```elixir
+  defmodule TestCallNestedStructWithError do
+    use GuardedStruct
+
+    guardedstruct error: true do
+      field(:name, String.t(), derive: "validate(string)")
+
+      sub_field(:auth, struct(), error: true) do
+        field(:action, String.t(), derive: "validate(not_empty)")
+
+        sub_field(:path, struct(), error: true) do
+          field(:name, String.t())
+        end
+      end
+    end
+  end
+
+  # And you should call it like this, the second entry should be `true` or `false` to show error `defexception`
+  TestCallNestedStructWithError.builder(%{name: 1}, true)
+  ```
+
+  11. #### `authorized_fields` option to limit user input
+
+  If this option is not used, the program will automatically drop fields that are not defined;
+  however, if this option is set, it will return an error to the user if they transmit a field
+  that is not in the list of specified fields. If this option is not used, the program will automatically
+  drop fields that are not defined.
+
+  **Please take note** that the `required_fields` and this section are not the same thing,
+  and that the validation of the mandatory fields will take place after this section.
+
+  ```elixir
+  defmodule TestAuthorizeKeys do
+    use GuardedStruct
+
+    guardedstruct authorized_fields: true do
+      field(:name, String.t(), derive: "validate(string)")
+
+      sub_field(:auth, struct(), authorized_fields: true) do
+        field(:action, String.t(), derive: "validate(not_empty)")
+
+        sub_field(:path, struct()) do
+          field(:name, String.t())
+        end
+      end
+    end
+  end
+
+  TestAuthorizeKeys.builder(%{name: "Shahryar", test: "test"})
+  # Ouput: `{:error, :authorized_fields, [:test]}`
+
+  TestAuthorizeKeys.builder(%{name: "Shahryar", auth: %{action: "admin", test: "test"}})
+  # Ouput: `{:error, :bad_parameters, [%{field: :auth, errors: {:authorized_fields, [:test]}}]}`
+  ```
+
+  12. #### `authorized_fields` option to limit user input
+
+  This option can be helpful for you if you wish to construct your own modules in various files
+  and then make those modules reusable in the future. Simply implement the macro in another module,
+  and then call that module from the `field` macro. The `struct` and `structs` options are the
+  ones in which the module can be placed. The first one will provide you with an indication that you
+  will be given a map, and the second one will provide you with a list of maps.
+
+
+  ```elixir
+  defmodule TestAuthStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:action, String.t(), derive: "validate(not_empty)")
+    end
+  end
+
+  defmodule TestOnValueStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:name, String.t(), derive: "validate(string)")
+      field(:auth_path, struct(), struct: TestAuthStruct)
+      # field(:auth_path, struct(), structs: TestAuthStruct)
+    end
+  end
+  ```
+
+  13. #### List of structs
+
+  As was discussed in the earlier available choices. In the `field` macro that is used to
+  call **another module**, as well as in the `sub_field` macro, you have the ability to retrieve
+  a list of structs rather than a single struct.
+
+  ```elixir
+  defmodule TestUserAuthStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:name, String.t(), derive: "validate(not_empty)")
+      field(:auth_path, struct(), structs: TestAuthStruct)
+
+      sub_field(:profile, list(struct()), structs: true) do
+        field(:github, String.t(), enforce: true, derive: "validate(url)")
+        field(:nickname, String.t(), derive: "validate(not_empty)")
+      end
+    end
+  end
+
+  TestUserAuthStruct.builder(%{
+           name: "mishka",
+           auth_path: [
+             %{action: "*:admin", path: %{role: "1"}},
+             %{action: "*:user", path: %{role: "3"}}
+           ]
+         })
+
+  # OR
+  TestUserAuthStruct.builder(%{
+           name: "mishka",
+           auth_path: [
+             %{action: "*:admin", path: %{role: "1"}},
+             %{action: "*:user", path: %{role: "3", rel: %{social: "github"}}}
+           ],
+           profile: [%{github: "https://github.com/mishka-group"}]
+         })
+  ```
+
+  14. #### Struct information function
+
+  You will need to include a function known as `__information__()` in each and every module
+  that you develop for your very own `structs`. This function will store a variety of information, such as keys,
+  callers, and so on.
+
+  **Note:** There is a possibility that further information will be added to this function; please check its
+  output after each update.
+
+  **Note:** If you call another Struct module within the `field` macro, you should not use
+  the `caller` key within this function. This is due to the fact that the constructor information
+  is only available during **compile** time, and not run time.
+
+  ```elixir
+  TestStruct.__information__()
+  ```
+
+  15. #### Transmitting whole output of builder function to its children
+
+  Because new keys have been added, such as `auto`, `on`, and `from` which will be explained
+  in more detail below. The `builder` function is available in the following two different styles.
+
+  > If you don't provide the `:root` key, you can just specify the child key,
+  but if you do, you have to send the entire map as an `attar`. This is something to keep in mind.
+
+
+  ```elixir
+  def builder(attrs, error)
+
+  def builder({key, attrs} = input, error)
+      when is_tuple(input) and is_map(attrs) and is_list(key) do
+        ...
+  end
+  ```
+
+  16. #### Auto core key
+
+  Even if the user transmits the information and it is already in the input, such as with the ID field,
+  the sequence of fields still has to be formed automatically. You can accomplish what you want to with
+  the help of the `auto` option.
+
+  > As you can see in the code below, we have several types of `auto` option calls
+
+  ---
+
+  **TODO**: In the next version, it will not be made automatically if there is data for the key that is desired,
+  but it will be feasible to do so if the data exists.
+
+  > When the core keys are called, the entire primary map is sent to each child.
+
+  ```elixir
+  defmodule TestAutoValueStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:username, String.t(), derive: "validate(not_empty)")
+      field(:user_id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:parent_id, String.t(), auto: {Ecto.UUID, :generate})
+
+      sub_field(:profile, struct()) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:nickname, String.t(), derive: "validate(not_empty)")
+
+        sub_field(:social, struct()) do
+          field(:id, String.t(), auto: {TestAutoValueStruct, :create_uuid, "test-path"})
+          field(:skype, String.t(), derive: "validate(string)")
+          field(:username, String.t(), from: "root::username")
+        end
+      end
+
+      sub_field(:items, struct(), structs: true) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:something, String.t(), derive: "validate(string)", from: "root::username")
+      end
+    end
+
+    def create_uuid(default) do
+      Ecto.UUID.generate() <> "-\#{default}\"
+    end
+  end
+  ```
+
+  17. #### On core key
+
+  With the aid of this option, you can make the presence of a field dependent on the presence of another field and,
+  if there is no error, produce an error message.
+
+  If you pay attention to the routing method, the routing will start from the sent map itself
+  if `:root` is specified, but if it is not used, the routing will start from the received
+  map in the child if it is not used.
+
+  > When the core keys are called, the entire primary map is sent to each child.
+
+  ```elixir
+  defmodule TestOnValueStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:name, String.t(), derive: "validate(string)")
+
+      sub_field(:profile, struct()) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:nickname, String.t(), on: "root::name", derive: "validate(string)")
+        field(:github, String.t(), derive: "validate(string)")
+
+        sub_field(:identity, struct()) do
+          field(:provider, String.t(), on: "root::profile::github", derive: "validate(string)")
+          field(:id, String.t(), auto: {Ecto.UUID, :generate})
+          field(:rel, String.t(), on: "sub_identity::auth_path::action")
+
+          sub_field(:sub_identity, struct()) do
+            field(:id, String.t(), auto: {Ecto.UUID, :generate})
+            field(:auth_path, struct(), struct: TestAuthStruct)
+          end
+        end
+      end
+
+      sub_field(:last_activity, list(struct()), structs: true) do
+        field(:action, String.t(), enforce: true, derive: "validate(string)", on: "root::name")
+      end
+    end
+  end
+  ```
+  18. #### From core key
+
+  You can select this alternative if you require any data that was delivered in another key
+  to be incorporated into the key that you are looking for. If the key is present, the data
+  associated with it will be copied; however, if the key is not there, the data in and of itself will be retained.
+
+  If you pay attention to the routing method, the routing will start from the sent map itself
+  if `:root` is specified, but if it is not used, the routing will start from the received map
+  in the child if it is not used.
+
+  ---
+
+  > When the core keys are called, the entire primary map is sent to each child.
+
+  > Note: It is possible that you will need to check that the field you wish to duplicate exists,
+  and in order to do so, you can use either the `on` key or the `enforce` option.
+
+  ```elixir
+  defmodule TestAutoValueStruct do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:username, String.t(), derive: "validate(not_empty)")
+      field(:user_id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:parent_id, String.t(), auto: {Ecto.UUID, :generate})
+
+      sub_field(:profile, struct()) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:nickname, String.t(), derive: "validate(not_empty)")
+
+        sub_field(:social, struct()) do
+          field(:id, String.t(), auto: {TestAutoValueStruct, :create_uuid, "test-path"})
+          field(:skype, String.t(), derive: "validate(string)")
+          field(:username, String.t(), from: "root::username")
+        end
+      end
+
+      sub_field(:items, struct(), structs: true) do
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:something, String.t(), derive: "validate(string)", from: "root::username")
+      end
+    end
+
+    def create_uuid(default) do
+      Ecto.UUID.generate() <> "-\#{default}\"
+    end
+  end
   ```
   """
   defmacro guardedstruct(opts \\ [], do: block) do
@@ -798,6 +1158,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @doc false
   def reverse_module_keys(splited_module, key) do
     path =
       for {_module, idx} <- Enum.with_index(splited_module) do
@@ -913,6 +1274,7 @@ defmodule GuardedStruct do
     raise(concated, term: term, errors: error_list)
   end
 
+  @doc false
   def show_nested_keys(module, type \\ :keys) do
     apply(module, type, [])
     |> Enum.map(fn item ->
@@ -926,6 +1288,7 @@ defmodule GuardedStruct do
     end)
   end
 
+  @doc false
   def create_module_name(name, module_name, type \\ :macro) do
     name
     |> atom_to_module()

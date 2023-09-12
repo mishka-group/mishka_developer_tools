@@ -1,6 +1,7 @@
 # Changelog for MishkaDeveloperTools 0.1.2
 
 - [ ] Add driver for accepting JSON
+- [ ] Add Conditional field structure `macro` (**Multiple states of a field**)
 - [ ] Add driver for making JSON outputs
 - [ ] Add derives caller inside parent module
 - [ ] Add Supporting new `Typespecs` for `list(struct())` and previous one `struct()`

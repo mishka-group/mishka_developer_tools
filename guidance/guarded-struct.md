@@ -22,7 +22,7 @@ Before explaining the copyright, I must point out that the primary library, whic
 
 ## Copyright
 
-The code in this module is based on the 'typed_struct' library (https://github.com/ejpcmac/typed_struct),
+The code in this module is based on the `typed_struct` library (https://github.com/ejpcmac/typed_struct),
 which is licensed under the MIT License.
 
 Modifications and additions have been made to enhance its capabilities as part of the current project.
@@ -306,6 +306,7 @@ end
 | `"validate(enum=Map[%{status: 1}::%{status: 2}::%{status: 3}])"` | NO | Validate if the data is one of the enum value, which is Map|
 | `"validate(enum=Tuple[{:admin, 1}::{:user, 2}::{:banned, 3}])"` | NO | Validate if the data is one of the enum value, which is Tuple|
 | `"validate(equal=some_thing)"` | NO | Validate if the data is equal with validation value, which is any type|
+| `"validate(either=[string, enum=Integer[1::2::3]])"` | NO | Validate if the data is valid with each derive validation|
 
 ```elixir
 defmodule MyModule do
@@ -542,4 +543,288 @@ end
    family: "Group",
    name: "Mishka"
  }}
+```
+
+10. #### Set config to show error inside `defexception`
+
+You may want to display the received errors in Elixir's `defexception`. you just need to enable the `error: true` for `guardedstruct` macro or `sub_field`.
+
+**Note**: When you enable the `error` option. This macro will generate for you a module that is part of the parent module subset, and within that module, it will generate a `defexception` struct.
+
+##### Error `defexception` modules
+
+```elixir
+TestCallNestedStructWithError.Error
+TestCallNestedStructWithError.Auth.Error
+TestCallNestedStructWithError.Auth.Path.Error
+```
+
+##### Sample code
+
+```elixir
+defmodule TestCallNestedStructWithError do
+  use GuardedStruct
+
+  guardedstruct error: true do
+    field(:name, String.t(), derive: "validate(string)")
+
+    sub_field(:auth, struct(), error: true) do
+      field(:action, String.t(), derive: "validate(not_empty)")
+
+      sub_field(:path, struct(), error: true) do
+        field(:name, String.t())
+      end
+    end
+  end
+end
+
+# And you should call it like this, the second entry should be `true` or `false` to show error `defexception`
+TestCallNestedStructWithError.builder(%{name: 1}, true)
+```
+
+11. #### `authorized_fields` option to limit user input
+
+If this option is not used, the program will automatically drop fields that are not defined; however, if this option is set, it will return an error to the user if they transmit a field that is not in the list of specified fields. If this option is not used, the program will automatically drop fields that are not defined.
+
+**Please take note** that the `required_fields` and this section are not the same thing, and that the validation of the mandatory fields will take place after this section.
+
+```elixir
+defmodule TestAuthorizeKeys do
+  use GuardedStruct
+
+  guardedstruct authorized_fields: true do
+    field(:name, String.t(), derive: "validate(string)")
+
+    sub_field(:auth, struct(), authorized_fields: true) do
+      field(:action, String.t(), derive: "validate(not_empty)")
+
+      sub_field(:path, struct()) do
+        field(:name, String.t())
+      end
+    end
+  end
+end
+
+TestAuthorizeKeys.builder(%{name: "Shahryar", test: "test"})
+# Ouput: `{:error, :authorized_fields, [:test]}`
+
+TestAuthorizeKeys.builder(%{name: "Shahryar", auth: %{action: "admin", test: "test"}})
+# Ouput: `{:error, :bad_parameters, [%{field: :auth, errors: {:authorized_fields, [:test]}}]}`
+```
+
+12. #### `authorized_fields` option to limit user input
+
+This option can be helpful for you if you wish to construct your own modules in various files and then make those modules reusable in the future. Simply implement the macro in another module, and then call that module from the `field` macro. The `struct` and `structs` options are the ones in which the module can be placed. The first one will provide you with an indication that you will be given a map, and the second one will provide you with a list of maps.
+
+
+```elixir
+defmodule TestAuthStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:action, String.t(), derive: "validate(not_empty)")
+  end
+end
+
+defmodule TestOnValueStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:name, String.t(), derive: "validate(string)")
+    field(:auth_path, struct(), struct: TestAuthStruct)
+    # field(:auth_path, struct(), structs: TestAuthStruct)
+  end
+end
+```
+
+13. #### List of structs
+
+As was discussed in the earlier available choices. In the `field` macro that is used to call **another module**, as well as in the `sub_field` macro, you have the ability to retrieve a list of structs rather than a single struct.
+
+```elixir
+defmodule TestUserAuthStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:name, String.t(), derive: "validate(not_empty)")
+    field(:auth_path, struct(), structs: TestAuthStruct)
+
+    sub_field(:profile, list(struct()), structs: true) do
+      field(:github, String.t(), enforce: true, derive: "validate(url)")
+      field(:nickname, String.t(), derive: "validate(not_empty)")
+    end
+  end
+end
+
+TestUserAuthStruct.builder(%{
+         name: "mishka",
+         auth_path: [
+           %{action: "*:admin", path: %{role: "1"}},
+           %{action: "*:user", path: %{role: "3"}}
+         ]
+       })
+
+# OR
+TestUserAuthStruct.builder(%{
+         name: "mishka",
+         auth_path: [
+           %{action: "*:admin", path: %{role: "1"}},
+           %{action: "*:user", path: %{role: "3", rel: %{social: "github"}}}
+         ],
+         profile: [%{github: "https://github.com/mishka-group"}]
+       })
+```
+
+14. #### Struct information function
+
+You will need to include a function known as `__information__()` in each and every module that you develop for your very own `structs`. This function will store a variety of information, such as keys, callers, and so on.
+
+**Note:** There is a possibility that further information will be added to this function; please check its output after each update.
+
+**Note:** If you call another Struct module within the `field` macro, you should not use the `caller` key within this function. This is due to the fact that the constructor information is only available during **compile** time, and not run time.
+
+```elixir
+TestStruct.__information__()
+```
+
+15. #### Transmitting whole output of builder function to its children
+
+Because new keys have been added, such as `auto`, `on`, and `from` which will be explained in more detail below. The `builder` function is available in the following two different styles.
+
+> If you don't provide the `:root` key, you can just specify the child key, but if you do, you have to send the entire map as an `attar`. This is something to keep in mind.
+
+
+```elixir
+def builder(attrs, error)
+
+def builder({key, attrs} = input, error)
+    when is_tuple(input) and is_map(attrs) and is_list(key) do
+      ...
+end
+```
+
+16. #### Auto core key
+
+Even if the user transmits the information and it is already in the input, such as with the ID field, the sequence of fields still has to be formed automatically. You can accomplish what you want to with the help of the `auto` option.
+
+> As you can see in the code below, we have several types of `auto` option calls
+
+---
+
+**TODO**: In the next version, it will not be made automatically if there is data for the key that is desired, but it will be feasible to do so if the data exists.
+
+> When the core keys are called, the entire primary map is sent to each child.
+
+```elixir
+defmodule TestAutoValueStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:username, String.t(), derive: "validate(not_empty)")
+    field(:user_id, String.t(), auto: {Ecto.UUID, :generate})
+    field(:parent_id, String.t(), auto: {Ecto.UUID, :generate})
+
+    sub_field(:profile, struct()) do
+      field(:id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:nickname, String.t(), derive: "validate(not_empty)")
+
+      sub_field(:social, struct()) do
+        field(:id, String.t(), auto: {TestAutoValueStruct, :create_uuid, "test-path"})
+        field(:skype, String.t(), derive: "validate(string)")
+        field(:username, String.t(), from: "root::username")
+      end
+    end
+
+    sub_field(:items, struct(), structs: true) do
+      field(:id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:something, String.t(), derive: "validate(string)", from: "root::username")
+    end
+  end
+
+  def create_uuid(default) do
+    Ecto.UUID.generate() <> "-#{default}"
+  end
+end
+```
+
+17. #### On core key
+
+With the aid of this option, you can make the presence of a field dependent on the presence of another field and, if there is no error, produce an error message.
+
+If you pay attention to the routing method, the routing will start from the sent map itself if `:root` is specified, but if it is not used, the routing will start from the received map in the child if it is not used.
+
+> When the core keys are called, the entire primary map is sent to each child.
+
+```elixir
+defmodule TestOnValueStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:name, String.t(), derive: "validate(string)")
+
+    sub_field(:profile, struct()) do
+      field(:id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:nickname, String.t(), on: "root::name", derive: "validate(string)")
+      field(:github, String.t(), derive: "validate(string)")
+
+      sub_field(:identity, struct()) do
+        field(:provider, String.t(), on: "root::profile::github", derive: "validate(string)")
+        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:rel, String.t(), on: "sub_identity::auth_path::action")
+
+        sub_field(:sub_identity, struct()) do
+          field(:id, String.t(), auto: {Ecto.UUID, :generate})
+          field(:auth_path, struct(), struct: TestAuthStruct)
+        end
+      end
+    end
+
+    sub_field(:last_activity, list(struct()), structs: true) do
+      field(:action, String.t(), enforce: true, derive: "validate(string)", on: "root::name")
+    end
+  end
+end
+```
+18. #### From core key
+
+You can select this alternative if you require any data that was delivered in another key to be incorporated into the key that you are looking for. If the key is present, the data associated with it will be copied; however, if the key is not there, the data in and of itself will be retained.
+
+If you pay attention to the routing method, the routing will start from the sent map itself if `:root` is specified, but if it is not used, the routing will start from the received map in the child if it is not used.
+
+---
+
+> When the core keys are called, the entire primary map is sent to each child.
+
+> Note: It is possible that you will need to check that the field you wish to duplicate exists, and in order to do so, you can use either the `on` key or the `enforce` option.
+
+```elixir
+defmodule TestAutoValueStruct do
+  use GuardedStruct
+
+  guardedstruct do
+    field(:username, String.t(), derive: "validate(not_empty)")
+    field(:user_id, String.t(), auto: {Ecto.UUID, :generate})
+    field(:parent_id, String.t(), auto: {Ecto.UUID, :generate})
+
+    sub_field(:profile, struct()) do
+      field(:id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:nickname, String.t(), derive: "validate(not_empty)")
+
+      sub_field(:social, struct()) do
+        field(:id, String.t(), auto: {TestAutoValueStruct, :create_uuid, "test-path"})
+        field(:skype, String.t(), derive: "validate(string)")
+        field(:username, String.t(), from: "root::username")
+      end
+    end
+
+    sub_field(:items, struct(), structs: true) do
+      field(:id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:something, String.t(), derive: "validate(string)", from: "root::username")
+    end
+  end
+
+  def create_uuid(default) do
+    Ecto.UUID.generate() <> "-#{default}"
+  end
+end
 ```
