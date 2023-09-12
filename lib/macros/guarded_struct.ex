@@ -1490,9 +1490,6 @@ defmodule GuardedStruct do
 
     get_field = get_in(attrs, field_path)
 
-    # IO.inspect(attrs)
-    # IO.inspect(field_path)
-
     if is_list(get_field) do
       builders_output =
         Enum.map(get_field, &module.builder({field_path, Map.put(attrs, field, &1)}))

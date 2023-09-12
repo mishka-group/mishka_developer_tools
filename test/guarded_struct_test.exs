@@ -1075,34 +1075,34 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   # TODO: it is for version 0.1.2
-  # defmodule AllowedParentDomain do
-  #   use GuardedStruct
+  defmodule AllowedParentDomain do
+    use GuardedStruct
 
-  #   guardedstruct authorized_fields: true do
-  #     field(:username, String.t(),
-  #       domain: "!auth=String[admin, user]::?auth.social=Atom[banned]",
-  #       derive: "validate(string)"
-  #     )
+    guardedstruct authorized_fields: true do
+      field(:username, String.t(),
+        domain: "!auth=String[admin, user]::?auth.social=Atom[banned]",
+        derive: "validate(string)"
+      )
 
-  #     sub_field(:auth, struct(), authorized_fields: true) do
-  #       field(:action, String.t(), derive: "validate(not_empty)")
-  #     end
+      sub_field(:auth, struct(), authorized_fields: true) do
+        field(:action, String.t(), derive: "validate(not_empty)")
+      end
 
-  #     condition_field(:social,
-  #       which: "String::Function(AllowedParentDomain, is_stuff?)::Struct[]::Struct"
-  #     ) do
-  #       field(:social, String.t(), derive: "validate(not_empty)")
-  #       field(:social, struct(), struct: TestAuthStruct)
-  #       field(:social, list(struct()), structs: TestAuthStruct)
+      condition_field(:social,
+        which: "String::Function(AllowedParentDomain, is_stuff?)::Struct[]::Struct"
+      ) do
+        field(:social, String.t(), derive: "validate(not_empty)")
+        field(:social, struct(), struct: TestAuthStruct)
+        field(:social, list(struct()), structs: TestAuthStruct)
 
-  #       sub_field(:social, struct()) do
-  #         field(:name, String.t())
-  #       end
-  #     end
-  #   end
+        sub_field(:social, struct()) do
+          field(:name, String.t())
+        end
+      end
+    end
 
-  #   def is_stuff?(_data), do: true
-  # end
+    def is_stuff?(_data), do: true
+  end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
