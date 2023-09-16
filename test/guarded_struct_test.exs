@@ -1080,28 +1080,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
     guardedstruct authorized_fields: true do
       field(:username, String.t(),
-        domain: "!auth=String[admin, user]::?auth.social=Atom[banned]",
+        # domain: "!auth=String[admin, user]::?auth.social=Atom[banned]",
+        domain: "!auth.action=String[admin, user]",
         derive: "validate(string)"
       )
 
       sub_field(:auth, struct(), authorized_fields: true) do
         field(:action, String.t(), derive: "validate(not_empty)")
       end
-
-      condition_field(:social,
-        which: "String::Function(AllowedParentDomain, is_stuff?)::Struct[]::Struct"
-      ) do
-        field(:social, String.t(), derive: "validate(not_empty)")
-        field(:social, struct(), struct: TestAuthStruct)
-        field(:social, list(struct()), structs: TestAuthStruct)
-
-        sub_field(:social, struct()) do
-          field(:name, String.t())
-        end
-      end
     end
 
     def is_stuff?(_data), do: true
+  end
+
+  test "domain parent and parameters domain core key" do
+    AllowedParentDomain.builder(%{username: "shahryar", auth: %{action: "admin"}})
+    |> IO.inspect()
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
@@ -1146,3 +1140,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     Enum.sort(fields) == get_fields
   end
 end
+
+# conditional_field(:social,
+#   which: "String::Function(AllowedParentDomain, is_stuff?)::Struct[]::Struct"
+# ) do
+#   field(:social, String.t(), derive: "validate(not_empty)")
+#   field(:social, struct(), struct: TestAuthStruct)
+#   field(:social, list(struct()), structs: TestAuthStruct)
+
+#   sub_field(:social, struct()) do
+#     field(:name, String.t())
+#   end
+# end

@@ -522,7 +522,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     _ -> nil
   end
 
-  defp convert_enum(list) do
+  def convert_enum(list) do
     list
     |> String.replace(["[", "]"], "")
     |> String.split("::", trim: true)

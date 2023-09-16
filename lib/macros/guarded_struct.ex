@@ -42,7 +42,7 @@ defmodule GuardedStruct do
   **Note:** If the license changes during the support of this project, this file will always remain on MIT
 
   """
-  alias MishkaDeveloperTools.Helper.{Derive, Derive.Parser}
+  alias MishkaDeveloperTools.Helper.{Derive, Derive.Parser, Derive.ValidationDerive}
   defexception [:term]
 
   @temporary_revaluation [
@@ -55,6 +55,7 @@ defmodule GuardedStruct do
     :gs_authorized_fields,
     :gs_external,
     :gs_core_keys,
+    :gs_conditional_field,
     :gs_caller
   ]
 
@@ -1061,6 +1062,10 @@ defmodule GuardedStruct do
     end
   end
 
+  defmacro conditional_field(_name, _type, _opts \\ [], do: _block) do
+    # TODO: it should be done
+  end
+
   @doc false
   def __field__(name, type, opts, env_data, subfield \\ false)
 
@@ -1191,7 +1196,17 @@ defmodule GuardedStruct do
   def builder(actions, key, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
 
-    [enforce_keys, validator, main_validator, derive, authorized_fields, external, core_keys, _] =
+    [
+      enforce_keys,
+      validator,
+      main_validator,
+      derive,
+      authorized_fields,
+      external,
+      core_keys,
+      _,
+      _
+    ] =
       t
 
     found_main_validator = Enum.find(main_validator, &is_tuple(&1))
@@ -1213,6 +1228,7 @@ defmodule GuardedStruct do
       _ -> Map.get(attrs, key)
     end
     |> generate_auto_value(core_keys)
+    |> validation_domain_parameters(attrs)
     |> validation_on_value(attrs)
     |> generate_from_value(attrs)
   end
@@ -1236,12 +1252,34 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
-  defp validation_on_value({attrs, core_keys}, full_attrs) do
-    dependent_keys_error = check_dependent_keys(attrs, core_keys, full_attrs)
+  defp validation_domain_parameters({attrs, core_keys}, _full_attrs) do
+    domain_parameters_errors =
+      Enum.map(core_keys, fn
+        {key, %{type: :domain, values: pattern}} ->
+          parsed =
+            parse_domain_patterns(pattern, key, attrs)
+            |> List.flatten()
 
-    if length(dependent_keys_error) == 0,
+          if length(parsed) == 0, do: nil, else: parsed
+
+        _ ->
+          nil
+      end)
+      |> Enum.reject(&is_nil(&1))
+
+    if length(domain_parameters_errors) == 0,
       do: {:ok, attrs, core_keys},
-      else: {:error, :dependent_keys, dependent_keys_error, :halt}
+      else: {:error, :domain_parameters, domain_parameters_errors, :halt}
+  end
+
+  defp validation_on_value({:error, _, _, _} = error, _full_attrs), do: error
+
+  defp validation_on_value({:ok, attrs, core_keys}, full_attrs) do
+    dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
+
+    if length(dependent_keys_errors) == 0,
+      do: {:ok, attrs, core_keys},
+      else: {:error, :dependent_keys, dependent_keys_errors, :halt}
   end
 
   defp generate_from_value({:error, _, _, _} = error, _full_attrs), do: error
@@ -1625,7 +1663,7 @@ defmodule GuardedStruct do
   end
 
   defp config(:core_keys, opts, mod, name) do
-    Enum.each([:on, :from, :auto], fn item ->
+    Enum.each([:on, :from, :auto, :domain], fn item ->
       if Keyword.has_key?(opts, item) do
         core_key = %{values: opts[item], type: item}
         Module.put_attribute(mod, :gs_core_keys, {name, core_key})
@@ -1655,5 +1693,45 @@ defmodule GuardedStruct do
         nil
     end)
     |> Enum.reject(&is_nil(&1))
+  end
+
+  defp parse_domain_patterns(pattern, key, attrs) do
+    # "!auth=String[admin, user]::?auth.social=Atom[banned, moderated]"
+    # for example `auth.social` should be atom and between `banned` and `moderated`
+    # ? and ! means the `auth.social` can exist or not and if yes it should be atom and between the values
+    pattern
+    |> String.trim()
+    |> String.split("::", trim: true)
+    |> Enum.map(&String.split(&1, "=", trim: true))
+    |> Enum.map(fn
+      ["!" <> field, converted_pattern] ->
+        domain_field_status(field, attrs, converted_pattern, key, :error)
+
+      ["?" <> field, converted_pattern] ->
+        domain_field_status(field, attrs, converted_pattern, key)
+    end)
+    |> Enum.reject(&is_nil(&1))
+  end
+
+  defp get_domain_field(field, attrs) do
+    field
+    |> String.trim()
+    |> String.split(".", trim: true)
+    |> Enum.map(&String.to_atom/1)
+    |> then(&get_in(attrs, &1))
+  end
+
+  defp domain_field_status(field, attrs, converted_pattern, key, force \\ nil) do
+    domain_field = get_domain_field(field, attrs)
+
+    if !is_nil(domain_field) do
+      ValidationDerive.validate({:enum, converted_pattern}, domain_field, key)
+      |> case do
+        data when is_tuple(data) and elem(data, 0) == :error -> :error
+        _ -> nil
+      end
+    else
+      force
+    end
   end
 end

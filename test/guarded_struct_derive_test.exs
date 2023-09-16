@@ -141,6 +141,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     true = assert is_port(get_port)
 
     {:error, :node, :port, _msg} = assert ValidationDerive.validate(:port, :test, :node)
+  after
+    File.rm("name")
   end
 
   test "validate(:reference, input, field)" do
