@@ -1724,6 +1724,12 @@ defmodule GuardedStruct do
   defp domain_field_status(field, attrs, converted_pattern, key, force \\ nil) do
     domain_field = get_domain_field(field, attrs)
 
+    converted_pattern =
+      converted_pattern
+      |> String.split(",", trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.join("::")
+
     if !is_nil(domain_field) do
       ValidationDerive.validate({:enum, converted_pattern}, domain_field, key)
       |> case do
