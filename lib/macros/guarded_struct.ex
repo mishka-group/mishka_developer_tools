@@ -928,6 +928,53 @@ defmodule GuardedStruct do
     end
   end
   ```
+
+  19. #### Domain core key
+
+  When dealing with a structure that is heavily nested, it is occasionally necessary
+  to establish the permitted range of values for a set of parameters based on the
+  input provided by a parent.
+  Note that similar to earlier parts, we do not transfer the entirety of either
+  the `Struct` or the `Map` to this feature in this particular section.
+  Always keep in mind the top-down structure, often known as the parent-to-child relationship.
+
+  ```elixir
+  defmodule AllowedParentDomain do
+    use GuardedStruct
+
+    guardedstruct authorized_fields: true do
+      field(:username, String.t(),
+        domain: "!auth.action=String[admin, user]::?auth.social=Atom[banned]",
+        derive: "validate(string)"
+      )
+
+      field(:type_social, String.t(),
+        domain: "?auth.type=Map[%{name: \"mishka\"}, %{name: \"mishka2\"}]",
+        derive: "validate(string)"
+      )
+
+      sub_field(:auth, struct(), authorized_fields: true) do
+        field(:action, String.t(), derive: "validate(not_empty)")
+        field(:social, atom(), derive: "validate(atom)")
+        field(:type, map(), derive: "validate(map)")
+      end
+    end
+  end
+  ```
+
+  **Please see the `domain` core key, for example:**
+
+  ```elixir
+  domain: "!auth.action=String[admin, user]::?auth.social=Atom[banned]"
+  ```
+
+  **In this part:**
+  - If `username` key is sentm you must have `auth.action` path which is string `admin` or string `user`
+  - If `username` key is sentm you you can have `auth.social` path which is just atom `:banned`
+  - So the `auth.social` can be nil and inside user input impossible nil
+
+  **Note**: Within this section of the core keys, we are making use of the `:enum` Derive.
+  You are free to make advantage of any and all of the amenities that this Derive provides.
   """
   defmacro guardedstruct(opts \\ [], do: block) do
     ast = register_struct(block, opts, :root, __CALLER__.module)
