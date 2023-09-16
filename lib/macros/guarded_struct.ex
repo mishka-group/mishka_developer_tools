@@ -1228,7 +1228,7 @@ defmodule GuardedStruct do
       _ -> Map.get(attrs, key)
     end
     |> generate_auto_value(core_keys)
-    |> validation_domain_parameters(attrs)
+    |> validation_domain_parameters()
     |> validation_on_value(attrs)
     |> generate_from_value(attrs)
   end
@@ -1252,7 +1252,7 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
-  defp validation_domain_parameters({attrs, core_keys}, _full_attrs) do
+  defp validation_domain_parameters({attrs, core_keys}) do
     domain_parameters_errors =
       Enum.map(core_keys, fn
         {key, %{type: :domain, values: pattern}} ->
@@ -1266,6 +1266,7 @@ defmodule GuardedStruct do
           nil
       end)
       |> Enum.reject(&is_nil(&1))
+      |> List.flatten()
 
     if length(domain_parameters_errors) == 0,
       do: {:ok, attrs, core_keys},
@@ -1721,23 +1722,60 @@ defmodule GuardedStruct do
     |> then(&get_in(attrs, &1))
   end
 
+  defp re_structure_domain_for_derive(data) do
+    data
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.join("::")
+  end
+
+  defp re_structure_domain_for_derive(data, "string") do
+    {converted, []} = Code.eval_string(data)
+
+    Enum.reduce(converted, "", fn item, acc ->
+      acc <> "#{Macro.to_string(item)}::"
+    end)
+  end
+
   defp domain_field_status(field, attrs, converted_pattern, key, force \\ nil) do
     domain_field = get_domain_field(field, attrs)
 
     converted_pattern =
       converted_pattern
-      |> String.split(",", trim: true)
-      |> Enum.map(&String.trim/1)
-      |> Enum.join("::")
+      |> case do
+        "Tuple" <> list ->
+          "Tuple[#{re_structure_domain_for_derive(list, "string")}]"
+
+        "Map" <> list ->
+          "Map[#{re_structure_domain_for_derive(list, "string")}]"
+
+        data ->
+          data
+          |> re_structure_domain_for_derive()
+      end
 
     if !is_nil(domain_field) do
       ValidationDerive.validate({:enum, converted_pattern}, domain_field, key)
       |> case do
-        data when is_tuple(data) and elem(data, 0) == :error -> :error
-        _ -> nil
+        data when is_tuple(data) and elem(data, 0) == :error ->
+          %{
+            message: "Based on field #{key} input you have to send authorized data",
+            field_path: field,
+            field: key
+          }
+
+        _ ->
+          nil
       end
     else
-      force
+      if is_nil(force),
+        do: nil,
+        else: %{
+          message:
+            "Based on field #{key} input you have to send authorized data and required key",
+          field_path: field,
+          field: key
+        }
     end
   end
 end

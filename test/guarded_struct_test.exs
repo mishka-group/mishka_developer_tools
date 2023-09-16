@@ -1074,19 +1074,24 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   #            })
   # end
 
-  # TODO: it is for version 0.1.2
   defmodule AllowedParentDomain do
     use GuardedStruct
 
     guardedstruct authorized_fields: true do
       field(:username, String.t(),
-        # domain: "!auth=String[admin, user]::?auth.social=Atom[banned]",
-        domain: "!auth.action=String[admin, user]",
+        domain: "!auth.action=String[admin, user]::?auth.social=Atom[banned]",
+        derive: "validate(string)"
+      )
+
+      field(:type_social, String.t(),
+        domain: "?auth.type=Map[%{name: \"mishka\"}, %{name: \"mishka2\"}]",
         derive: "validate(string)"
       )
 
       sub_field(:auth, struct(), authorized_fields: true) do
         field(:action, String.t(), derive: "validate(not_empty)")
+        field(:social, atom(), derive: "validate(atom)")
+        field(:type, map(), derive: "validate(map)")
       end
     end
 
@@ -1094,8 +1099,73 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   end
 
   test "domain parent and parameters domain core key" do
-    AllowedParentDomain.builder(%{username: "shahryar", auth: %{action: "admin"}})
-    |> IO.inspect()
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field username input you have to send authorized data",
+         field: :username,
+         field_path: "auth.action"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{username: "mishka", auth: %{action: "admin1"}})
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message:
+           "Based on field username input you have to send authorized data and required key",
+         field: :username,
+         field_path: "auth.action"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{username: "mishka", auth: %{action1: "admin"}})
+
+    {:error, :domain_parameters, _} =
+      assert AllowedParentDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "admin", social: "test"}
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
+       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+         social: :banned,
+         action: "admin"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "admin", social: :banned}
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
+       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+         type: %{name: "mishka"},
+         social: :banned,
+         action: "admin"
+       },
+       type_social: "github",
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               type_social: "github",
+               auth: %{action: "admin", social: :banned, type: %{name: "mishka"}}
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field type_social input you have to send authorized data",
+         field: :type_social,
+         field_path: "auth.type"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{
+               type_social: "github",
+               auth: %{action: "admin", social: :banned, type: %{name: "test"}}
+             })
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
