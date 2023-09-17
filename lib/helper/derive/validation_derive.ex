@@ -439,6 +439,16 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     |> vlidate_equal(input, field)
   end
 
+  def validate({:custom, value}, input, field) do
+    [module, function] = convert_enum(value, ",")
+    safe_module = Module.safe_concat([module])
+    executed = apply(safe_module, String.to_atom(function), [input])
+    if is_boolean(executed) and executed, do: input, else: raise(ArgumentError, "")
+  rescue
+    _e ->
+      {:error, field, :custom, "The condition for checking the #{field} field is not correct"}
+  end
+
   def validate(%{either: list}, input, field) do
     Enum.any?(list, fn item ->
       output = validate(item, input, field)
@@ -450,12 +460,12 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
 
       _ ->
         {:error, field, :either,
-         "None of the conditions for checking the #{field} field is correct"}
+         "None of the conditions for checking the #{field} field is not correct"}
     end
   rescue
     _ ->
       {:error, field, :either,
-       "None of the conditions for checking the #{field} field is correct"}
+       "None of the conditions for checking the #{field} field isn not correct"}
   end
 
   def validate(action, input, field) do
@@ -522,10 +532,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     _ -> nil
   end
 
-  def convert_enum(list) do
+  def convert_enum(list, splitter \\ "::") do
     list
     |> String.replace(["[", "]"], "")
-    |> String.split("::", trim: true)
+    |> String.split(splitter, trim: true)
     |> Enum.map(&String.trim(&1))
   end
 

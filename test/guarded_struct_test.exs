@@ -1106,8 +1106,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         field(:either, atom())
       end
     end
-
-    def is_stuff?(_data), do: true
   end
 
   test "domain parent and parameters domain core key" do
@@ -1245,6 +1243,52 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       assert AllowedParentDomain.builder(%{
                social_either: :github,
                auth: %{action: "admin", social: :banned, either: 3}
+             })
+  end
+
+  defmodule AllowedParentCustomDomain do
+    use GuardedStruct
+    @module_path "MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentCustomDomain"
+
+    guardedstruct authorized_fields: true do
+      field(:username, String.t(),
+        domain: "!auth.action=Custom[#{@module_path}, is_stuff?]",
+        derive: "validate(string)"
+      )
+
+      sub_field(:auth, struct(), authorized_fields: true) do
+        field(:action, String.t(), derive: "validate(not_empty)")
+      end
+    end
+
+    def is_stuff?(data) when data == "ok", do: true
+    def is_stuff?(_data), do: false
+  end
+
+  test "check Custom function inside domain core key" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentCustomDomain{
+       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentCustomDomain.Auth{
+         action: "ok"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentCustomDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "ok"}
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field username input you have to send authorized data",
+         field: :username,
+         field_path: "auth.action"
+       }
+     ]} =
+      assert AllowedParentCustomDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "error"}
              })
   end
 

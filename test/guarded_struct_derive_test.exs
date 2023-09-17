@@ -735,7 +735,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     {:error, :bad_parameters,
      [
        %{
-         message: "None of the conditions for checking the test field is correct",
+         message: _msg,
          field: :test,
          action: :either
        }

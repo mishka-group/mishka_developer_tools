@@ -307,6 +307,7 @@ end
 | `"validate(enum=Tuple[{:admin, 1}::{:user, 2}::{:banned, 3}])"` | NO | Validate if the data is one of the enum value, which is Tuple|
 | `"validate(equal=some_thing)"` | NO | Validate if the data is equal with validation value, which is any type|
 | `"validate(either=[string, enum=Integer[1::2::3]])"` | NO | Validate if the data is valid with each derive validation|
+| `"validate(custom=[Enum, all?])"` | NO | Validate if the you custom function returns true|
 
 ```elixir
 defmodule MyModule do
@@ -889,3 +890,32 @@ domain: "?auth.either=Either[string, enum>>Integer[1>>2>>3]]"
 ```
 
 **Note**: As you can see, the `>>` indicator has been utilized in this area, despite the fact that it was not included in the first version of these validations.
+
+20. #### Domain core key with Custom function support
+
+Imagine that you have a function that determines for you whether or not the data that has been sent is valid.
+
+**Note**: the function is required to have an input.
+**Note**: the function must return either true or false.
+**Note**: When writing code for the module, do not utilize aliases; instead, write the module's complete path.
+
+```elixir
+defmodule AllowedParentCustomDomain do
+  use GuardedStruct
+  @module_path "MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentCustomDomain"
+
+  guardedstruct authorized_fields: true do
+    field(:username, String.t(),
+      domain: "!auth.action=Custom[#{@module_path}, is_stuff?]",
+      derive: "validate(string)"
+    )
+
+    sub_field(:auth, struct(), authorized_fields: true) do
+      field(:action, String.t(), derive: "validate(not_empty)")
+    end
+  end
+
+  def is_stuff?(data) when data == "ok", do: true
+  def is_stuff?(_data), do: false
+end
+```
