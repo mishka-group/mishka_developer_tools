@@ -34,7 +34,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   defp convert_value(value), do: value
 
-  defp convert_parameters(derive_key, parameters) do
+  def convert_parameters(derive_key, parameters) do
     converted =
       parameters
       |> Enum.map(fn

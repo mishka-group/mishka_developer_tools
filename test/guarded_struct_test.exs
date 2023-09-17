@@ -1088,10 +1088,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         derive: "validate(string)"
       )
 
+      field(:social_equal, atom(),
+        domain: "?auth.equal=Equal[Atom>>name]",
+        derive: "validate(atom)"
+      )
+
+      field(:social_either, atom(),
+        domain: "?auth.either=Either[string, enum>>Integer[1>>2>>3]]",
+        derive: "validate(atom)"
+      )
+
       sub_field(:auth, struct(), authorized_fields: true) do
         field(:action, String.t(), derive: "validate(not_empty)")
         field(:social, atom(), derive: "validate(atom)")
         field(:type, map(), derive: "validate(map)")
+        field(:equal, atom(), derive: "validate(atom)")
+        field(:either, atom())
       end
     end
 
@@ -1165,6 +1177,74 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
       assert AllowedParentDomain.builder(%{
                type_social: "github",
                auth: %{action: "admin", social: :banned, type: %{name: "test"}}
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
+       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+         equal: :name,
+         type: nil,
+         social: :banned,
+         action: "admin"
+       },
+       social_equal: :github,
+       type_social: nil,
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               social_equal: :github,
+               auth: %{action: "admin", social: :banned, equal: :name}
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
+       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+         either: "test",
+         equal: nil,
+         type: nil,
+         social: :banned,
+         action: "admin"
+       },
+       social_either: :github,
+       social_equal: nil,
+       type_social: nil,
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               social_either: :github,
+               auth: %{action: "admin", social: :banned, either: "test"}
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field social_either input you have to send authorized data",
+         field: :social_either,
+         field_path: "auth.either"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{
+               social_either: :github,
+               auth: %{action: "admin", social: :banned, either: 5}
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
+       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+         either: 3,
+         equal: nil,
+         type: nil,
+         social: :banned,
+         action: "admin"
+       },
+       social_either: :github,
+       social_equal: nil,
+       type_social: nil,
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               social_either: :github,
+               auth: %{action: "admin", social: :banned, either: 3}
              })
   end
 
