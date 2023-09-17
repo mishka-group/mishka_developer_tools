@@ -975,6 +975,28 @@ defmodule GuardedStruct do
 
   **Note**: Within this section of the core keys, we are making use of the `:enum` Derive.
   You are free to make advantage of any and all of the amenities that this Derive provides.
+
+  19. #### Domain core key with `equal` and `either` support
+
+  This component supplies all of the facilities that are necessary to be able to utilize the
+  two keys labeled `equal` and `either`, but because of a little interference, its style is
+  different from the original style of each of these keys, and you are required to adhere to
+  these guidelines. Play can be found in this section.
+
+  ##### Example for `equal`
+
+  ```elixir
+  "?auth.equal=Equal[Atom>>name]"
+  ```
+
+  ##### Example for `either`
+
+  ```elixir
+  domain: "?auth.either=Either[string, enum>>Integer[1>>2>>3]]"
+  ```
+
+  **Note**: As you can see, the `>>` indicator has been utilized in this area,
+  despite the fact that it was not included in the first version of these validations.
   """
   defmacro guardedstruct(opts \\ [], do: block) do
     ast = register_struct(block, opts, :root, __CALLER__.module)
@@ -1784,8 +1806,6 @@ defmodule GuardedStruct do
     end)
   end
 
-  # TODO: support equal
-  # TODO: support either
   # TODO: support custom module with its function
   defp domain_field_status(field, attrs, converted_pattern, key, force \\ nil) do
     domain_field = get_domain_field(field, attrs)

@@ -870,3 +870,22 @@ domain: "!auth.action=String[admin, user]::?auth.social=Atom[banned]"
 - So the `auth.social` can be nil and inside user input impossible nil
 
 **Note**: Within this section of the core keys, we are making use of the `:enum` Derive. You are free to make advantage of any and all of the amenities that this Derive provides.
+
+
+19. #### Domain core key with `equal` and `either` support
+
+This component supplies all of the facilities that are necessary to be able to utilize the two keys labeled `equal` and `either`, but because of a little interference, its style is different from the original style of each of these keys, and you are required to adhere to these guidelines. Play can be found in this section.
+
+##### Example for `equal`
+
+```elixir
+"?auth.equal=Equal[Atom>>name]"
+```
+
+##### Example for `either`
+
+```elixir
+domain: "?auth.either=Either[string, enum>>Integer[1>>2>>3]]"
+```
+
+**Note**: As you can see, the `>>` indicator has been utilized in this area, despite the fact that it was not included in the first version of these validations.
