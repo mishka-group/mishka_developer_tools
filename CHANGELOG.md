@@ -1,6 +1,10 @@
 # Changelog for MishkaDeveloperTools 0.1.2
 
-- [x] Add allowed parent domain core key
+- [x] Add allowed parent domain core key `Enum` derive style
+- [x] Add allowed parent domain core key `either` derive style
+- [x] Add allowed parent domain core key `equal` derive style
+- [x] Add allowed parent domain core key `custom` derive style
+- [x] Add driver for accepting `custom` function
 - [ ] Add driver for accepting JSON
 - [ ] Add Conditional field structure `macro` (**Multiple states of a field**)
 - [ ] Add driver for making JSON outputs

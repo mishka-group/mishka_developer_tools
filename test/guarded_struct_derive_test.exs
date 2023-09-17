@@ -747,4 +747,31 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
        test: nil
      }} = assert TestEitherValidationDerive.builder(%{test1: 3})
   end
+
+  defmodule TestCustomValidationDerive do
+    use GuardedStruct
+
+    guardedstruct authorized_fields: true do
+      field(:status, String.t(), derive: "validate(custom=[#{__MODULE__}, is_stuff?])")
+    end
+
+    def is_stuff?(data) when data == "ok", do: true
+    def is_stuff?(_data), do: false
+  end
+
+  test "validate({:custom, value}, input, field)" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomValidationDerive{
+       status: "ok"
+     }} = assert TestCustomValidationDerive.builder(%{status: "ok"})
+
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The condition for checking the status field is not correct",
+         field: :status,
+         action: :custom
+       }
+     ]} = assert TestCustomValidationDerive.builder(%{status: "error"})
+  end
 end

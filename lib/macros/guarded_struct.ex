@@ -373,7 +373,7 @@ defmodule GuardedStruct do
   | `"validate(enum=Tuple[{:admin, 1}::{:user, 2}::{:banned, 3}])"` | NO | Validate if the data is one of the enum value, which is Tuple|
   | `"validate(equal=some_thing)"` | NO | Validate if the data is equal with validation value, which is any type|
   | `"validate(either=[string, enum=Integer[1::2::3]])"` | NO | Validate if the data is valid with each derive validation|
-  | `"validate(custom=[Enum, all?])"` | NO | Validate if the you custom function returns true|
+  | `"validate(custom=[Enum, all?])"` | NO | Validate if the you custom function returns true, **Please read section 20**|
 
   ```elixir
   defmodule MyModule do
@@ -1027,6 +1027,23 @@ defmodule GuardedStruct do
     def is_stuff?(_data), do: false
   end
   ```
+
+  **Note**: if you want to use `custom` inside `derive` validation, you should do like this:
+
+  ```elixir
+  defmodule TestCustomValidationDerive do
+    use GuardedStruct
+
+    guardedstruct authorized_fields: true do
+      field(:status, String.t(), derive: "validate(custom=[\#{__MODULE__}, is_stuff?])")
+    end
+
+    def is_stuff?(data) when data == "ok", do: true
+    def is_stuff?(_data), do: false
+  end
+  ```
+
+  **Note**: You can see when you use it inside a derive, the GuardedStruct calculates the you module `alias`.
   """
   defmacro guardedstruct(opts \\ [], do: block) do
     ast = register_struct(block, opts, :root, __CALLER__.module)

@@ -439,6 +439,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     |> vlidate_equal(input, field)
   end
 
+  def validate({:custom, {module_list, function}}, input, field) do
+    safe_module = Module.safe_concat(module_list)
+    executed = apply(safe_module, function, [input])
+    if is_boolean(executed) and executed, do: input, else: raise(ArgumentError, "")
+  rescue
+    _e ->
+      {:error, field, :custom, "The condition for checking the #{field} field is not correct"}
+  end
+
   def validate({:custom, value}, input, field) do
     [module, function] = convert_enum(value, ",")
     safe_module = Module.safe_concat([module])

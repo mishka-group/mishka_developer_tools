@@ -47,6 +47,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
         {:=, _, [{key, _, nil}, value]} when is_integer(value) ->
           {key, value}
 
+        {:=, _, [{key, _, nil}, value]} when is_list(value) and key == :custom ->
+          case value do
+            [{:__aliases__, _, module_list}, {function, _, nil}] ->
+              {key, {module_list, function}}
+
+            _ ->
+              nil
+          end
+
         {:=, _, [{key, _, nil}, value]} when is_list(value) ->
           if Enum.any?(value, &is_tuple(&1)),
             do: convert_parameters(key, value),
