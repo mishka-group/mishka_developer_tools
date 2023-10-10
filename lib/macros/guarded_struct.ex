@@ -1315,7 +1315,6 @@ defmodule GuardedStruct do
       authorized_fields,
       external,
       core_keys,
-      _,
       _
     ] =
       t
