@@ -55,7 +55,6 @@ defmodule GuardedStruct do
     :gs_authorized_fields,
     :gs_external,
     :gs_core_keys,
-    :gs_conditional_field,
     :gs_caller
   ]
 
@@ -1176,10 +1175,6 @@ defmodule GuardedStruct do
         if unquote(is_error), do: GuardedStruct.create_error_module()
       end
     end
-  end
-
-  defmacro conditional_field(_name, _type, _opts \\ [], do: _block) do
-    # TODO: it should be done
   end
 
   @doc false
