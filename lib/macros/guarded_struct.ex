@@ -1299,7 +1299,8 @@ defmodule GuardedStruct do
     |> before_revaluation(core_keys, key)
     |> authorized_fields(fields, authorized)
     |> required_fields(enforces)
-    |> field_validating(validator, fields, module, external, attrs, key)
+    |> sub_fields_validating(fields, module, external, attrs, key)
+    |> fields_validating(validator, module)
     |> main_validating(found_main_validator, main_validator, module)
     |> Derive.derive(derive)
     |> exceptions_handler(module, error)
@@ -1332,7 +1333,7 @@ defmodule GuardedStruct do
     with missing_keys <- Enum.reject(enforces, &Map.has_key?(attrs, &1)),
          {:missing_keys, true, _missing_keys} <-
            {:missing_keys, Enum.empty?(missing_keys), missing_keys} do
-      {:ok, :required_fields, attrs, :halt}
+      {:ok, :required_fields, attrs}
     else
       {:missing_keys, false, missing_keys} ->
         {:error, :required_fields, missing_keys, :halt}
@@ -1342,34 +1343,45 @@ defmodule GuardedStruct do
   def required_fields({:error, _, _, :halt} = error, _), do: error
 
   @doc false
-  def field_validating({:error, _, _, :halt} = error, _, _, _, _, _, _),
-    do: error
+  def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _), do: error
 
-  def field_validating(
-        {:ok, :required_fields, attrs, :halt},
-        gs_validator,
-        gs_fields,
-        module,
-        external,
-        full_attrs,
-        key
-      ) do
-    {sub_modules_builders, sub_modules_builders_errors, unsub_fields} =
-      required_fields_and_validate_sub_field(
-        attrs,
-        module,
-        gs_fields,
-        external,
-        full_attrs,
-        key
-      )
+  def sub_fields_validating({:ok, _, attrs}, fields, module, external, full_attrs, key) do
+    allowed_fields = Map.take(attrs, fields) |> Map.keys()
+    sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
-    allowed_data = Map.take(attrs, unsub_fields)
+    sub_modules_builders =
+      sub_modules
+      |> Enum.map(fn
+        %{field: field, module: module, type: :list} ->
+          {field, list_builder(full_attrs, module, field, key)}
+
+        %{field: field, module: module, type: :struct} ->
+          keys =
+            reverse_module_keys(Module.split(module), field)
+            |> combine_parent_field(if(is_list(key), do: key, else: [key]))
+            |> List.delete(:root)
+
+          {field, module.builder({keys, full_attrs})}
+      end)
+
+    {
+      attrs,
+      sub_modules_builders_data(sub_modules_builders),
+      sub_modules_builders_errors(sub_modules_builders),
+      reject_sub_module_fields(allowed_fields, sub_modules)
+    }
+  end
+
+  @doc false
+  def fields_validating({:error, _, _, :halt} = error, _, _), do: error
+
+  def fields_validating({attrs, sub_data, sub_errors, unsub}, validator, module) do
+    allowed_data = Map.take(attrs, unsub)
 
     validated =
       allowed_data
       |> Enum.map(fn {key, value} ->
-        GuardedStruct.find_validator(key, value, gs_validator, module)
+        GuardedStruct.find_validator(key, value, validator, module)
       end)
 
     validated_errors =
@@ -1379,13 +1391,11 @@ defmodule GuardedStruct do
       end)
 
     validated_allowed_data =
-      if length(validated_errors) == 0 do
-        convert_list_tuple_to_map(validated)
-      else
-        allowed_data
-      end
+      if length(validated_errors) == 0,
+        do: convert_list_tuple_to_map(validated),
+        else: allowed_data
 
-    {validated_errors, validated_allowed_data, sub_modules_builders, sub_modules_builders_errors}
+    {validated_errors, validated_allowed_data, sub_data, sub_errors}
   end
 
   @doc false
@@ -1578,32 +1588,6 @@ defmodule GuardedStruct do
     Enum.reduce(list, %{}, fn {_, key, value}, acc ->
       Map.put(acc, key, value)
     end)
-  end
-
-  defp required_fields_and_validate_sub_field(attrs, module, gs_fields, external, full_attrs, key) do
-    allowed_fields = Map.take(attrs, gs_fields) |> Map.keys()
-    sub_modules = get_fields_sub_module(module, allowed_fields, external)
-
-    sub_modules_builders =
-      sub_modules
-      |> Enum.map(fn
-        %{field: field, module: module, type: :list} ->
-          {field, list_builder(full_attrs, module, field, key)}
-
-        %{field: field, module: module, type: :struct} ->
-          keys =
-            reverse_module_keys(Module.split(module), field)
-            |> combine_parent_field(if(is_list(key), do: key, else: [key]))
-            |> List.delete(:root)
-
-          {field, module.builder({keys, full_attrs})}
-      end)
-
-    {
-      sub_modules_builders_data(sub_modules_builders),
-      sub_modules_builders_errors(sub_modules_builders),
-      reject_sub_module_fields(allowed_fields, sub_modules)
-    }
   end
 
   defp list_builder(attrs, module, field, key) do
