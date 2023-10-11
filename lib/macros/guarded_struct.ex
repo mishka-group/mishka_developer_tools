@@ -1461,10 +1461,6 @@ defmodule GuardedStruct do
     raise(concated, term: term, errors: error_list)
   end
 
-  ####################################################################
-  ################### (▰˘◡˘▰) Helpers (▰˘◡˘▰) ##################
-  ####################################################################
-
   defp auto_core_key(attrs, core_keys) do
     reduce_attrs =
       Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
@@ -1534,6 +1530,10 @@ defmodule GuardedStruct do
     {:ok, reduce_attrs}
   end
 
+  ####################################################################
+  ################### (▰˘◡˘▰) Helpers (▰˘◡˘▰) ##################
+  ####################################################################
+
   @doc false
   def reverse_module_keys(splited_module, key) do
     path =
@@ -1576,6 +1576,53 @@ defmodule GuardedStruct do
     end
   end
 
+  @doc false
+  def get_fields_sub_module(module, fields, external, list \\ false) do
+    Enum.map(fields, fn field ->
+      extra_field = Keyword.get(external, field)
+
+      find_module =
+        if(!is_nil(extra_field),
+          do: [Keyword.get(external, field).module],
+          else: [module, atom_to_module(field)]
+        )
+
+      {!is_nil(extra_field), Code.ensure_loaded(Module.concat(find_module))}
+      |> case do
+        {true, {:module, module}} ->
+          if !list, do: %{field: field, module: module, type: extra_field.type}, else: field
+
+        {false, {:module, module}} ->
+          if !list, do: %{field: field, module: module, type: :struct}, else: field
+
+        _ ->
+          nil
+      end
+    end)
+    |> Enum.reject(&is_nil(&1))
+  end
+
+  @doc false
+  def show_nested_keys(module, type \\ :keys) do
+    apply(module, type, [])
+    |> Enum.map(fn item ->
+      sub_module = create_module_name(item, module, :direct)
+
+      if Code.ensure_loaded?(sub_module) do
+        Map.new([{item, show_nested_keys(sub_module)}])
+      else
+        item
+      end
+    end)
+  end
+
+  @doc false
+  def create_module_name(name, module_name, type \\ :macro) do
+    name
+    |> atom_to_module()
+    |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
+  end
+
   defp exists_validator?(mod, modfn, attr_name, arity \\ 1) do
     if Module.defines?(mod, {modfn, arity}) do
       Module.put_attribute(mod, attr_name, true)
@@ -1611,32 +1658,6 @@ defmodule GuardedStruct do
   defp combine_parent_field(module_keys, parent_list) do
     combined_list = parent_list ++ module_keys
     Enum.uniq(combined_list)
-  end
-
-  @doc false
-  def get_fields_sub_module(module, fields, external, list \\ false) do
-    Enum.map(fields, fn field ->
-      extra_field = Keyword.get(external, field)
-
-      find_module =
-        if(!is_nil(extra_field),
-          do: [Keyword.get(external, field).module],
-          else: [module, atom_to_module(field)]
-        )
-
-      {!is_nil(extra_field), Code.ensure_loaded(Module.concat(find_module))}
-      |> case do
-        {true, {:module, module}} ->
-          if !list, do: %{field: field, module: module, type: extra_field.type}, else: field
-
-        {false, {:module, module}} ->
-          if !list, do: %{field: field, module: module, type: :struct}, else: field
-
-        _ ->
-          nil
-      end
-    end)
-    |> Enum.reject(&is_nil(&1))
   end
 
   defp atom_to_module(field) do
@@ -1763,45 +1784,19 @@ defmodule GuardedStruct do
     |> Enum.reject(&is_nil(&1))
   end
 
-  defp parse_domain_patterns(pattern, key, attrs) do
-    # "!auth=String[admin, user]::?auth.social=Atom[banned, moderated]"
-    # for example `auth.social` should be atom and between `banned` and `moderated`
-    # ? and ! means the `auth.social` can exist or not and if yes it should be atom and between the values
-    pattern
-    |> String.trim()
-    |> String.split("::", trim: true)
-    |> Enum.map(&String.split(&1, "=", trim: true))
-    |> Enum.map(fn
-      ["!" <> field, converted_pattern] ->
-        domain_field_status(field, attrs, converted_pattern, key, :error)
+  # Makes the type nullable if the key is not enforced.
+  defp type_for(type, false), do: type
+  defp type_for(type, _), do: quote(do: unquote(type) | nil)
 
-      ["?" <> field, converted_pattern] ->
-        domain_field_status(field, attrs, converted_pattern, key)
-    end)
-    |> Enum.reject(&is_nil(&1))
-  end
+  defp check_authorized_fields(attrs, fields, authorized_fields) do
+    case List.first(authorized_fields) do
+      false ->
+        {:authorized_fields, true, []}
 
-  defp get_domain_field(field, attrs) do
-    field
-    |> String.trim()
-    |> String.split(".", trim: true)
-    |> Enum.map(&String.to_atom/1)
-    |> then(&get_in(attrs, &1))
-  end
-
-  defp re_structure_domain_for_derive(data) do
-    data
-    |> String.split(",", trim: true)
-    |> Enum.map(&String.trim/1)
-    |> Enum.join("::")
-  end
-
-  defp re_structure_domain_for_derive(data, "string") do
-    {converted, []} = Code.eval_string(data)
-
-    Enum.reduce(converted, "", fn item, acc ->
-      acc <> "#{Macro.to_string(item)}::"
-    end)
+      true ->
+        filtered = Enum.filter(Map.keys(attrs), &(&1 not in fields))
+        {:authorized_fields, length(filtered) == 0, filtered}
+    end
   end
 
   defp domain_field_status(field, attrs, converted_pattern, key, force \\ nil) do
@@ -1865,39 +1860,44 @@ defmodule GuardedStruct do
     end
   end
 
-  defp check_authorized_fields(attrs, fields, authorized_fields) do
-    case List.first(authorized_fields) do
-      false ->
-        {:authorized_fields, true, []}
+  defp parse_domain_patterns(pattern, key, attrs) do
+    # "!auth=String[admin, user]::?auth.social=Atom[banned, moderated]"
+    # for example `auth.social` should be atom and between `banned` and `moderated`
+    # ? and ! means the `auth.social` can exist or not and if yes it should be atom and between the values
+    pattern
+    |> String.trim()
+    |> String.split("::", trim: true)
+    |> Enum.map(&String.split(&1, "=", trim: true))
+    |> Enum.map(fn
+      ["!" <> field, converted_pattern] ->
+        domain_field_status(field, attrs, converted_pattern, key, :error)
 
-      true ->
-        filtered = Enum.filter(Map.keys(attrs), &(&1 not in fields))
-        {:authorized_fields, length(filtered) == 0, filtered}
-    end
+      ["?" <> field, converted_pattern] ->
+        domain_field_status(field, attrs, converted_pattern, key)
+    end)
+    |> Enum.reject(&is_nil(&1))
   end
 
-  @doc false
-  def show_nested_keys(module, type \\ :keys) do
-    apply(module, type, [])
-    |> Enum.map(fn item ->
-      sub_module = create_module_name(item, module, :direct)
+  defp get_domain_field(field, attrs) do
+    field
+    |> String.trim()
+    |> String.split(".", trim: true)
+    |> Enum.map(&String.to_atom/1)
+    |> then(&get_in(attrs, &1))
+  end
 
-      if Code.ensure_loaded?(sub_module) do
-        Map.new([{item, show_nested_keys(sub_module)}])
-      else
-        item
-      end
+  defp re_structure_domain_for_derive(data) do
+    data
+    |> String.split(",", trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.join("::")
+  end
+
+  defp re_structure_domain_for_derive(data, "string") do
+    {converted, []} = Code.eval_string(data)
+
+    Enum.reduce(converted, "", fn item, acc ->
+      acc <> "#{Macro.to_string(item)}::"
     end)
   end
-
-  @doc false
-  def create_module_name(name, module_name, type \\ :macro) do
-    name
-    |> atom_to_module()
-    |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
-  end
-
-  # Makes the type nullable if the key is not enforced.
-  defp type_for(type, false), do: type
-  defp type_for(type, _), do: quote(do: unquote(type) | nil)
 end
