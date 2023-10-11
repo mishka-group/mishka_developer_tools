@@ -1317,38 +1317,6 @@ defmodule GuardedStruct do
     |> generate_from_value(attrs)
   end
 
-  def exceptions_handler(ouput, module, exception \\ false)
-
-  def exceptions_handler({:ok, _} = successful_output, _, _), do: successful_output
-
-  def exceptions_handler({:error, _, _} = error_output, _module, false), do: error_output
-
-  def exceptions_handler({:error, term, error_list}, module, true) do
-    concated = Module.safe_concat([module, Error])
-    raise(concated, term: term, errors: error_list)
-  end
-
-  @doc false
-  def show_nested_keys(module, type \\ :keys) do
-    apply(module, type, [])
-    |> Enum.map(fn item ->
-      sub_module = create_module_name(item, module, :direct)
-
-      if Code.ensure_loaded?(sub_module) do
-        Map.new([{item, show_nested_keys(sub_module)}])
-      else
-        item
-      end
-    end)
-  end
-
-  @doc false
-  def create_module_name(name, module_name, type \\ :macro) do
-    name
-    |> atom_to_module()
-    |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
-  end
-
   @doc false
   def authorized_fields({:ok, attrs}, fields, authorized) do
     case check_authorized_fields(attrs, fields, authorized) do
@@ -1372,17 +1340,6 @@ defmodule GuardedStruct do
   end
 
   def required_fields({:error, _, _, :halt} = error, _), do: error
-
-  defp check_authorized_fields(attrs, fields, authorized_fields) do
-    case List.first(authorized_fields) do
-      false ->
-        {:authorized_fields, true, []}
-
-      true ->
-        filtered = Enum.filter(Map.keys(attrs), &(&1 not in fields))
-        {:authorized_fields, length(filtered) == 0, filtered}
-    end
-  end
 
   @doc false
   def field_validating({:error, _, _, :halt} = error, _, _, _, _, _, _),
@@ -1483,6 +1440,17 @@ defmodule GuardedStruct do
          validated_errors ++
            sub_modules_builders_errors ++ if(status == :error, do: [main_error_or_data], else: [])}
     end
+  end
+
+  def exceptions_handler(ouput, module, exception \\ false)
+
+  def exceptions_handler({:ok, _} = successful_output, _, _), do: successful_output
+
+  def exceptions_handler({:error, _, _} = error_output, _module, false), do: error_output
+
+  def exceptions_handler({:error, term, error_list}, module, true) do
+    concated = Module.safe_concat([module, Error])
+    raise(concated, term: term, errors: error_list)
   end
 
   ####################################################################
@@ -1913,6 +1881,38 @@ defmodule GuardedStruct do
           field: key
         }
     end
+  end
+
+  defp check_authorized_fields(attrs, fields, authorized_fields) do
+    case List.first(authorized_fields) do
+      false ->
+        {:authorized_fields, true, []}
+
+      true ->
+        filtered = Enum.filter(Map.keys(attrs), &(&1 not in fields))
+        {:authorized_fields, length(filtered) == 0, filtered}
+    end
+  end
+
+  @doc false
+  def show_nested_keys(module, type \\ :keys) do
+    apply(module, type, [])
+    |> Enum.map(fn item ->
+      sub_module = create_module_name(item, module, :direct)
+
+      if Code.ensure_loaded?(sub_module) do
+        Map.new([{item, show_nested_keys(sub_module)}])
+      else
+        item
+      end
+    end)
+  end
+
+  @doc false
+  def create_module_name(name, module_name, type \\ :macro) do
+    name
+    |> atom_to_module()
+    |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
   end
 
   # Makes the type nullable if the key is not enforced.
