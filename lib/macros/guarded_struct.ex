@@ -42,6 +42,11 @@ defmodule GuardedStruct do
   **Note:** If the license changes during the support of this project, this file will always remain on MIT
 
   """
+
+  ####################################################################
+  ################ (▰˘◡˘▰) initializing (▰˘◡˘▰) ################
+  ####################################################################
+
   alias MishkaDeveloperTools.Helper.{Derive, Derive.Parser, Derive.ValidationDerive}
   defexception [:term]
 
@@ -1068,6 +1073,10 @@ defmodule GuardedStruct do
     end
   end
 
+  ####################################################################
+  ################### (▰˘◡˘▰) Macros (▰˘◡˘▰) ###################
+  ####################################################################
+
   defmacro create_error_module() do
     quote do
       defmodule Error do
@@ -1082,59 +1091,6 @@ defmodule GuardedStruct do
           """
         end
       end
-    end
-  end
-
-  @doc false
-  def register_struct(block, opts, key, caller) do
-    quote do
-      [:validate_derive, :sanitize_derive]
-      |> Enum.each(fn item ->
-        if is_nil(Application.compile_env(:guarded_struct, item)) do
-          Application.put_env(:guarded_struct, item, Keyword.get(unquote(opts), item))
-        end
-      end)
-
-      Enum.each(unquote(@temporary_revaluation), fn attr ->
-        Module.register_attribute(__MODULE__, attr, accumulate: true)
-      end)
-
-      Module.put_attribute(__MODULE__, :gs_enforce?, unquote(!!opts[:enforce]))
-
-      Module.put_attribute(
-        __MODULE__,
-        :gs_caller,
-        %{key: unquote(key), module: __MODULE__, caller: unquote(caller)}
-      )
-
-      Module.put_attribute(__MODULE__, :gs_authorized_fields, unquote(!!opts[:authorized_fields]))
-
-      main_validator = unquote(opts[:main_validator])
-
-      if !is_nil(main_validator) && is_tuple(main_validator) do
-        Module.put_attribute(__MODULE__, :gs_main_validator, main_validator)
-      end
-
-      if !is_nil(main_validator) && (!is_tuple(main_validator) or tuple_size(main_validator) != 2) do
-        raise(
-          ArgumentError,
-          "Main validator is came as a tuple and includes {module, function_name}, noted the function_name should be atom."
-        )
-      end
-
-      @before_compile {unquote(__MODULE__), :create_builder}
-      @before_compile {unquote(__MODULE__), :delete_temporary_revaluation}
-
-      import GuardedStruct
-      # Leave the block with its orginal face
-      unquote(block)
-
-      # Point what field should be required
-      @enforce_keys @gs_enforce_keys
-      defstruct @gs_fields
-
-      # Create type `t()` with `@opaque` option
-      GuardedStruct.__type__(@gs_types, unquote(opts))
     end
   end
 
@@ -1176,29 +1132,6 @@ defmodule GuardedStruct do
       end
     end
   end
-
-  @doc false
-  def __field__(name, type, opts, env_data, subfield \\ false)
-
-  def __field__(name, type, opts, %Macro.Env{module: mod} = _env, sub_field)
-      when is_atom(name) do
-    if Keyword.has_key?(Module.get_attribute(mod, :gs_fields), name) do
-      raise ArgumentError, "the field #{inspect(name)} is already set"
-    end
-
-    config(:core_keys, opts, mod, name)
-    config(:derive, opts, mod, name)
-    config(:struct, opts, sub_field, mod, name)
-    config(:fields_types, opts, mod, name, type)
-  end
-
-  def __field__(name, _type, _opts, _env, _sub_field) do
-    raise ArgumentError, "a field name must be an atom, got #{inspect(name)}"
-  end
-
-  # Makes the type nullable if the key is not enforced.
-  defp type_for(type, false), do: type
-  defp type_for(type, _), do: quote(do: unquote(type) | nil)
 
   @doc false
   defmacro create_builder(%Macro.Env{module: module}) do
@@ -1275,56 +1208,97 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def reverse_module_keys(splited_module, key) do
-    path =
-      for {_module, idx} <- Enum.with_index(splited_module) do
-        Enum.join(Enum.take(splited_module, idx + 1), ".")
-      end
-      |> Enum.reverse()
-      |> tl
-      |> Enum.reduce_while([], fn item, acc ->
-        concated = Module.safe_concat(String.split(item, ".", trim: true))
+  defmacro delete_temporary_revaluation(%Macro.Env{module: module}) do
+    Enum.each(unquote(@temporary_revaluation), &Module.delete_attribute(module, &1))
+  end
 
-        {Code.ensure_loaded(concated), function_exported?(concated, :__information__, 0)}
-        |> case do
-          {{:module, module}, true} ->
-            module_info = apply(module, :__information__, [])
+  ####################################################################
+  ############## (▰˘◡˘▰) Action Functions (▰˘◡˘▰) ##############
+  ####################################################################
 
-            if(module_info.key == :root,
-              do: {:halt, acc},
-              else: {:cont, acc ++ [module_info.key]}
-            )
-
-          _ ->
-            {:halt, acc}
+  @doc false
+  def register_struct(block, opts, key, caller) do
+    quote do
+      [:validate_derive, :sanitize_derive]
+      |> Enum.each(fn item ->
+        if is_nil(Application.compile_env(:guarded_struct, item)) do
+          Application.put_env(:guarded_struct, item, Keyword.get(unquote(opts), item))
         end
       end)
 
-    path ++ [key]
+      Enum.each(unquote(@temporary_revaluation), fn attr ->
+        Module.register_attribute(__MODULE__, attr, accumulate: true)
+      end)
+
+      Module.put_attribute(__MODULE__, :gs_enforce?, unquote(!!opts[:enforce]))
+
+      Module.put_attribute(
+        __MODULE__,
+        :gs_caller,
+        %{key: unquote(key), module: __MODULE__, caller: unquote(caller)}
+      )
+
+      Module.put_attribute(__MODULE__, :gs_authorized_fields, unquote(!!opts[:authorized_fields]))
+
+      main_validator = unquote(opts[:main_validator])
+
+      if !is_nil(main_validator) && is_tuple(main_validator) do
+        Module.put_attribute(__MODULE__, :gs_main_validator, main_validator)
+      end
+
+      if !is_nil(main_validator) && (!is_tuple(main_validator) or tuple_size(main_validator) != 2) do
+        raise(
+          ArgumentError,
+          "Main validator is came as a tuple and includes {module, function_name}, noted the function_name should be atom."
+        )
+      end
+
+      @before_compile {unquote(__MODULE__), :create_builder}
+      @before_compile {unquote(__MODULE__), :delete_temporary_revaluation}
+
+      import GuardedStruct
+      # Leave the block with its orginal face
+      unquote(block)
+
+      # Point what field should be required
+      @enforce_keys @gs_enforce_keys
+      defstruct @gs_fields
+
+      # Create type `t()` with `@opaque` option
+      GuardedStruct.__type__(@gs_types, unquote(opts))
+    end
+  end
+
+  @doc false
+  def __field__(name, type, opts, env_data, subfield \\ false)
+
+  def __field__(name, type, opts, %Macro.Env{module: mod} = _env, sub_field)
+      when is_atom(name) do
+    if Keyword.has_key?(Module.get_attribute(mod, :gs_fields), name) do
+      raise ArgumentError, "the field #{inspect(name)} is already set"
+    end
+
+    config(:core_keys, opts, mod, name)
+    config(:derive, opts, mod, name)
+    config(:struct, opts, sub_field, mod, name)
+    config(:fields_types, opts, mod, name, type)
+  end
+
+  def __field__(name, _type, _opts, _env, _sub_field) do
+    raise ArgumentError, "a field name must be an atom, got #{inspect(name)}"
   end
 
   @doc false
   def builder(actions, key, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
-
-    [
-      enforce_keys,
-      validator,
-      main_validator,
-      derive,
-      authorized_fields,
-      external,
-      core_keys,
-      _
-    ] =
-      t
-
+    [enforces, validator, main_validator, derive, authorized, external, core_keys, _] = t
     found_main_validator = Enum.find(main_validator, &is_tuple(&1))
     fields = h |> Enum.map(&elem(&1, 0))
 
     Parser.convert_to_atom_map(attrs)
     |> before_revaluation(core_keys, key)
-    |> required_fields(enforce_keys, fields, authorized_fields)
+    |> authorized_fields(fields, authorized)
+    |> required_fields(enforces)
     |> field_validating(validator, fields, module, external, attrs, key)
     |> main_validating(found_main_validator, main_validator, module)
     |> Derive.derive(derive)
@@ -1341,75 +1315,6 @@ defmodule GuardedStruct do
     |> validation_domain_parameters()
     |> validation_on_value(attrs)
     |> generate_from_value(attrs)
-  end
-
-  defp generate_auto_value(attrs, core_keys) do
-    reduce_attrs =
-      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
-      |> Enum.reduce(attrs, fn item, acc ->
-        case item do
-          {key, %{type: :auto, values: {module, function}}} ->
-            Map.put(acc, key, apply(module, function, []))
-
-          {key, %{type: :auto, values: {module, function, default}}} ->
-            Map.put(acc, key, apply(module, function, [default]))
-
-          _ ->
-            acc
-        end
-      end)
-
-    {reduce_attrs, core_keys}
-  end
-
-  defp validation_domain_parameters({attrs, core_keys}) do
-    domain_parameters_errors =
-      Enum.map(core_keys, fn
-        {key, %{type: :domain, values: pattern}} ->
-          parsed =
-            parse_domain_patterns(pattern, key, attrs)
-            |> List.flatten()
-
-          if length(parsed) == 0, do: nil, else: parsed
-
-        _ ->
-          nil
-      end)
-      |> Enum.reject(&is_nil(&1))
-      |> List.flatten()
-
-    if length(domain_parameters_errors) == 0,
-      do: {:ok, attrs, core_keys},
-      else: {:error, :domain_parameters, domain_parameters_errors, :halt}
-  end
-
-  defp validation_on_value({:error, _, _, _} = error, _full_attrs), do: error
-
-  defp validation_on_value({:ok, attrs, core_keys}, full_attrs) do
-    dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
-
-    if length(dependent_keys_errors) == 0,
-      do: {:ok, attrs, core_keys},
-      else: {:error, :dependent_keys, dependent_keys_errors, :halt}
-  end
-
-  defp generate_from_value({:error, _, _, _} = error, _full_attrs), do: error
-
-  defp generate_from_value({:ok, attrs, core_keys}, full_attrs) do
-    reduce_attrs =
-      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
-      |> Enum.reduce(attrs, fn {key, %{type: :from, values: pattern}}, acc ->
-        splited_pattern = Parser.parse_core_keys_pattern(pattern)
-        [h | t] = splited_pattern
-
-        if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern))
-        |> case do
-          data when is_nil(data) -> acc
-          data -> Map.put(acc, key, data)
-        end
-      end)
-
-    {:ok, reduce_attrs}
   end
 
   def exceptions_handler(ouput, module, exception \\ false)
@@ -1445,23 +1350,28 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def required_fields({:ok, attrs}, keys, gs_fields, authorized_fields) do
-    with {:authorized_fields, true, _} <-
-           check_authorized_fields(attrs, gs_fields, authorized_fields),
-         missing_keys <- Enum.reject(keys, &Map.has_key?(attrs, &1)),
+  def authorized_fields({:ok, attrs}, fields, authorized) do
+    case check_authorized_fields(attrs, fields, authorized) do
+      {_, true, _} -> {:ok, attrs}
+      {_, false, filtered} -> {:error, :authorized_fields, filtered, :halt}
+    end
+  end
+
+  def authorized_fields({:error, _, _, :halt} = error, _, _), do: error
+
+  @doc false
+  def required_fields({:ok, attrs}, enforces) do
+    with missing_keys <- Enum.reject(enforces, &Map.has_key?(attrs, &1)),
          {:missing_keys, true, _missing_keys} <-
            {:missing_keys, Enum.empty?(missing_keys), missing_keys} do
       {:ok, :required_fields, attrs, :halt}
     else
       {:missing_keys, false, missing_keys} ->
         {:error, :required_fields, missing_keys, :halt}
-
-      {:authorized_fields, false, filtered} ->
-        {:error, :authorized_fields, filtered, :halt}
     end
   end
 
-  def required_fields({:error, _, _, :halt} = error, _, _, _), do: error
+  def required_fields({:error, _, _, :halt} = error, _), do: error
 
   defp check_authorized_fields(attrs, fields, authorized_fields) do
     case List.first(authorized_fields) do
@@ -1575,6 +1485,108 @@ defmodule GuardedStruct do
     end
   end
 
+  ####################################################################
+  ################### (▰˘◡˘▰) Helpers (▰˘◡˘▰) ##################
+  ####################################################################
+
+  defp generate_auto_value(attrs, core_keys) do
+    reduce_attrs =
+      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
+      |> Enum.reduce(attrs, fn item, acc ->
+        case item do
+          {key, %{type: :auto, values: {module, function}}} ->
+            Map.put(acc, key, apply(module, function, []))
+
+          {key, %{type: :auto, values: {module, function, default}}} ->
+            Map.put(acc, key, apply(module, function, [default]))
+
+          _ ->
+            acc
+        end
+      end)
+
+    {reduce_attrs, core_keys}
+  end
+
+  defp validation_domain_parameters({attrs, core_keys}) do
+    domain_parameters_errors =
+      Enum.map(core_keys, fn
+        {key, %{type: :domain, values: pattern}} ->
+          parsed =
+            parse_domain_patterns(pattern, key, attrs)
+            |> List.flatten()
+
+          if length(parsed) == 0, do: nil, else: parsed
+
+        _ ->
+          nil
+      end)
+      |> Enum.reject(&is_nil(&1))
+      |> List.flatten()
+
+    if length(domain_parameters_errors) == 0,
+      do: {:ok, attrs, core_keys},
+      else: {:error, :domain_parameters, domain_parameters_errors, :halt}
+  end
+
+  defp validation_on_value({:error, _, _, _} = error, _full_attrs), do: error
+
+  defp validation_on_value({:ok, attrs, core_keys}, full_attrs) do
+    dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
+
+    if length(dependent_keys_errors) == 0,
+      do: {:ok, attrs, core_keys},
+      else: {:error, :dependent_keys, dependent_keys_errors, :halt}
+  end
+
+  defp generate_from_value({:error, _, _, _} = error, _full_attrs), do: error
+
+  defp generate_from_value({:ok, attrs, core_keys}, full_attrs) do
+    reduce_attrs =
+      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
+      |> Enum.reduce(attrs, fn {key, %{type: :from, values: pattern}}, acc ->
+        splited_pattern = Parser.parse_core_keys_pattern(pattern)
+        [h | t] = splited_pattern
+
+        if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern))
+        |> case do
+          data when is_nil(data) -> acc
+          data -> Map.put(acc, key, data)
+        end
+      end)
+
+    {:ok, reduce_attrs}
+  end
+
+  @doc false
+  def reverse_module_keys(splited_module, key) do
+    path =
+      for {_module, idx} <- Enum.with_index(splited_module) do
+        Enum.join(Enum.take(splited_module, idx + 1), ".")
+      end
+      |> Enum.reverse()
+      |> tl
+      |> Enum.reduce_while([], fn item, acc ->
+        concated = Module.safe_concat(String.split(item, ".", trim: true))
+
+        {Code.ensure_loaded(concated), function_exported?(concated, :__information__, 0)}
+        |> case do
+          {{:module, module}, true} ->
+            module_info = apply(module, :__information__, [])
+
+            if(module_info.key == :root,
+              do: {:halt, acc},
+              else: {:cont, acc ++ [module_info.key]}
+            )
+
+          _ ->
+            {:halt, acc}
+        end
+      end)
+
+    path ++ [key]
+  end
+
   @doc false
   def find_validator(field, data, gs_validator, caller_module) do
     case Enum.find(gs_validator, &(&1 != true && &1.field == field)) do
@@ -1586,11 +1598,6 @@ defmodule GuardedStruct do
           do: caller_module.validator(field, data),
           else: {:ok, field, data}
     end
-  end
-
-  @doc false
-  defmacro delete_temporary_revaluation(%Macro.Env{module: module}) do
-    Enum.each(unquote(@temporary_revaluation), &Module.delete_attribute(module, &1))
   end
 
   defp exists_validator?(mod, modfn, attr_name, arity \\ 1) do
@@ -1907,4 +1914,8 @@ defmodule GuardedStruct do
         }
     end
   end
+
+  # Makes the type nullable if the key is not enforced.
+  defp type_for(type, false), do: type
+  defp type_for(type, _), do: quote(do: unquote(type) | nil)
 end
