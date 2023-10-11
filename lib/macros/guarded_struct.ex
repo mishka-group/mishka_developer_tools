@@ -1844,6 +1844,7 @@ defmodule GuardedStruct do
 
   # Makes the type nullable if the key is not enforced.
   defp type_for(type, false), do: type
+
   defp type_for(type, _), do: quote(do: unquote(type) | nil)
 
   defp check_authorized_fields(attrs, fields, authorized_fields) do
@@ -1859,39 +1860,7 @@ defmodule GuardedStruct do
 
   defp domain_field_status(field, attrs, converted_pattern, key, force \\ nil) do
     domain_field = get_domain_field(field, attrs)
-
-    converted_pattern =
-      converted_pattern
-      |> case do
-        "Tuple" <> list ->
-          {:enum, "Tuple[#{re_structure_domain_for_derive(list, "string")}]"}
-
-        "Map" <> list ->
-          {:enum, "Map[#{re_structure_domain_for_derive(list, "string")}]"}
-
-        "Equal" <> data ->
-          converted_data =
-            data
-            |> String.replace(["[", "]"], "")
-            |> String.replace(">>", "::")
-
-          {:equal, converted_data}
-
-        "Either" <> list ->
-          converted_data =
-            list
-            |> String.replace("enum>>", "enum=")
-            |> String.replace(">>", "::")
-            |> then(&Parser.convert_parameters("parsed_string", Code.string_to_quoted!(&1)))
-
-          %{either: converted_data["parsed_string"]}
-
-        "Custom" <> list ->
-          {:custom, list}
-
-        data ->
-          {:enum, re_structure_domain_for_derive(data)}
-      end
+    converted_pattern = converted_domain_pattern(converted_pattern)
 
     if !is_nil(domain_field) do
       ValidationDerive.validate(converted_pattern, domain_field, key)
@@ -1915,6 +1884,40 @@ defmodule GuardedStruct do
           field_path: field,
           field: key
         }
+    end
+  end
+
+  defp converted_domain_pattern(converted_pattern) do
+    converted_pattern
+    |> case do
+      "Tuple" <> list ->
+        {:enum, "Tuple[#{re_structure_domain_for_derive(list, "string")}]"}
+
+      "Map" <> list ->
+        {:enum, "Map[#{re_structure_domain_for_derive(list, "string")}]"}
+
+      "Equal" <> data ->
+        converted_data =
+          data
+          |> String.replace(["[", "]"], "")
+          |> String.replace(">>", "::")
+
+        {:equal, converted_data}
+
+      "Either" <> list ->
+        converted_data =
+          list
+          |> String.replace("enum>>", "enum=")
+          |> String.replace(">>", "::")
+          |> then(&Parser.convert_parameters("parsed_string", Code.string_to_quoted!(&1)))
+
+        %{either: converted_data["parsed_string"]}
+
+      "Custom" <> list ->
+        {:custom, list}
+
+      data ->
+        {:enum, re_structure_domain_for_derive(data)}
     end
   end
 
