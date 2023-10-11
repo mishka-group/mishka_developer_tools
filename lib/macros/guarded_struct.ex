@@ -1296,7 +1296,11 @@ defmodule GuardedStruct do
     fields = h |> Enum.map(&elem(&1, 0))
 
     Parser.convert_to_atom_map(attrs)
-    |> before_revaluation(core_keys, key)
+    |> before_revaluation(key)
+    |> auto_core_key(core_keys)
+    |> domain_core_key()
+    |> on_core_key(attrs)
+    |> from_core_key(attrs)
     |> authorized_fields(fields, authorized)
     |> required_fields(enforces)
     |> sub_fields_validating(fields, module, external, attrs, key)
@@ -1306,17 +1310,11 @@ defmodule GuardedStruct do
     |> exceptions_handler(module, error)
   end
 
-  defp before_revaluation(attrs, core_keys, key) do
-    case key do
-      :root -> attrs
-      key when is_list(key) -> get_in(attrs, key)
-      _ -> Map.get(attrs, key)
-    end
-    |> generate_auto_value(core_keys)
-    |> validation_domain_parameters()
-    |> validation_on_value(attrs)
-    |> generate_from_value(attrs)
-  end
+  defp before_revaluation(attrs, key) when key == :root, do: attrs
+
+  defp before_revaluation(attrs, key) when is_list(key), do: get_in(attrs, key)
+
+  defp before_revaluation(attrs, key), do: Map.get(attrs, key)
 
   @doc false
   def authorized_fields({:ok, attrs}, fields, authorized) do
@@ -1467,7 +1465,7 @@ defmodule GuardedStruct do
   ################### (▰˘◡˘▰) Helpers (▰˘◡˘▰) ##################
   ####################################################################
 
-  defp generate_auto_value(attrs, core_keys) do
+  defp auto_core_key(attrs, core_keys) do
     reduce_attrs =
       Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
       |> Enum.reduce(attrs, fn item, acc ->
@@ -1486,7 +1484,7 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
-  defp validation_domain_parameters({attrs, core_keys}) do
+  defp domain_core_key({attrs, core_keys}) do
     domain_parameters_errors =
       Enum.map(core_keys, fn
         {key, %{type: :domain, values: pattern}} ->
@@ -1507,9 +1505,9 @@ defmodule GuardedStruct do
       else: {:error, :domain_parameters, domain_parameters_errors, :halt}
   end
 
-  defp validation_on_value({:error, _, _, _} = error, _full_attrs), do: error
+  defp on_core_key({:error, _, _, _} = error, _full_attrs), do: error
 
-  defp validation_on_value({:ok, attrs, core_keys}, full_attrs) do
+  defp on_core_key({:ok, attrs, core_keys}, full_attrs) do
     dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
 
     if length(dependent_keys_errors) == 0,
@@ -1517,9 +1515,9 @@ defmodule GuardedStruct do
       else: {:error, :dependent_keys, dependent_keys_errors, :halt}
   end
 
-  defp generate_from_value({:error, _, _, _} = error, _full_attrs), do: error
+  defp from_core_key({:error, _, _, _} = error, _full_attrs), do: error
 
-  defp generate_from_value({:ok, attrs, core_keys}, full_attrs) do
+  defp from_core_key({:ok, attrs, core_keys}, full_attrs) do
     reduce_attrs =
       Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
       |> Enum.reduce(attrs, fn {key, %{type: :from, values: pattern}}, acc ->
