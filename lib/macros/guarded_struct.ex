@@ -1403,22 +1403,19 @@ defmodule GuardedStruct do
     reduce_attrs =
       Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
       |> Enum.reduce(attrs, fn item, acc ->
-        case item do
-          {key, %{type: :auto, values: {module, function}}} ->
-            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
-              Map.put(acc, key, Map.get(acc, key))
-            else
-              _ ->
-                Map.put(acc, key, apply(module, function, []))
-            end
+        case {type, !is_nil(Map.get(acc, elem(item, 0))), item} do
+          {:edit, true, {key, %{type: :auto, values: _value}}} ->
+            Map.put(acc, key, Map.get(acc, key))
 
-          {key, %{type: :auto, values: {module, function, default}}} ->
-            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
-              Map.put(acc, key, Map.get(acc, key))
-            else
-              _ ->
-                Map.put(acc, key, apply(module, function, [default]))
-            end
+          {_, _, {key, %{type: :auto, values: {module, function, default}}}}
+          when is_list(default) ->
+            Map.put(acc, key, apply(module, function, default))
+
+          {_, _, {key, %{type: :auto, values: {module, function, default}}}} ->
+            Map.put(acc, key, apply(module, function, [default]))
+
+          {_, _, {key, %{type: :auto, values: {module, function}}}} ->
+            Map.put(acc, key, apply(module, function, []))
 
           _ ->
             acc
