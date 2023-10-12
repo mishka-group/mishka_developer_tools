@@ -1145,11 +1145,22 @@ defmodule GuardedStruct do
     quote do
       def builder(attrs, error \\ false)
 
+      def builder({key, attrs, type} = input, error)
+          when is_tuple(input) and is_map(attrs) and (is_list(key) or is_atom(key)) do
+        GuardedStruct.builder(
+          %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
+          key,
+          type,
+          error
+        )
+      end
+
       def builder({key, attrs} = input, error)
           when is_tuple(input) and is_map(attrs) and is_list(key) do
         GuardedStruct.builder(
           %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
           key,
+          :add,
           error
         )
       end
@@ -1158,6 +1169,7 @@ defmodule GuardedStruct do
         GuardedStruct.builder(
           %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
           :root,
+          :add,
           error
         )
       end
@@ -1347,7 +1359,7 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def builder(actions, key, error \\ false) do
+  def builder(actions, key, type, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
     [enforces, validator, main_validator, derive, authorized, external, core_keys, _] = t
     found_main_validator = Enum.find(main_validator, &is_tuple(&1))
@@ -1355,20 +1367,22 @@ defmodule GuardedStruct do
 
     Parser.convert_to_atom_map(attrs)
     |> before_revaluation(key)
-    |> auto_core_key(core_keys)
+    |> auto_core_key(core_keys, type)
     |> domain_core_key()
     |> on_core_key(attrs)
     |> from_core_key(attrs)
     |> authorized_fields(fields, authorized)
     |> required_fields(enforces)
-    |> sub_fields_validating(fields, module, external, attrs, key)
+    |> sub_fields_validating(fields, module, external, attrs, key, type)
     |> fields_validating(validator, module)
     |> main_validating(found_main_validator, main_validator, module)
     |> Derive.derive(derive)
     |> exceptions_handler(module, error)
   end
 
-  defp before_revaluation(attrs, key) when key == :root, do: attrs
+  defp before_revaluation(attrs, :root), do: attrs
+
+  defp before_revaluation(attrs, [:root]), do: attrs
 
   defp before_revaluation(attrs, key) when is_list(key), do: get_in(attrs, key)
 
@@ -1399,9 +1413,9 @@ defmodule GuardedStruct do
   def required_fields({:error, _, _, :halt} = error, _), do: error
 
   @doc false
-  def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _), do: error
+  def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _, _), do: error
 
-  def sub_fields_validating({:ok, _, attrs}, fields, module, external, full_attrs, key) do
+  def sub_fields_validating({:ok, _, attrs}, fields, module, external, full_attrs, key, type) do
     allowed_fields = Map.take(attrs, fields) |> Map.keys()
     sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
@@ -1409,7 +1423,7 @@ defmodule GuardedStruct do
       sub_modules
       |> Enum.map(fn
         %{field: field, module: module, type: :list} ->
-          {field, list_builder(full_attrs, module, field, key)}
+          {field, list_builder(full_attrs, module, field, key, type)}
 
         %{field: field, module: module, type: :struct} ->
           keys =
@@ -1417,7 +1431,7 @@ defmodule GuardedStruct do
             |> combine_parent_field(if(is_list(key), do: key, else: [key]))
             |> List.delete(:root)
 
-          {field, module.builder({keys, full_attrs})}
+          {field, module.builder({keys, full_attrs, type})}
       end)
 
     {
@@ -1519,16 +1533,26 @@ defmodule GuardedStruct do
     raise(concated, term: term, errors: error_list)
   end
 
-  defp auto_core_key(attrs, core_keys) do
+  defp auto_core_key(attrs, core_keys, type) do
     reduce_attrs =
       Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
       |> Enum.reduce(attrs, fn item, acc ->
         case item do
           {key, %{type: :auto, values: {module, function}}} ->
-            Map.put(acc, key, apply(module, function, []))
+            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
+              Map.put(acc, key, Map.get(acc, key))
+            else
+              _ ->
+                Map.put(acc, key, apply(module, function, []))
+            end
 
           {key, %{type: :auto, values: {module, function, default}}} ->
-            Map.put(acc, key, apply(module, function, [default]))
+            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
+              Map.put(acc, key, Map.get(acc, key))
+            else
+              _ ->
+                Map.put(acc, key, apply(module, function, [default]))
+            end
 
           _ ->
             acc
@@ -1693,7 +1717,7 @@ defmodule GuardedStruct do
     end)
   end
 
-  defp list_builder(attrs, module, field, key) do
+  defp list_builder(attrs, module, field, key, type) do
     field_path =
       reverse_module_keys(Module.split(module), field)
       |> combine_parent_field(if(is_list(key), do: key, else: [key]))
@@ -1703,7 +1727,7 @@ defmodule GuardedStruct do
 
     if is_list(get_field) do
       builders_output =
-        Enum.map(get_field, &module.builder({field_path, Map.put(attrs, field, &1)}))
+        Enum.map(get_field, &module.builder({field_path, Map.put(attrs, field, &1), type}))
 
       errors = Enum.find(builders_output, &(elem(&1, 0) == :error))
 

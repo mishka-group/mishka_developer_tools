@@ -902,6 +902,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
            |> is_binary()
 
     assert social_UUID != profile_UUID != user_UUID
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
+       parent_id: _edit_parent_id,
+       user_id: "test_not_to_be_replaced"
+     }} =
+      assert TestAutoValueStruct.builder(
+               {:root,
+                %{
+                  username: "mishka",
+                  user_id: "test_not_to_be_replaced"
+                }, :edit}
+             )
   end
 
   defmodule TestOnValueStruct do
