@@ -807,9 +807,6 @@ defmodule GuardedStruct do
 
   ---
 
-  **TODO**: In the next version, it will not be made automatically if there is data for the key that is desired,
-  but it will be feasible to do so if the data exists.
-
   > When the core keys are called, the entire primary map is sent to each child.
 
   ```elixir
@@ -843,6 +840,20 @@ defmodule GuardedStruct do
     end
   end
   ```
+
+  > **Note**: When changing a record in the database, for example, you might need to make sure that a particular
+  > piece of data does not get overwritten by an automatic piece of data if one already exists.
+  > To find a solution to this issue, you will need to invoke the `builder` function in the following manner.
+
+  ```elixir
+  TestModule.builder({:root, %{username: "mishka", user_id: "test_not_to_be_replaced"}, :edit})
+  ```
+
+  The desired key can be derived from the information that was supplied by the user,
+  and it is stored in the first entry of the `Tuple`. If it is `:root` or `[:root]`, it indicates that the entire
+  data set is being referred to, and if it is a special key that must be valued as a list,
+  it indicates that the `builder` will begin its operation from that particular key.
+  It is important to notice that the key has to be `sub_field` if the path is chosen to be displayed.
 
   17. #### On core key
 

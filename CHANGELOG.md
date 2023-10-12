@@ -5,6 +5,7 @@
 - [x] Add allowed parent domain core key `equal` derive style
 - [x] Add allowed parent domain core key `custom` derive style
 - [x] Add driver for accepting `custom` function
+- [x] Add status to auto core key if the data of key exists do not create auto value
 - [ ] Add driver for accepting JSON
 - [ ] Add Conditional field structure `macro` (**Multiple states of a field**)
 - [ ] Add driver for making JSON outputs
