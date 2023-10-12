@@ -1388,6 +1388,85 @@ defmodule GuardedStruct do
 
   defp before_revaluation(attrs, key), do: Map.get(attrs, key)
 
+  defp auto_core_key(attrs, core_keys, type) do
+    reduce_attrs =
+      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
+      |> Enum.reduce(attrs, fn item, acc ->
+        case item do
+          {key, %{type: :auto, values: {module, function}}} ->
+            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
+              Map.put(acc, key, Map.get(acc, key))
+            else
+              _ ->
+                Map.put(acc, key, apply(module, function, []))
+            end
+
+          {key, %{type: :auto, values: {module, function, default}}} ->
+            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
+              Map.put(acc, key, Map.get(acc, key))
+            else
+              _ ->
+                Map.put(acc, key, apply(module, function, [default]))
+            end
+
+          _ ->
+            acc
+        end
+      end)
+
+    {reduce_attrs, core_keys}
+  end
+
+  defp domain_core_key({attrs, core_keys}) do
+    domain_parameters_errors =
+      Enum.map(core_keys, fn
+        {key, %{type: :domain, values: pattern}} ->
+          parsed =
+            parse_domain_patterns(pattern, key, attrs)
+            |> List.flatten()
+
+          if length(parsed) == 0, do: nil, else: parsed
+
+        _ ->
+          nil
+      end)
+      |> Enum.reject(&is_nil(&1))
+      |> List.flatten()
+
+    if length(domain_parameters_errors) == 0,
+      do: {:ok, attrs, core_keys},
+      else: {:error, :domain_parameters, domain_parameters_errors, :halt}
+  end
+
+  defp on_core_key({:error, _, _, _} = error, _full_attrs), do: error
+
+  defp on_core_key({:ok, attrs, core_keys}, full_attrs) do
+    dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
+
+    if length(dependent_keys_errors) == 0,
+      do: {:ok, attrs, core_keys},
+      else: {:error, :dependent_keys, dependent_keys_errors, :halt}
+  end
+
+  defp from_core_key({:error, _, _, _} = error, _full_attrs), do: error
+
+  defp from_core_key({:ok, attrs, core_keys}, full_attrs) do
+    reduce_attrs =
+      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
+      |> Enum.reduce(attrs, fn {key, %{type: :from, values: pattern}}, acc ->
+        splited_pattern = Parser.parse_core_keys_pattern(pattern)
+        [h | t] = splited_pattern
+
+        if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern))
+        |> case do
+          data when is_nil(data) -> acc
+          data -> Map.put(acc, key, data)
+        end
+      end)
+
+    {:ok, reduce_attrs}
+  end
+
   @doc false
   def authorized_fields({:ok, attrs}, fields, authorized) do
     case check_authorized_fields(attrs, fields, authorized) do
@@ -1531,85 +1610,6 @@ defmodule GuardedStruct do
   def exceptions_handler({:error, term, error_list}, module, true) do
     concated = Module.safe_concat([module, Error])
     raise(concated, term: term, errors: error_list)
-  end
-
-  defp auto_core_key(attrs, core_keys, type) do
-    reduce_attrs =
-      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :auto end)
-      |> Enum.reduce(attrs, fn item, acc ->
-        case item do
-          {key, %{type: :auto, values: {module, function}}} ->
-            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
-              Map.put(acc, key, Map.get(acc, key))
-            else
-              _ ->
-                Map.put(acc, key, apply(module, function, []))
-            end
-
-          {key, %{type: :auto, values: {module, function, default}}} ->
-            with :edit <- type, true <- !is_nil(Map.get(acc, key)) do
-              Map.put(acc, key, Map.get(acc, key))
-            else
-              _ ->
-                Map.put(acc, key, apply(module, function, [default]))
-            end
-
-          _ ->
-            acc
-        end
-      end)
-
-    {reduce_attrs, core_keys}
-  end
-
-  defp domain_core_key({attrs, core_keys}) do
-    domain_parameters_errors =
-      Enum.map(core_keys, fn
-        {key, %{type: :domain, values: pattern}} ->
-          parsed =
-            parse_domain_patterns(pattern, key, attrs)
-            |> List.flatten()
-
-          if length(parsed) == 0, do: nil, else: parsed
-
-        _ ->
-          nil
-      end)
-      |> Enum.reject(&is_nil(&1))
-      |> List.flatten()
-
-    if length(domain_parameters_errors) == 0,
-      do: {:ok, attrs, core_keys},
-      else: {:error, :domain_parameters, domain_parameters_errors, :halt}
-  end
-
-  defp on_core_key({:error, _, _, _} = error, _full_attrs), do: error
-
-  defp on_core_key({:ok, attrs, core_keys}, full_attrs) do
-    dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
-
-    if length(dependent_keys_errors) == 0,
-      do: {:ok, attrs, core_keys},
-      else: {:error, :dependent_keys, dependent_keys_errors, :halt}
-  end
-
-  defp from_core_key({:error, _, _, _} = error, _full_attrs), do: error
-
-  defp from_core_key({:ok, attrs, core_keys}, full_attrs) do
-    reduce_attrs =
-      Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
-      |> Enum.reduce(attrs, fn {key, %{type: :from, values: pattern}}, acc ->
-        splited_pattern = Parser.parse_core_keys_pattern(pattern)
-        [h | t] = splited_pattern
-
-        if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern))
-        |> case do
-          data when is_nil(data) -> acc
-          data -> Map.put(acc, key, data)
-        end
-      end)
-
-    {:ok, reduce_attrs}
   end
 
   ####################################################################
