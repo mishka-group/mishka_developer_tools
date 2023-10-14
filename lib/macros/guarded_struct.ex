@@ -1780,8 +1780,6 @@ defmodule GuardedStruct do
       :gs_conditional_fields,
       {name,
        Map.merge(gs_conditional, %{
-         field: name,
-         opts: opts,
          sub_fields_count: sub_fields_count + 1,
          fields: gs_conditional.fields ++ field
        })}
@@ -1797,8 +1795,6 @@ defmodule GuardedStruct do
       :gs_conditional_fields,
       {name,
        Map.merge(gs_conditional, %{
-         field: name,
-         opts: opts,
          fields_count: fields_count + 1,
          fields: gs_conditional.fields ++ field
        })}
