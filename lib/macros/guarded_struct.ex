@@ -60,6 +60,7 @@ defmodule GuardedStruct do
     :gs_authorized_fields,
     :gs_external,
     :gs_core_keys,
+    :gs_conditional_fields,
     :gs_caller
   ]
 
@@ -1121,7 +1122,7 @@ defmodule GuardedStruct do
   @doc false
   defmacro field(name, type, opts \\ []) do
     quote bind_quoted: [name: name, type: Macro.escape(type), opts: opts] do
-      GuardedStruct.__field__(name, type, opts, __ENV__)
+      GuardedStruct.__field__(name, type, opts, __ENV__, false)
     end
   end
 
@@ -1131,12 +1132,14 @@ defmodule GuardedStruct do
     type = Macro.escape(quote do: struct())
     is_error = !is_nil(Keyword.get(opts, :error))
 
-    converted_name = create_module_name(name, __CALLER__)
-
     quote do
+      %{name: module_name, cond?: _cond?} =
+        Module.get_attribute(__ENV__.module, :gs_conditional_fields)
+        |> GuardedStruct.sub_conditional_field_module(unquote(name), __ENV__)
+
       GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__, true)
 
-      defmodule unquote(converted_name) do
+      defmodule module_name do
         unquote(ast)
 
         if unquote(is_error), do: GuardedStruct.create_error_module()
@@ -1233,6 +1236,15 @@ defmodule GuardedStruct do
   @doc false
   defmacro delete_temporary_revaluation(%Macro.Env{module: module}) do
     Enum.each(unquote(@temporary_revaluation), &Module.delete_attribute(module, &1))
+  end
+
+  defmacro conditional_field(name, opts \\ [], do: block) do
+    type = Macro.escape(quote do: struct())
+
+    quote do
+      GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__, true, true)
+      unquote(block)
+    end
   end
 
   ####################################################################
@@ -1351,33 +1363,48 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  def __field__(name, type, opts, env_data, subfield \\ false)
+  def __field__(name, type, opts, env_data, subfield, cond? \\ false)
 
-  def __field__(name, type, opts, %Macro.Env{module: mod} = _env, sub_field)
+  def __field__(name, type, opts, %Macro.Env{module: mod} = _env, sub_field, cond?)
       when is_atom(name) do
-    if Keyword.has_key?(Module.get_attribute(mod, :gs_fields), name) do
+    gs_fields = Module.get_attribute(mod, :gs_fields)
+    gs_conditional = Module.get_attribute(mod, :gs_conditional_fields)
+
+    # We check if this field is already set and it is not conditional type, so should send error to user
+    if Keyword.has_key?(gs_fields, name) and !Keyword.has_key?(gs_conditional, name) do
       raise ArgumentError, "the field #{inspect(name)} is already set"
     end
 
-    config(:core_keys, opts, mod, name)
-    config(:derive, opts, mod, name)
-    config(:struct, opts, sub_field, mod, name)
-    config(:fields_types, opts, mod, name, type)
+    # If for this name, there is no record which be submitted
+    if !Keyword.has_key?(gs_conditional, name) do
+      config(:core_keys, opts, mod, name)
+      config(:derive, opts, mod, name)
+      config(:struct, opts, sub_field, mod, name)
+      config(:fields_types, opts, mod, name, type)
+    end
+
+    # In this line, we should update conditional moduale attributes
+    if cond? or Keyword.has_key?(gs_conditional, name),
+      do: config(:conditional, opts, mod, name, Keyword.get(gs_conditional, name), sub_field)
   end
 
-  def __field__(name, _type, _opts, _env, _sub_field) do
+  def __field__(name, _type, _opts, _env, _sub_field, _cond?) do
     raise ArgumentError, "a field name must be an atom, got #{inspect(name)}"
   end
 
   @doc false
   def builder(actions, key, type, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
-    [enforces, validator, main_validator, derive, authorized, external, core_keys, _] = t
+    [enforces, validator, main_validator, derive, authorized, external, core_keys, _, _] = t
     found_main_validator = Enum.find(main_validator, &is_tuple(&1))
     fields = h |> Enum.map(&elem(&1, 0))
-
+    conditionals = Enum.at(t, 7)
+    # TODO: Can we separate the pipeline for conditional fields?
+    # TODO: For each fields of conditional, can we validator, derive and core keys?
+    # TODO: The first true field should be run and and stop the activity, return result
     Parser.convert_to_atom_map(attrs)
     |> before_revaluation(key)
+    |> conditional_fields_separator(conditionals)
     |> auto_core_key(core_keys, type)
     |> domain_core_key()
     |> on_core_key(attrs)
@@ -1398,6 +1425,16 @@ defmodule GuardedStruct do
   defp before_revaluation(attrs, key) when is_list(key), do: get_in(attrs, key)
 
   defp before_revaluation(attrs, key), do: Map.get(attrs, key)
+
+  defp conditional_fields_separator(attrs, _conditionals) do
+    # TODO: Do not create anything from scratch, just replace the module attribute based on attrs
+    # TODO: I think we can replace the real core keys based on attars
+    # TODO: Can we do the first line for sub fields with numerical naming for its module?
+    # TODO: Can we do the first line for extra struct from another module?
+    # TODO: Can we do the first line for validator and skipp main validator?
+    # TODO: Can we do the first line for derive?
+    attrs
+  end
 
   defp auto_core_key(attrs, core_keys, type) do
     reduce_attrs =
@@ -1713,6 +1750,144 @@ defmodule GuardedStruct do
     |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
   end
 
+  @doc false
+  def config(:conditional, opts, mod, name, nil, _sub?) do
+    Module.put_attribute(
+      mod,
+      :gs_conditional_fields,
+      {name,
+       %{
+         field: name,
+         opts: opts,
+         fields_count: 0,
+         sub_fields_count: 0,
+         fields: []
+       }}
+    )
+  end
+
+  def config(:conditional, opts, mod, name, gs_conditional, true) do
+    %{sub_fields_count: sub_fields_count} = gs_conditional
+
+    module_number =
+      String.to_atom("#{name}#{Integer.to_string(gs_conditional.sub_fields_count + 1)}")
+      |> create_module_name(mod, :direct)
+
+    field = [%{sub?: true, opts: opts, name: name, module: module_number}]
+
+    Module.put_attribute(
+      mod,
+      :gs_conditional_fields,
+      {name,
+       Map.merge(gs_conditional, %{
+         field: name,
+         opts: opts,
+         sub_fields_count: sub_fields_count + 1,
+         fields: gs_conditional.fields ++ field
+       })}
+    )
+  end
+
+  def config(:conditional, opts, mod, name, gs_conditional, false) do
+    %{fields_count: fields_count} = gs_conditional
+    field = [%{sub?: false, opts: opts, name: name}]
+
+    Module.put_attribute(
+      mod,
+      :gs_conditional_fields,
+      {name,
+       Map.merge(gs_conditional, %{
+         field: name,
+         opts: opts,
+         fields_count: fields_count + 1,
+         fields: gs_conditional.fields ++ field
+       })}
+    )
+  end
+
+  @doc false
+  def config(:fields_types, opts, mod, name, type) do
+    has_default? = Keyword.has_key?(opts, :default)
+    enforce_by_default? = Module.get_attribute(mod, :gs_enforce?)
+
+    enforce? =
+      if is_nil(opts[:enforce]),
+        do: enforce_by_default? && !has_default?,
+        else: !!opts[:enforce]
+
+    nullable? = !has_default? && !enforce?
+
+    Module.put_attribute(mod, :gs_fields, {name, opts[:default]})
+    Module.put_attribute(mod, :gs_types, {name, type_for(type, nullable?)})
+    if enforce?, do: Module.put_attribute(mod, :gs_enforce_keys, name)
+  end
+
+  def config(:struct, opts, sub_field, mod, name) do
+    struct? = Keyword.has_key?(opts, :struct)
+
+    if !sub_field and (struct? or Keyword.has_key?(opts, :structs)) do
+      Module.put_attribute(
+        mod,
+        :gs_external,
+        {name,
+         %{
+           module: opts[:struct] || opts[:structs],
+           type: if(struct?, do: :struct, else: :list)
+         }}
+      )
+    end
+
+    if sub_field do
+      converted_name = create_module_name(name, mod, :direct)
+
+      if Keyword.get(opts, :structs) do
+        Module.put_attribute(
+          mod,
+          :gs_external,
+          {name, %{module: converted_name, type: :list}}
+        )
+      end
+    end
+  end
+
+  @doc false
+  def config(:derive, opts, mod, name) do
+    if !is_nil(opts[:derive]),
+      do:
+        Module.put_attribute(mod, :gs_derive, %{
+          field: name,
+          derive: opts[:derive]
+        })
+
+    if !is_nil(opts[:validator]) do
+      Module.put_attribute(mod, :gs_validator, %{
+        field: name,
+        validator: opts[:validator]
+      })
+    end
+  end
+
+  def config(:core_keys, opts, mod, name) do
+    Enum.each([:on, :from, :auto, :domain], fn item ->
+      if Keyword.has_key?(opts, item) do
+        core_key = %{values: opts[item], type: item}
+        Module.put_attribute(mod, :gs_core_keys, {name, core_key})
+      end
+    end)
+  end
+
+  @doc false
+  def sub_conditional_field_module(conditionals, name, env) do
+    case Keyword.get(conditionals, name) do
+      nil ->
+        %{name: create_module_name(name, env), cond?: false}
+
+      data ->
+        module_number = String.to_atom("#{name}#{Integer.to_string(data.sub_fields_count + 1)}")
+        %{name: create_module_name(module_number, env), cond?: true}
+    end
+  end
+
   defp exists_validator?(mod, modfn, attr_name, arity \\ 1) do
     if Module.defines?(mod, {modfn, arity}) do
       Module.put_attribute(mod, attr_name, true)
@@ -1778,75 +1953,6 @@ defmodule GuardedStruct do
     |> Enum.filter(fn {_field, output} -> elem(output, 0) == :error end)
     |> Enum.map(fn {field, error} ->
       %{field: field, errors: {elem(error, 1), elem(error, 2)}}
-    end)
-  end
-
-  defp config(:fields_types, opts, mod, name, type) do
-    has_default? = Keyword.has_key?(opts, :default)
-    enforce_by_default? = Module.get_attribute(mod, :gs_enforce?)
-
-    enforce? =
-      if is_nil(opts[:enforce]),
-        do: enforce_by_default? && !has_default?,
-        else: !!opts[:enforce]
-
-    nullable? = !has_default? && !enforce?
-
-    Module.put_attribute(mod, :gs_fields, {name, opts[:default]})
-    Module.put_attribute(mod, :gs_types, {name, type_for(type, nullable?)})
-    if enforce?, do: Module.put_attribute(mod, :gs_enforce_keys, name)
-  end
-
-  defp config(:struct, opts, sub_field, mod, name) do
-    struct? = Keyword.has_key?(opts, :struct)
-
-    if !sub_field and (struct? or Keyword.has_key?(opts, :structs)) do
-      Module.put_attribute(
-        mod,
-        :gs_external,
-        {name,
-         %{
-           module: opts[:struct] || opts[:structs],
-           type: if(struct?, do: :struct, else: :list)
-         }}
-      )
-    end
-
-    if sub_field do
-      converted_name = create_module_name(name, mod, :direct)
-
-      if Keyword.get(opts, :structs) do
-        Module.put_attribute(
-          mod,
-          :gs_external,
-          {name, %{module: converted_name, type: :list}}
-        )
-      end
-    end
-  end
-
-  defp config(:derive, opts, mod, name) do
-    if !is_nil(opts[:derive]),
-      do:
-        Module.put_attribute(mod, :gs_derive, %{
-          field: name,
-          derive: opts[:derive]
-        })
-
-    if !is_nil(opts[:validator]) do
-      Module.put_attribute(mod, :gs_validator, %{
-        field: name,
-        validator: opts[:validator]
-      })
-    end
-  end
-
-  defp config(:core_keys, opts, mod, name) do
-    Enum.each([:on, :from, :auto, :domain], fn item ->
-      if Keyword.has_key?(opts, item) do
-        core_key = %{values: opts[item], type: item}
-        Module.put_attribute(mod, :gs_core_keys, {name, core_key})
-      end
     end)
   end
 

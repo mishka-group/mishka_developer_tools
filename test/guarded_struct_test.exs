@@ -1305,6 +1305,66 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
+  defmodule ConditionalFieldTest do
+    use GuardedStruct
+
+    guardedstruct authorized_fields: true do
+      field(:username, String.t(), derive: "validate(string, enum=String[shahryar::test])")
+
+      conditional_field(:social, enforce: true) do
+        field(:social, String.t(),
+          derive: "validate(custom=[Kernel, is_binary])",
+          validator: {__MODULE__, :social1}
+        )
+
+        field(:social, struct(),
+          struct: TestAuthStruct,
+          derive: "validate(custom=[Kernel, is_map])"
+        )
+
+        field(:social, list(struct()),
+          structs: MishkaDeveloperToolsTest.GuardedStructDeriveTest,
+          derive: "validate(custom=[Kernel, is_list])"
+        )
+
+        sub_field(:social, struct(), derive: "validate(custom=[#{__MODULE__}, is_social])") do
+          field(:name, String.t())
+        end
+
+        sub_field(:social, struct(), derive: "validate(custom=[#{__MODULE__}, is_social])") do
+          field(:name, String.t())
+          field(:fam, String.t())
+        end
+      end
+    end
+
+    def validator(:username, value) do
+      if is_binary(value), do: {:ok, :username, value}, else: {:error, :username, "No, never"}
+    end
+
+    def validator(field, value), do: {:ok, field, value}
+
+    def is_social(%{name: "shahryar", fam: "tavakkoli"}),
+      do: {:ok, %{social: %{name: "shahryar", fam: "tavakkoli"}}}
+
+    def is_social(%{name: "shahryar"}), do: {:ok, %{social: %{name: "shahryar"}}}
+
+    def is_social(_) do
+      {:error, :bad_parameters,
+       [
+         %{
+           message: "The social field must be integer",
+           field: :social,
+           action: :integer
+         }
+       ]}
+    end
+
+    def social1(field, value) do
+      if is_binary(value), do: {:ok, field, value}, else: {:error, field, "No, never"}
+    end
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do
