@@ -1550,11 +1550,23 @@ defmodule GuardedStruct do
       Enum.map(cond_data.fields, fn
         # Normail field that has custom validator function, if it does not. should pass ok
         %{sub?: false, opts: opts, module: nil, list?: false} ->
-          case Keyword.get(opts, :validator) do
-            nil -> {:ok, field, value}
-            {module, func} -> apply(module, func, [field, value])
-            _ -> {:ok, field, value}
-          end
+          output =
+            case Keyword.get(opts, :validator) do
+              nil ->
+                # In this place we checke local validator function of caller
+                if Code.ensure_loaded?(cond_data.caller) and
+                     function_exported?(cond_data.caller, :validator, 2),
+                   do: apply(cond_data.caller, :validator, [field, value]),
+                   else: {:ok, field, value}
+
+              {module, func} ->
+                apply(module, func, [field, value])
+
+              _ ->
+                {:ok, field, value}
+            end
+
+          {field, output}
 
         %{sub?: false, opts: opts, module: nil, list?: true} ->
           # It is not a sub field, but it should load external module
@@ -1805,6 +1817,7 @@ defmodule GuardedStruct do
          opts: opts,
          fields_count: 0,
          sub_fields_count: 0,
+         caller: mod,
          fields: []
        }}
     )
