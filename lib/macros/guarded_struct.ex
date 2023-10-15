@@ -1404,13 +1404,13 @@ defmodule GuardedStruct do
     # TODO: The first true field should be run and and stop the activity, return result
     Parser.convert_to_atom_map(attrs)
     |> before_revaluation(key)
-    |> conditional_fields_separator(conditionals)
     |> auto_core_key(core_keys, type)
     |> domain_core_key()
     |> on_core_key(attrs)
     |> from_core_key(attrs)
     |> authorized_fields(fields, authorized)
     |> required_fields(enforces)
+    |> conditional_fields_validating(conditionals, type, key, attrs)
     |> sub_fields_validating(fields, module, external, attrs, key, type)
     |> fields_validating(validator, module)
     |> main_validating(found_main_validator, main_validator, module)
@@ -1425,16 +1425,6 @@ defmodule GuardedStruct do
   defp before_revaluation(attrs, key) when is_list(key), do: get_in(attrs, key)
 
   defp before_revaluation(attrs, key), do: Map.get(attrs, key)
-
-  defp conditional_fields_separator(attrs, _conditionals) do
-    # TODO: Do not create anything from scratch, just replace the module attribute based on attrs
-    # TODO: I think we can replace the real core keys based on attars
-    # TODO: Can we do the first line for sub fields with numerical naming for its module?
-    # TODO: Can we do the first line for extra struct from another module?
-    # TODO: Can we do the first line for validator and skipp main validator?
-    # TODO: Can we do the first line for derive?
-    attrs
-  end
 
   defp auto_core_key(attrs, core_keys, type) do
     reduce_attrs =
@@ -1536,10 +1526,63 @@ defmodule GuardedStruct do
 
   def required_fields({:error, _, _, :halt} = error, _), do: error
 
+  defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _, _), do: error
+
+  defp conditional_fields_validating({:ok, _, attrs}, conditionals, type, key, full_attrs) do
+    # TODO: Do not create anything from scratch, just replace the module attribute based on attrs
+    # TODO: I think we can replace the real core keys based on attars
+    # TODO: Can we do the first line for sub fields with numerical naming for its module?
+    # TODO: Can we do the first line for extra struct from another module?
+    # TODO: Can we do the first line for validator and skipp main validator?
+    # TODO: Can we do the first line for derive?
+    # TODO: If we have no validation so check all the builders
+    # TODO: If there is no option to list of builders, select first :ok, if exists return all as a list
+    {cond_fields, uncond_fields} =
+      Enum.reduce(attrs, {%{}, %{}}, fn {key, val}, {cond_acc, uncond_acc} ->
+        if Keyword.has_key?(conditionals, key),
+          do: {Map.put(cond_acc, key, val), uncond_acc},
+          else: {cond_acc, Map.put(uncond_acc, key, val)}
+      end)
+
+    Enum.map(cond_fields, fn {field, value} ->
+      cond_data = Keyword.get(conditionals, key)
+
+      Enum.map(cond_data.fields, fn
+        # Normail field that has custom validator function, if it does not. should pass ok
+        %{sub?: false, opts: opts, module: nil, list?: false} ->
+          case Keyword.get(opts, :validator) do
+            nil -> {:ok, field, value}
+            {module, func} -> apply(module, func, [field, value])
+            _ -> {:ok, field, value}
+          end
+
+        %{sub?: false, opts: opts, module: nil, list?: true} ->
+          # It is not a sub field, but it should load external module
+          # because we have no normal field which is list
+          {field, list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type)}
+
+        %{sub?: true, opts: _opts, module: module, list?: false} ->
+          # It is a sub field and just accepts a map not list of map
+          keys =
+            reverse_module_keys(module, field)
+            |> combine_parent_field(if(is_list(key), do: key, else: [key]))
+            |> List.delete(:root)
+
+          {field, module.builder({keys, full_attrs, type})}
+
+        %{sub?: true, opts: _opts, module: module, list?: true} ->
+          # It is a sub field and accepts a list of maps
+          {field, list_builder(full_attrs, module, field, key, type)}
+      end)
+    end)
+
+    {:ok, uncond_fields}
+  end
+
   @doc false
   def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _, _), do: error
 
-  def sub_fields_validating({:ok, _, attrs}, fields, module, external, full_attrs, key, type) do
+  def sub_fields_validating({:ok, attrs}, fields, module, external, full_attrs, key, type) do
     allowed_fields = Map.take(attrs, fields) |> Map.keys()
     sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
@@ -1570,6 +1613,7 @@ defmodule GuardedStruct do
   def fields_validating({:error, _, _, :halt} = error, _, _), do: error
 
   def fields_validating({attrs, sub_data, sub_errors, unsub}, validator, module) do
+    # Just keep the normal fields of attrs
     allowed_data = Map.take(attrs, unsub)
 
     validated =
@@ -1773,7 +1817,8 @@ defmodule GuardedStruct do
       String.to_atom("#{name}#{Integer.to_string(gs_conditional.sub_fields_count + 1)}")
       |> create_module_name(mod, :direct)
 
-    field = [%{sub?: true, opts: opts, name: name, module: module_number}]
+    list_field? = Keyword.has_key?(opts, :structs)
+    field = [%{sub?: true, opts: opts, name: name, module: module_number, list?: list_field?}]
 
     Module.put_attribute(
       mod,
@@ -1788,7 +1833,8 @@ defmodule GuardedStruct do
 
   def config(:conditional, opts, mod, name, gs_conditional, false) do
     %{fields_count: fields_count} = gs_conditional
-    field = [%{sub?: false, opts: opts, name: name}]
+    list_field? = Keyword.has_key?(opts, :structs)
+    field = [%{sub?: false, opts: opts, name: name, module: nil, list?: list_field?}]
 
     Module.put_attribute(
       mod,
@@ -1894,6 +1940,11 @@ defmodule GuardedStruct do
     Enum.reduce(list, %{}, fn {_, key, value}, acc ->
       Map.put(acc, key, value)
     end)
+  end
+
+  defp list_builder(_attrs, nil, _field, _key, _type) do
+    {:error, :bad_parameters,
+     "Unfortunately, the appropriate settings have not been applied to the desired field."}
   end
 
   defp list_builder(attrs, module, field, key, type) do
