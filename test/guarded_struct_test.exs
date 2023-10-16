@@ -1311,7 +1311,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct authorized_fields: true do
       field(:username, String.t(), derive: "validate(string, enum=String[shahryar::test])")
 
-      conditional_field(:social, enforce: true) do
+      conditional_field(:social, enforce: true, priority: true) do
         field(:social, String.t(),
           derive: "validate(custom=[Kernel, is_binary])",
           validator: {__MODULE__, :social1}
@@ -1328,7 +1328,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         )
 
         sub_field(:social, struct(), derive: "validate(custom=[#{__MODULE__}, is_social])") do
-          field(:name, String.t())
+          field(:name, String.t(), enforce: true)
         end
 
         sub_field(:social, struct(), derive: "validate(custom=[#{__MODULE__}, is_social])") do
@@ -1363,6 +1363,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     def social1(field, value) do
       if is_binary(value), do: {:ok, field, value}, else: {:error, field, "No, never"}
     end
+  end
+
+  test "conditional fields" do
+    ConditionalFieldTest.builder(%{username: "mishka", social: "github"})
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############

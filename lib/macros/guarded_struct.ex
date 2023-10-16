@@ -1422,9 +1422,15 @@ defmodule GuardedStruct do
 
   defp before_revaluation(attrs, [:root]), do: attrs
 
-  defp before_revaluation(attrs, key) when is_list(key), do: get_in(attrs, key)
+  defp before_revaluation(attrs, key) when is_list(key) do
+    data = get_in(attrs, key)
+    if is_map(data), do: data, else: Map.new([{:bad_parameters, data}])
+  end
 
-  defp before_revaluation(attrs, key), do: Map.get(attrs, key)
+  defp before_revaluation(attrs, key) do
+    data = Map.get(attrs, key)
+    if is_map(data), do: data, else: Map.new([{:bad_parameters, data}])
+  end
 
   defp auto_core_key(attrs, core_keys, type) do
     reduce_attrs =
@@ -1517,7 +1523,7 @@ defmodule GuardedStruct do
     with missing_keys <- Enum.reject(enforces, &Map.has_key?(attrs, &1)),
          {:missing_keys, true, _missing_keys} <-
            {:missing_keys, Enum.empty?(missing_keys), missing_keys} do
-      {:ok, :required_fields, attrs}
+      {:ok, attrs}
     else
       {:missing_keys, false, missing_keys} ->
         {:error, :required_fields, missing_keys, :halt}
@@ -1528,7 +1534,7 @@ defmodule GuardedStruct do
 
   defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _, _), do: error
 
-  defp conditional_fields_validating({:ok, _, attrs}, conditionals, type, key, full_attrs) do
+  defp conditional_fields_validating({:ok, attrs}, conditionals, type, key, full_attrs) do
     # TODO: Do not create anything from scratch, just replace the module attribute based on attrs
     # TODO: I think we can replace the real core keys based on attars
     # TODO: Can we do the first line for sub fields with numerical naming for its module?
@@ -1537,6 +1543,7 @@ defmodule GuardedStruct do
     # TODO: Can we do the first line for derive?
     # TODO: If we have no validation so check all the builders
     # TODO: If there is no option to list of builders, select first :ok, if exists return all as a list
+
     {cond_fields, uncond_fields} =
       Enum.reduce(attrs, {%{}, %{}}, fn {key, val}, {cond_acc, uncond_acc} ->
         if Keyword.has_key?(conditionals, key),
@@ -1544,57 +1551,69 @@ defmodule GuardedStruct do
           else: {cond_acc, Map.put(uncond_acc, key, val)}
       end)
 
-    Enum.map(cond_fields, fn {field, value} ->
-      cond_data = Keyword.get(conditionals, key)
+    cond_builders =
+      Enum.map(cond_fields, fn {field, value} ->
+        cond_data = Keyword.get(conditionals, field)
 
-      Enum.map(cond_data.fields, fn
-        # Normail field that has custom validator function, if it does not. should pass ok
-        %{sub?: false, opts: opts, module: nil, list?: false} ->
-          output =
-            case Keyword.get(opts, :validator) do
-              nil ->
-                # In this place we checke local validator function of caller
-                if Code.ensure_loaded?(cond_data.caller) and
-                     function_exported?(cond_data.caller, :validator, 2),
-                   do: apply(cond_data.caller, :validator, [field, value]),
-                   else: {:ok, field, value}
+        output =
+          Enum.map(cond_data.fields, fn
+            # Normail field that has custom validator function, if it does not. should pass ok
+            %{sub?: false, opts: opts, module: nil, list?: false} ->
+              output =
+                case Keyword.get(opts, :validator) do
+                  nil ->
+                    # In this place we checke local validator function of caller
+                    if Code.ensure_loaded?(cond_data.caller) and
+                         function_exported?(cond_data.caller, :validator, 2),
+                       do: apply(cond_data.caller, :validator, [field, value]),
+                       else: {:ok, field, value}
 
-              {module, func} ->
-                apply(module, func, [field, value])
+                  {module, func} ->
+                    apply(module, func, [field, value])
 
-              _ ->
-                {:ok, field, value}
-            end
+                  _ ->
+                    {:ok, field, value}
+                end
 
-          {field, output}
+              output
 
-        %{sub?: false, opts: opts, module: nil, list?: true} ->
-          # It is not a sub field, but it should load external module
-          # because we have no normal field which is list
-          {field, list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type)}
+            %{sub?: false, opts: opts, module: nil, list?: true} ->
+              # It is not a sub field, but it should load external module
+              # because we have no normal field which is list
+              list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type)
 
-        %{sub?: true, opts: _opts, module: module, list?: false} ->
-          # It is a sub field and just accepts a map not list of map
-          keys =
-            reverse_module_keys(module, field)
-            |> combine_parent_field(if(is_list(key), do: key, else: [key]))
-            |> List.delete(:root)
+            %{sub?: true, opts: _opts, module: module, list?: false} ->
+              # It is a sub field and just accepts a map not list of map
+              keys =
+                reverse_module_keys(Module.split(module), field)
+                |> combine_parent_field(if(is_list(key), do: key, else: [key]))
+                |> List.delete(:root)
 
-          {field, module.builder({keys, full_attrs, type})}
+              module.builder({keys, full_attrs, type})
 
-        %{sub?: true, opts: _opts, module: module, list?: true} ->
-          # It is a sub field and accepts a list of maps
-          {field, list_builder(full_attrs, module, field, key, type)}
+            %{sub?: true, opts: _opts, module: module, list?: true} ->
+              # It is a sub field and accepts a list of maps
+              list_builder(full_attrs, module, field, key, type)
+          end)
+
+        {field, output, Keyword.get(cond_data.opts, :priority)}
       end)
-    end)
 
-    {:ok, uncond_fields}
+    # TODO: We need a private function to separate :ok data based on priority or normal one
+    # TODO: We need a private function to separate errors based on priority or normal one
+    conditionals_fields_data_divider(cond_builders)
+    # |> IO.inspect()
+
+    cond_outputs =
+      %{cond_data: cond_fields, cond_errors: cond_fields}
+
+    {:ok, uncond_fields, cond_outputs}
   end
 
   @doc false
   def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _, _), do: error
 
-  def sub_fields_validating({:ok, attrs}, fields, module, external, full_attrs, key, type) do
+  def sub_fields_validating({:ok, attrs, _cond}, fields, module, external, full_attrs, key, type) do
     allowed_fields = Map.take(attrs, fields) |> Map.keys()
     sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
@@ -2159,4 +2178,39 @@ defmodule GuardedStruct do
       acc <> "#{Macro.to_string(item)}::"
     end)
   end
+
+  defp conditionals_fields_data_divider(conditions) do
+    Enum.reduce(conditions, %{data: [], errors: []}, fn {field, conds, priority},
+                                                        %{data: data, errors: errors} = acc ->
+      separate_conditions_based_priority(field, conds, errors, data, acc, priority)
+    end)
+  end
+
+  defp separate_conditions_based_priority(field, conds, errors, data, acc, true) do
+    Map.merge(acc, %{
+      errors: errors ++ [{field, Enum.find(conds, &(elem(&1, 0) == :error))}],
+      data: data ++ [{field, Enum.find(conds, &(elem(&1, 0) == :ok))}]
+    })
+  end
+
+  defp separate_conditions_based_priority(field, conds, errors, data, acc, false) do
+    [success_data, error] =
+      Enum.reduce(conds, [[], []], fn
+        {:ok, key, value}, [data, error] -> [data ++ [{:ok, Map.new([{key, value}])}], error]
+        {:ok, success}, [data, error] -> [data ++ [{:ok, success}], error]
+        {:error, _type, _error} = output, [data, error] -> [data, error ++ [output]]
+      end)
+
+    Map.merge(acc, %{
+      errors: errors ++ [{field, error}],
+      data: data ++ [{field, success_data}]
+    })
+  end
+
+  defp conds_status(%{data: data, errors: errors}) when data == [] and errors == [], do: :ok
+
+  defp conds_status(%{data: data, errors: errors}) when data == [] and length(errors) >= 1,
+    do: :error
+
+  defp conds_status(%{data: data, errors: errors}) when data != [], do: :ok
 end
