@@ -1565,14 +1565,14 @@ defmodule GuardedStruct do
                     # In this place we checke local validator function of caller
                     if Code.ensure_loaded?(cond_data.caller) and
                          function_exported?(cond_data.caller, :validator, 2),
-                       do: apply(cond_data.caller, :validator, [field, value]),
-                       else: {:ok, field, value}
+                       do: {apply(cond_data.caller, :validator, [field, value]), opts},
+                       else: {{:ok, field, value}, opts}
 
                   {module, func} ->
-                    apply(module, func, [field, value])
+                    {apply(module, func, [field, value]), opts}
 
                   _ ->
-                    {:ok, field, value}
+                    {{:ok, field, value}, opts}
                 end
 
               output
@@ -1580,40 +1580,33 @@ defmodule GuardedStruct do
             %{sub?: false, opts: opts, module: nil, list?: true} ->
               # It is not a sub field, but it should load external module
               # because we have no normal field which is list
-              list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type)
+              {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type), opts}
 
-            %{sub?: true, opts: _opts, module: module, list?: false} ->
+            %{sub?: true, opts: opts, module: module, list?: false} ->
               # It is a sub field and just accepts a map not list of map
               keys =
                 reverse_module_keys(Module.split(module), field)
                 |> combine_parent_field(if(is_list(key), do: key, else: [key]))
                 |> List.delete(:root)
 
-              module.builder({keys, full_attrs, type})
+              {module.builder({keys, full_attrs, type}), opts}
 
-            %{sub?: true, opts: _opts, module: module, list?: true} ->
+            %{sub?: true, opts: opts, module: module, list?: true} ->
               # It is a sub field and accepts a list of maps
-              list_builder(full_attrs, module, field, key, type)
+              {list_builder(full_attrs, module, field, key, type), opts}
           end)
 
         {field, output, Keyword.get(cond_data.opts, :priority)}
       end)
 
-    # TODO: We need a private function to separate :ok data based on priority or normal one
-    # TODO: We need a private function to separate errors based on priority or normal one
-    conditionals_fields_data_divider(cond_builders)
-    # |> IO.inspect()
-
-    cond_outputs =
-      %{cond_data: cond_fields, cond_errors: cond_fields}
-
-    {:ok, uncond_fields, cond_outputs}
+    cond_data = conditionals_fields_data_divider(cond_builders)
+    {:ok, uncond_fields, cond_data}
   end
 
   @doc false
   def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _, _), do: error
 
-  def sub_fields_validating({:ok, attrs, _cond}, fields, module, external, full_attrs, key, type) do
+  def sub_fields_validating({:ok, attrs, conds}, fields, module, external, full_attrs, key, type) do
     allowed_fields = Map.take(attrs, fields) |> Map.keys()
     sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
@@ -1636,14 +1629,15 @@ defmodule GuardedStruct do
       attrs,
       sub_modules_builders_data(sub_modules_builders),
       sub_modules_builders_errors(sub_modules_builders),
-      reject_sub_module_fields(allowed_fields, sub_modules)
+      reject_sub_module_fields(allowed_fields, sub_modules),
+      conds
     }
   end
 
   @doc false
   def fields_validating({:error, _, _, :halt} = error, _, _), do: error
 
-  def fields_validating({attrs, sub_data, sub_errors, unsub}, validator, module) do
+  def fields_validating({attrs, sub_data, sub_errors, unsub, conds}, validator, module) do
     # Just keep the normal fields of attrs
     allowed_data = Map.take(attrs, unsub)
 
@@ -1664,7 +1658,7 @@ defmodule GuardedStruct do
         do: convert_list_tuple_to_map(validated),
         else: allowed_data
 
-    {validated_errors, validated_allowed_data, sub_data, sub_errors}
+    {validated_errors, validated_allowed_data, sub_data, sub_errors, conds}
   end
 
   @doc false
@@ -1677,7 +1671,8 @@ defmodule GuardedStruct do
           validated_errors,
           validated_allowed_data,
           sub_modules_builders,
-          sub_modules_builders_errors
+          sub_modules_builders_errors,
+          _conds
         },
         main_validator,
         gs_main_validator,
@@ -2179,38 +2174,40 @@ defmodule GuardedStruct do
     end)
   end
 
-  defp conditionals_fields_data_divider(conditions) do
-    Enum.reduce(conditions, %{data: [], errors: []}, fn {field, conds, priority},
-                                                        %{data: data, errors: errors} = acc ->
-      separate_conditions_based_priority(field, conds, errors, data, acc, priority)
+  defp conditionals_fields_data_divider(builders) do
+    Enum.reduce(builders, %{data: [], errors: []}, fn {field, conds, priority},
+                                                      %{data: data, errors: errors} = acc ->
+      {field, conds, errors, data, acc, priority}
+      |> separate_conditions_based_priority()
     end)
   end
 
-  defp separate_conditions_based_priority(field, conds, errors, data, acc, true) do
+  defp separate_conditions_based_priority({field, conds, _errors, _data, acc, true}) do
+    error_data = Enum.find(conds, &(elem(elem(&1, 0), 0) == :error))
+    success_data = Enum.find(conds, &(elem(elem(&1, 0), 0) == :ok))
+
     Map.merge(acc, %{
-      errors: errors ++ [{field, Enum.find(conds, &(elem(&1, 0) == :error))}],
-      data: data ++ [{field, Enum.find(conds, &(elem(&1, 0) == :ok))}]
+      errors: if(!is_nil(error_data), do: {field, error_data}, else: nil),
+      data: if(!is_nil(success_data), do: {field, success_data}, else: nil)
     })
   end
 
-  defp separate_conditions_based_priority(field, conds, errors, data, acc, false) do
-    [success_data, error] =
+  defp separate_conditions_based_priority({field, conds, errors, data, acc, false}) do
+    [success_data, error_data] =
       Enum.reduce(conds, [[], []], fn
-        {:ok, key, value}, [data, error] -> [data ++ [{:ok, Map.new([{key, value}])}], error]
-        {:ok, success}, [data, error] -> [data ++ [{:ok, success}], error]
-        {:error, _type, _error} = output, [data, error] -> [data, error ++ [output]]
+        {{:ok, key, value}, opts}, [data, error] ->
+          [data ++ [{{:ok, Map.new([{key, value}])}, opts}], error]
+
+        {{:ok, success}, opts}, [data, error] ->
+          [data ++ [{{:ok, success}, opts}], error]
+
+        {{:error, _type, _error}, _opts} = output, [data, error] ->
+          [data, error ++ [output]]
       end)
 
     Map.merge(acc, %{
-      errors: errors ++ [{field, error}],
-      data: data ++ [{field, success_data}]
+      errors: if(length(error_data) > 0, do: errors ++ [{field, error_data}], else: errors),
+      data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: data)
     })
   end
-
-  defp conds_status(%{data: data, errors: errors}) when data == [] and errors == [], do: :ok
-
-  defp conds_status(%{data: data, errors: errors}) when data == [] and length(errors) >= 1,
-    do: :error
-
-  defp conds_status(%{data: data, errors: errors}) when data != [], do: :ok
 end
