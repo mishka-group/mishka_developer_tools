@@ -1596,7 +1596,7 @@ defmodule GuardedStruct do
               {list_builder(full_attrs, module, field, key, type), field, opts}
           end)
 
-        {field, output, Keyword.get(cond_data.opts, :priority)}
+        {field, output, Keyword.get(cond_data.opts, :priority) || false}
       end)
 
     cond_data = conditionals_fields_data_divider(cond_builders)
@@ -2161,7 +2161,7 @@ defmodule GuardedStruct do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
 
     Map.merge(acc, %{
-      errors: if(length(error_data) > 0, do: [{field, List.first(error_data)}], else: []),
+      errors: if(length(error_data) > 0, do: [{field, [List.first(error_data)]}], else: []),
       data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: [])
     })
   end
@@ -2204,6 +2204,7 @@ defmodule GuardedStruct do
           Enum.reduce(sub_builders, struct(module, main_error_or_data), fn item, acc ->
             Map.merge(acc, item)
           end)
+          |> Map.merge(cond_data_converter(conds))
 
         {:ok, merged_struct}
 
@@ -2228,6 +2229,12 @@ defmodule GuardedStruct do
       {:error, _, _, true} ->
         {:error, :bad_parameters, validated_errors ++ sub_builders_errors ++ [main_error_or_data]}
     end
+  end
+
+  defp cond_data_converter(conds) do
+    Enum.reduce(conds.data, %{}, fn {field, {{:ok, data}, _opts}}, acc ->
+      Map.put(acc, field, Map.get(data, List.first(Map.keys(data))))
+    end)
   end
 
   defp cond_errors_converter(conds) do
@@ -2258,6 +2265,6 @@ defmodule GuardedStruct do
   defp add_hint(error, nil) when is_tuple(error), do: error
 
   defp add_hint(error, hint) when is_tuple(error) do
-    Tuple.insert_at(error, tuple_size(error), hint: hint)
+    Tuple.insert_at(error, tuple_size(error), __hint__: hint)
   end
 end
