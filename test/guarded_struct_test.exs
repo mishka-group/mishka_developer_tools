@@ -1311,30 +1311,46 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct authorized_fields: true do
       field(:username, String.t(), derive: "validate(string, enum=String[shahryar::test])")
 
-      conditional_field(:social, enforce: true, priority: true) do
+      conditional_field(:social, enforce: true, priority: false) do
+        sub_field(:social, struct(),
+          derive: "validate(custom=[#{__MODULE__}, is_social])",
+          hint: "a1"
+        ) do
+          field(:name, String.t())
+          field(:fam, String.t())
+        end
+
         field(:social, String.t(),
           derive: "validate(custom=[Kernel, is_binary])",
-          validator: {__MODULE__, :social1}
+          validator: {__MODULE__, :social1},
+          hint: "a2"
         )
 
         field(:social, struct(),
           struct: TestAuthStruct,
-          derive: "validate(custom=[Kernel, is_map])"
+          derive: "validate(custom=[Kernel, is_map])",
+          hint: "a3"
         )
 
         field(:social, list(struct()),
           structs: MishkaDeveloperToolsTest.GuardedStructDeriveTest,
-          derive: "validate(custom=[Kernel, is_list])"
+          derive: "validate(custom=[Kernel, is_list])",
+          hint: "a4"
         )
 
-        sub_field(:social, struct(), derive: "validate(custom=[#{__MODULE__}, is_social])") do
+        sub_field(:social, struct(),
+          derive: "validate(custom=[#{__MODULE__}, is_social])",
+          hint: "a5"
+        ) do
           field(:name, String.t(), enforce: true)
         end
+      end
 
-        sub_field(:social, struct(), derive: "validate(custom=[#{__MODULE__}, is_social])") do
-          field(:name, String.t())
-          field(:fam, String.t())
-        end
+      conditional_field(:profile, enforce: true, priority: false) do
+        field(:profile, String.t(),
+          derive: "validate(custom=[Kernel, is_binary])",
+          validator: {__MODULE__, :social2}
+        )
       end
     end
 
@@ -1363,10 +1379,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     def social1(field, value) do
       if is_binary(value), do: {:ok, field, value}, else: {:error, field, "No, never"}
     end
+
+    def social2(field, value) do
+      if !is_binary(value), do: {:ok, field, value}, else: {:error, field, "No, never"}
+    end
   end
 
   test "conditional fields" do
-    ConditionalFieldTest.builder(%{username: "mishka", social: "github"})
+    ConditionalFieldTest.builder(%{username: "mishka", social: "github", profile: "mishka"})
+    |> IO.inspect(label: "=====>")
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
@@ -1411,15 +1432,3 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     Enum.sort(fields) == get_fields
   end
 end
-
-# conditional_field(:social,
-#   which: "String::Function(AllowedParentDomain, is_stuff?)::Struct[]::Struct"
-# ) do
-#   field(:social, String.t(), derive: "validate(not_empty)")
-#   field(:social, struct(), struct: TestAuthStruct)
-#   field(:social, list(struct()), structs: TestAuthStruct)
-
-#   sub_field(:social, struct()) do
-#     field(:name, String.t())
-#   end
-# end

@@ -91,14 +91,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
   @doc false
   def is_data?(%{data: [], errors: []}), do: true
 
-  def is_data?(%{data: nil, errors: nil}), do: true
+  def is_data?(%{data: [], errors: errors}) when errors != [], do: false
 
-  def is_data?(%{data: [], errors: errors}) when length(errors) > 0, do: false
+  def is_data?(%{data: data, errors: errors}) when data != [] and errors == [], do: true
 
-  def is_data?(%{data: nil, errors: errors}) when length(errors) > 0, do: false
-
-  def is_data?(%{data: nil, errors: errors}) when not is_nil(errors), do: false
-
-  def is_data?(%{data: data, errors: _errors}) when data != [] or not is_nil(data),
-    do: true
+  def is_data?(%{data: data, errors: errors}) do
+    Enum.all?(Keyword.keys(errors), &(&1 in Keyword.keys(data)))
+  end
 end
