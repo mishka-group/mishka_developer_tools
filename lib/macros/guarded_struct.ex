@@ -2212,12 +2212,12 @@ defmodule GuardedStruct do
          struct(module, main_error_or_data)}
 
       {:ok, _, _, false} ->
-        errors = cond_errors_converter(conds.errors)
+        errors = cond_errors_converter(conds)
 
         {:error, :bad_parameters, validated_errors ++ sub_builders_errors ++ errors}
 
       {:error, _, _, false} ->
-        errors = cond_errors_converter(conds.errors)
+        errors = cond_errors_converter(conds)
 
         {:error, :bad_parameters,
          validated_errors ++ sub_builders_errors ++ [main_error_or_data] ++ errors}
@@ -2230,8 +2230,14 @@ defmodule GuardedStruct do
     end
   end
 
-  defp cond_errors_converter(errors) do
-    Enum.reduce(errors, [], fn {field, entries}, acc ->
+  defp cond_errors_converter(conds) do
+    Enum.reduce(conds.errors, [], fn {field, entries}, acc ->
+      # Suppose that in the front end, the programmer believes that only two types of errors
+      # should be returned, whereas in the rear end, four modes are considered. Currently,
+      # the individual who will use the API does not comprehend for which mode this error is sent.
+      # Similarly, if hint is set, it can indicate which mode this error is sent in.
+      # This section only applies to fields with conditions.
+      # It should be noted that the hint must be documented as a custom contract in the user's document.
       transformed_errors =
         Enum.map(entries, fn
           {error, opts} ->
@@ -2245,6 +2251,8 @@ defmodule GuardedStruct do
 
       acc ++ [%{field: field, errors: {:conditionals, transformed_errors}}]
     end)
+    # We reject the keys that have success data
+    |> Enum.reject(&(&1.field in Keyword.keys(conds.data)))
   end
 
   defp add_hint(error, nil) when is_tuple(error), do: error
