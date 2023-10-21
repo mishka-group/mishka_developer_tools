@@ -1534,15 +1534,6 @@ defmodule GuardedStruct do
   defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _, _), do: error
 
   defp conditional_fields_validating({:ok, attrs}, conditionals, type, key, full_attrs) do
-    # TODO: Do not create anything from scratch, just replace the module attribute based on attrs
-    # TODO: I think we can replace the real core keys based on attars
-    # TODO: Can we do the first line for sub fields with numerical naming for its module?
-    # TODO: Can we do the first line for extra struct from another module?
-    # TODO: Can we do the first line for validator and skipp main validator?
-    # TODO: Can we do the first line for derive?
-    # TODO: If we have no validation so check all the builders
-    # TODO: If there is no option to list of builders, select first :ok, if exists return all as a list
-
     {cond_fields, uncond_fields} =
       Enum.reduce(attrs, {%{}, %{}}, fn {key, val}, {cond_acc, uncond_acc} ->
         if Keyword.has_key?(conditionals, key),
@@ -1553,47 +1544,42 @@ defmodule GuardedStruct do
     cond_builders =
       Enum.map(cond_fields, fn {field, value} ->
         cond_data = Keyword.get(conditionals, field)
+        # TODO: it should run validator of sub_field
+        # TODO: check normal sub_field can run validator?
 
         output =
           Enum.map(cond_data.fields, fn
             # Normail field that has custom validator function, if it does not. should pass ok
+            # The priority is with the external module
             %{sub?: false, opts: opts, module: nil, list?: false} ->
-              output =
-                case Keyword.get(opts, :validator) do
-                  nil ->
-                    # In this place we checke local validator function of caller
-                    if Code.ensure_loaded?(cond_data.caller) and
-                         function_exported?(cond_data.caller, :validator, 2),
-                       do: {apply(cond_data.caller, :validator, [field, value]), opts},
-                       else: {{:ok, field, value}, opts}
+              case Keyword.get(opts, :struct) do
+                nil ->
+                  {get_field_validator(opts, cond_data.caller, field, value), opts}
 
-                  {module, func} ->
-                    {apply(module, func, [field, value]), opts}
-
-                  _ ->
-                    {{:ok, field, value}, opts}
-                end
-
-              output
+                module ->
+                  if !Code.ensure_loaded?(module) do
+                    {get_field_validator(opts, cond_data.caller, field, value), opts}
+                  else
+                    {opts, cond_data.caller, field, value, type, module}
+                    |> execute_field_validator(:external)
+                  end
+              end
 
             %{sub?: false, opts: opts, module: nil, list?: true} ->
               # It is not a sub field, but it should load external module
               # because we have no normal field which is list
-              {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type), field,
-               opts}
+              {opts, cond_data.caller, field, value, key, type, full_attrs}
+              |> execute_field_validator(:list_external)
 
             %{sub?: true, opts: opts, module: module, list?: false} ->
               # It is a sub field and just accepts a map not list of map
-              keys =
-                reverse_module_keys(Module.split(module), field)
-                |> combine_parent_field(if(is_list(key), do: key, else: [key]))
-                |> List.delete(:root)
-
-              {module.builder({keys, full_attrs, type}), field, opts}
+              {opts, cond_data.caller, field, value, module, key, full_attrs, type}
+              |> execute_field_validator(:sub_field)
 
             %{sub?: true, opts: opts, module: module, list?: true} ->
               # It is a sub field and accepts a list of maps
-              {list_builder(full_attrs, module, field, key, type), field, opts}
+              {opts, module, field, key, type, full_attrs}
+              |> execute_field_validator(:list_field)
           end)
 
         {field, output, Keyword.get(cond_data.opts, :priority) || false}
@@ -2266,5 +2252,67 @@ defmodule GuardedStruct do
 
   defp add_hint(error, hint) when is_tuple(error) do
     Tuple.insert_at(error, tuple_size(error), __hint__: hint)
+  end
+
+  defp get_field_validator(opts, caller, field, value) do
+    case Keyword.get(opts, :validator) do
+      nil ->
+        # In this place we checke local validator function of caller
+        if Code.ensure_loaded?(caller) and
+             function_exported?(caller, :validator, 2),
+           do: apply(caller, :validator, [field, value]),
+           else: {:ok, field, value}
+
+      {module, func} ->
+        apply(module, func, [field, value])
+
+      _ ->
+        {:ok, field, value}
+    end
+  end
+
+  defp execute_field_validator(
+         {opts, caller, field, value, key, type, full_attrs},
+         :list_external
+       ) do
+    case get_field_validator(opts, caller, field, value) do
+      {:ok, _field, _value} ->
+        {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type), field, opts}
+
+      error ->
+        {error, opts}
+    end
+  end
+
+  defp execute_field_validator({opts, caller, field, value, type, module}, :external) do
+    case get_field_validator(opts, caller, field, value) do
+      {:ok, _field, _value} ->
+        {module.builder({:root, value, type}), field, opts}
+
+      error ->
+        {error, opts}
+    end
+  end
+
+  defp execute_field_validator(
+         {opts, caller, field, value, module, key, full_attrs, type},
+         :sub_field
+       ) do
+    case get_field_validator(opts, caller, field, value) do
+      {:ok, _field, _value} ->
+        keys =
+          reverse_module_keys(Module.split(module), field)
+          |> combine_parent_field(if(is_list(key), do: key, else: [key]))
+          |> List.delete(:root)
+
+        {module.builder({keys, full_attrs, type}), field, opts}
+
+      error ->
+        {error, opts}
+    end
+  end
+
+  defp execute_field_validator({opts, module, field, key, type, full_attrs}, :list_field) do
+    {list_builder(full_attrs, module, field, key, type), field, opts}
   end
 end

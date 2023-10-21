@@ -1408,6 +1408,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     def is_map_data(field, value) do
       if is_map(value), do: {:ok, field, value}, else: {:error, field, "It is not map"}
     end
+
+    def is_list_data(field, value) do
+      if is_list(value), do: {:ok, field, value}, else: {:error, field, "It is not list"}
+    end
   end
 
   defmodule ConditionalFieldValidatorTest do
@@ -1471,7 +1475,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
            {:conditionals,
             [
               {:social, "It is not string", [__hint__: "social1"]},
-              {:required_fields, [:username, :address], [__hint__: "social2"]}
+              {:social, "It is not map", [__hint__: "social2"]}
             ]}
        }
      ]} =
@@ -1480,12 +1484,166 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
                social: ["https://twitter.com/shahryar_tbiz"],
                profile: %{name: "Shahryar", family: "Tavakkoli"}
              })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :profile,
+         errors:
+           {:conditionals,
+            [
+              {:profile, "It is not string", [__hint__: "profile1"]},
+              {:required_fields, [:name], [__hint__: "profile2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalFieldValidatorTest.builder(%{
+               provider: "twitter",
+               social: "https://twitter.com/shahryar_tbiz",
+               profile: %{name1: "Shahryar", family: "Tavakkoli"}
+             })
+  end
+
+  defmodule ConditionalSocialExternalModuleTest do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:address, String.t(), enforce: true)
+      field(:username, String.t(), enforce: true)
+    end
+  end
+
+  defmodule ConditionalProfileExternalModuleTest do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:name, String.t(), enforce: true)
+      field(:family, String.t(), enforce: true)
+    end
+  end
+
+  defmodule ConditionalFieldExternalModuleTest do
+    use GuardedStruct
+    alias ConditionalFieldValidatorTestValidators, as: VAL
+
+    guardedstruct do
+      field(:provider, String.t())
+
+      conditional_field(:social, enforce: true) do
+        field(:social, String.t(), hint: "social1", validator: {VAL, :is_string_data})
+
+        field(:social, String.t(),
+          hint: "social1",
+          validator: {VAL, :is_map_data},
+          struct: ConditionalSocialExternalModuleTest
+        )
+      end
+
+      conditional_field(:profile, enforce: true) do
+        field(:profile, String.t(), hint: "profile1", validator: {VAL, :is_string_data})
+
+        field(:profile, String.t(),
+          hint: "profile2",
+          validator: {VAL, :is_map_data},
+          struct: ConditionalProfileExternalModuleTest
+        )
+      end
+    end
   end
 
   test "conditional fields with external modules" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :profile,
+         errors:
+           {:conditionals,
+            [
+              {:profile, "It is not string", [__hint__: "profile1"]},
+              {:required_fields, [:family, :name], [__hint__: "profile2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalFieldExternalModuleTest.builder(%{
+               provider: "twitter",
+               social: "https://twitter.com/shahryar_tbiz",
+               profile: %{name1: "Shahryar", family1: "Tavakkoli"}
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldExternalModuleTest{
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalProfileExternalModuleTest{
+         family: "Tavakkoli",
+         name: "Shahryar"
+       },
+       social: "https://twitter.com/shahryar_tbiz",
+       provider: "twitter"
+     }} =
+      assert ConditionalFieldExternalModuleTest.builder(%{
+               provider: "twitter",
+               social: "https://twitter.com/shahryar_tbiz",
+               profile: %{name: "Shahryar", family: "Tavakkoli"}
+             })
+  end
+
+  defmodule ConditionalFieldPriorityTest do
+    use GuardedStruct
+    alias ConditionalFieldValidatorTestValidators, as: VAL
+
+    guardedstruct do
+      field(:provider, String.t())
+
+      conditional_field(:social, enforce: true, priority: true) do
+        field(:social, String.t(), hint: "social1", validator: {VAL, :is_string_data})
+
+        sub_field(:social, struct(), hint: "social2", validator: {VAL, :is_map_data}) do
+          field(:address, String.t(), enforce: true)
+          field(:username, String.t(), enforce: true)
+        end
+      end
+
+      conditional_field(:profile, enforce: true, priority: true) do
+        field(:profile, String.t(), hint: "profile1", validator: {VAL, :is_string_data})
+
+        sub_field(:profile, struct(), hint: "profile2", validator: {VAL, :is_map_data}) do
+          field(:name, String.t(), enforce: true)
+          field(:family, String.t(), enforce: true)
+        end
+      end
+    end
   end
 
   test "conditional fields with validator test, priority: true" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldPriorityTest{
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldPriorityTest.Profile1{
+         family: "Tavakkoli",
+         name: "Shahryar"
+       },
+       social: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldPriorityTest.Social1{
+         username: "shahryar_tbiz",
+         address: "https://twitter.com/shahryar_tbiz"
+       },
+       provider: "twitter"
+     }} =
+      assert ConditionalFieldPriorityTest.builder(%{
+               provider: "twitter",
+               social: %{address: "https://twitter.com/shahryar_tbiz", username: "shahryar_tbiz"},
+               profile: %{name: "Shahryar", family: "Tavakkoli"}
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :social,
+         errors: {:conditionals, [{:social, "It is not string", [__hint__: "social1"]}]}
+       }
+     ]} =
+      assert ConditionalFieldPriorityTest.builder(%{
+               provider: "twitter",
+               social: %{address1: "https://twitter.com/shahryar_tbiz", username: "shahryar_tbiz"},
+               profile: %{name: "Shahryar", family: "Tavakkoli"}
+             })
   end
 
   test "conditional fields with validator and derive test" do
