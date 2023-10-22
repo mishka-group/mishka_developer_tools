@@ -1545,8 +1545,6 @@ defmodule GuardedStruct do
     cond_builders =
       Enum.map(cond_fields, fn {field, value} ->
         cond_data = Keyword.get(conditionals, field)
-        # TODO: it should run validator of sub_field
-        # TODO: check normal sub_field can run validator?
 
         output =
           Enum.map(cond_data.fields, fn
@@ -1676,7 +1674,6 @@ defmodule GuardedStruct do
     |> validation_errors_aggregator()
   end
 
-  # TODO: this derives should be replaced with conditional data selected derive
   @doc false
   def replace_condition_fields_derives({:ok, data, conds}, derives) do
     new_derives =

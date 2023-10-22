@@ -1412,6 +1412,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     def is_list_data(field, value) do
       if is_list(value), do: {:ok, field, value}, else: {:error, field, "It is not list"}
     end
+
+    def is_int_data(field, value) do
+      if is_integer(value), do: {:ok, field, value}, else: {:error, field, "It is not integer"}
+    end
   end
 
   defmodule ConditionalFieldValidatorTest do
@@ -1767,7 +1771,244 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
+  defmodule ConditionalFieldComplexTest do
+    use GuardedStruct
+    alias ConditionalFieldValidatorTestValidators, as: VAL
+
+    guardedstruct do
+      field(:provider, String.t())
+
+      sub_field(:profile, struct()) do
+        field(:name, String.t(), enforce: true)
+        field(:family, String.t(), enforce: true)
+
+        conditional_field(:address) do
+          field(:address, String.t(), hint: "address1", validator: {VAL, :is_string_data})
+
+          sub_field(:address, struct(), hint: "address2", validator: {VAL, :is_map_data}) do
+            field(:location, String.t(), enforce: true)
+            field(:text_location, String.t(), enforce: true)
+          end
+
+          sub_field(:address, struct(), hint: "address3", validator: {VAL, :is_map_data}) do
+            field(:location, String.t(), enforce: true, derive: "validate(string, location)")
+            field(:text_location, String.t(), enforce: true)
+            field(:email, String.t(), enforce: true)
+          end
+        end
+      end
+
+      conditional_field(:product) do
+        field(:product, String.t(), hint: "product1", validator: {VAL, :is_string_data})
+
+        sub_field(:product, struct(), hint: "product2", validator: {VAL, :is_map_data}) do
+          field(:name, String.t(), enforce: true)
+          field(:price, integer(), enforce: true)
+
+          sub_field(:information, struct()) do
+            field(:creator, String.t(), enforce: true)
+            field(:company, String.t(), enforce: true)
+
+            conditional_field(:inventory, enforce: true) do
+              field(:inventory, integer(),
+                hint: "inventory1",
+                validator: {VAL, :is_int_data},
+                derive: "validate(integer, max_len=33)"
+              )
+
+              sub_field(:inventory, struct(), hint: "inventory2", validator: {VAL, :is_map_data}) do
+                field(:count, integer(), enforce: true)
+                field(:expiration, integer(), enforce: true)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
   test "complex nested conditionals fields with nested sub_fields" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest{
+       product: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Product1{
+         information:
+           %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Product1.Information{
+             inventory:
+               %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Product1.Information.Inventory1{
+                 expiration: 33,
+                 count: 3_000_000
+               },
+             company: "mishka group",
+             creator: "Shahryar Tavakkoli"
+           },
+         price: 0,
+         name: "MishkaDeveloperTools"
+       },
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Profile{
+         address:
+           %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Profile.Address1{
+             text_location: "Nowhere",
+             location: "geo:48.198634,-16.371648,3.4;crs=wgs84;u=40.0"
+           },
+         family: "Tavakkoli",
+         name: "Shahryar"
+       },
+       provider: "Mishka"
+     }} =
+      assert ConditionalFieldComplexTest.builder(%{
+               provider: "Mishka",
+               profile: %{
+                 name: "Shahryar",
+                 family: "Tavakkoli",
+                 address: %{
+                   location: "geo:48.198634,-16.371648,3.4;crs=wgs84;u=40.0",
+                   text_location: "Nowhere",
+                   email: "shahryar@mishka.group"
+                 }
+               },
+               product: %{
+                 name: "MishkaDeveloperTools",
+                 price: 0,
+                 information: %{
+                   creator: "Shahryar Tavakkoli",
+                   company: "mishka group",
+                   inventory: %{
+                     count: 3_000_000,
+                     expiration: 33
+                   }
+                 }
+               }
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :product,
+         errors:
+           {:conditionals,
+            [
+              {:product, "It is not string", [__hint__: "product1"]},
+              {:bad_parameters,
+               [
+                 %{
+                   field: :information,
+                   errors:
+                     {:bad_parameters,
+                      [
+                        %{
+                          field: :inventory,
+                          errors:
+                            {:conditionals,
+                             [
+                               {:inventory, "It is not integer", [__hint__: "inventory1"]},
+                               {:inventory, "It is not map", [__hint__: "inventory2"]}
+                             ]}
+                        }
+                      ]}
+                 }
+               ], [__hint__: "product2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalFieldComplexTest.builder(%{
+               provider: "Mishka",
+               profile: %{
+                 name: "Shahryar",
+                 family: "Tavakkoli",
+                 address: "Nowhere"
+               },
+               product: %{
+                 name: "MishkaDeveloperTools",
+                 price: 0,
+                 information: %{
+                   creator: "Shahryar Tavakkoli",
+                   company: "mishka group",
+                   inventory: "111"
+                 }
+               }
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest{
+       product: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Product1{
+         information:
+           %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Product1.Information{
+             inventory: 33,
+             company: "mishka group",
+             creator: "Shahryar Tavakkoli"
+           },
+         price: 0,
+         name: "MishkaDeveloperTools"
+       },
+       profile: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldComplexTest.Profile{
+         address: "Nowhere",
+         family: "Tavakkoli",
+         name: "Shahryar"
+       },
+       provider: "Mishka"
+     }} =
+      assert ConditionalFieldComplexTest.builder(%{
+               provider: "Mishka",
+               profile: %{
+                 name: "Shahryar",
+                 family: "Tavakkoli",
+                 address: "Nowhere"
+               },
+               product: %{
+                 name: "MishkaDeveloperTools",
+                 price: 0,
+                 information: %{
+                   creator: "Shahryar Tavakkoli",
+                   company: "mishka group",
+                   inventory: 33
+                 }
+               }
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :product,
+         errors:
+           {:conditionals,
+            [
+              {:product, "It is not string", [__hint__: "product1"]},
+              {:bad_parameters,
+               [
+                 %{
+                   field: :information,
+                   errors:
+                     {:bad_parameters,
+                      [
+                        %{
+                          message:
+                            "The maximum number the inventory field is 33 and you have sent more than this number of entries",
+                          field: :inventory,
+                          action: :max_len
+                        }
+                      ]}
+                 }
+               ], [__hint__: "product2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalFieldComplexTest.builder(%{
+               provider: "Mishka",
+               profile: %{
+                 name: "Shahryar",
+                 family: "Tavakkoli",
+                 address: "Nowhere"
+               },
+               product: %{
+                 name: "MishkaDeveloperTools",
+                 price: 0,
+                 information: %{
+                   creator: "Shahryar Tavakkoli",
+                   company: "mishka group",
+                   inventory: 35
+                 }
+               }
+             })
   end
 
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
