@@ -1395,7 +1395,7 @@ defmodule GuardedStruct do
   @doc false
   def builder(actions, key, type, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
-    [enforces, validator, main_validator, derive, authorized, external, core_keys, _, _] = t
+    [enforces, validator, main_validator, derives, authorized, external, core_keys, _, _] = t
     found_main_validator = Enum.find(main_validator, &is_tuple(&1))
     fields = h |> Enum.map(&elem(&1, 0))
     conditionals = Enum.at(t, 7)
@@ -1413,7 +1413,8 @@ defmodule GuardedStruct do
     |> sub_fields_validating(fields, module, external, attrs, key, type)
     |> fields_validating(validator, module)
     |> main_validating(found_main_validator, main_validator, module)
-    |> Derive.derive(derive)
+    |> replace_condition_fields_derives(derives)
+    |> Derive.derive()
     |> exceptions_handler(module, error)
   end
 
@@ -1674,6 +1675,31 @@ defmodule GuardedStruct do
     {status, validated_errors, sub_errors, conds, module, main_outputs, sub_data}
     |> validation_errors_aggregator()
   end
+
+  # TODO: this derives should be replaced with conditional data selected derive
+  @doc false
+  def replace_condition_fields_derives({:ok, data, conds}, derives) do
+    new_derives =
+      Enum.reject(derives, &(&1.field in Enum.uniq(Keyword.keys(conds)))) ++
+        Derive.get_derives_from_success_conditional_data(conds)
+
+    {:ok, data, new_derives}
+  end
+
+  def replace_condition_fields_derives(
+        {:error, :bad_parameters, :nested, _, _, conds} = error,
+        derives
+      ) do
+    new_derives =
+      Enum.reject(derives, &(&1.field in Enum.uniq(Keyword.keys(conds)))) ++
+        Derive.get_derives_from_success_conditional_data(conds)
+
+    error
+    |> Tuple.delete_at(5)
+    |> Tuple.insert_at(5, new_derives)
+  end
+
+  def replace_condition_fields_derives(error, _derives), do: error
 
   def exceptions_handler(ouput, module, exception \\ false)
 
@@ -2192,11 +2218,11 @@ defmodule GuardedStruct do
           end)
           |> Map.merge(cond_data_converter(conds))
 
-        {:ok, merged_struct}
+        {:ok, merged_struct, conds.data}
 
       {:ok, 0, sub_errors, true} when sub_errors != [] ->
         {:error, :bad_parameters, :nested, sub_builders_errors,
-         struct(module, main_error_or_data)}
+         struct(module, main_error_or_data), conds.data}
 
       {:ok, _, _, false} ->
         errors = cond_errors_converter(conds)

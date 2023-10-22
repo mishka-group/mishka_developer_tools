@@ -1,16 +1,16 @@
 defmodule MishkaDeveloperTools.Helper.Derive do
   alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDerive, ValidationDerive}
 
-  def derive({:error, type, message, :halt}, _derive_inputs) do
+  def derive({:error, type, message, :halt}) do
     {:error, type, message}
   end
 
-  def derive({:error, _, :nested, builders_errors, data}, derive_inputs),
-    do: derive({:ok, data}, derive_inputs, builders_errors)
+  def derive({:error, _, :nested, builders_errors, data, derive_inputs}),
+    do: derive({:ok, data, derive_inputs}, builders_errors)
 
-  def derive({:error, _, _} = error, _derive_inputs), do: error
+  def derive({:error, _, _} = error), do: error
 
-  def derive({:ok, data}, derive_inputs, extra_error \\ []) do
+  def derive({:ok, data, derive_inputs}, extra_error \\ []) do
     reduced_fields =
       Enum.reduce(derive_inputs, %{}, fn map, acc ->
         parsed_derive = Parser.parser(map.derive)
@@ -64,6 +64,19 @@ defmodule MishkaDeveloperTools.Helper.Derive do
       if Map.get(item, :status) == :halt,
         do: {:halt, acc ++ [Map.delete(item, :status)]},
         else: {:cont, acc ++ [item]}
+    end)
+  end
+
+  @doc false
+  def get_derives_from_success_conditional_data(conds) do
+    Enum.reduce(conds, [], fn {field, {{:ok, _data}, opts}}, acc ->
+      get_cond_derive =
+        case Keyword.get(opts, :derive) do
+          nil -> []
+          derive -> [Map.new([{:derive, derive}, {:field, field}])]
+        end
+
+      acc ++ get_cond_derive
     end)
   end
 end
