@@ -123,11 +123,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate({:max_len, len}, input, field) when is_binary(input) do
-    if String.length(input) >= len,
-      do:
+    if String.length(input) <= len,
+      do: input,
+      else:
         {:error, field, :max_len,
-         "The maximum number of characters in the #{field} field is #{len} and you have sent more than this number of entries"},
-      else: input
+         "The maximum number of characters in the #{field} field is #{len} and you have sent more than this number of entries"}
   end
 
   def validate({:max_len, len}, input, field) when is_integer(input) do

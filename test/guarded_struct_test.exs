@@ -1646,13 +1646,125 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
+  defmodule ConditionalFieldDeriveTest do
+    use GuardedStruct
+    alias ConditionalFieldValidatorTestValidators, as: VAL
+
+    guardedstruct do
+      field(:provider, String.t())
+
+      conditional_field(:social, enforce: true, priority: true) do
+        field(:social, String.t(),
+          hint: "social1",
+          validator: {VAL, :is_string_data},
+          derive: "validate(not_empty, max_len=33, min_len=3)"
+        )
+
+        sub_field(:social, struct(), hint: "social2", validator: {VAL, :is_map_data}) do
+          field(:address, String.t(), enforce: true)
+          field(:username, String.t(), enforce: true)
+        end
+      end
+
+      conditional_field(:profile, enforce: true, priority: true) do
+        field(:profile, String.t(),
+          hint: "profile1",
+          validator: {VAL, :is_string_data},
+          derive: "validate(not_empty, max_len=33, min_len=3)"
+        )
+
+        sub_field(:profile, struct(), hint: "profile2", validator: {VAL, :is_map_data}) do
+          field(:name, String.t(), enforce: true)
+          field(:family, String.t(), enforce: true)
+        end
+      end
+    end
+  end
+
   test "conditional fields with validator and derive test" do
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldDeriveTest{
+       profile: "https://twitter.com/shahryar_tbiz",
+       social: "https://twitter.com/shahryar_tbiz",
+       provider: "twitter"
+     }} =
+      assert ConditionalFieldDeriveTest.builder(%{
+               provider: "twitter",
+               social: "https://twitter.com/shahryar_tbiz",
+               profile: "https://twitter.com/shahryar_tbiz"
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         message:
+           "The maximum number of characters in the profile field is 33 and you have sent more than this number of entries",
+         field: :profile,
+         action: :max_len
+       },
+       %{
+         message:
+           "The maximum number of characters in the social field is 33 and you have sent more than this number of entries",
+         field: :social,
+         action: :max_len
+       }
+     ]} =
+      assert ConditionalFieldDeriveTest.builder(%{
+               provider: "twitter",
+               social: "https://twitter.com/shahryar_tbiz_extera",
+               profile: "https://twitter.com/shahryar_tbiz_extera"
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldDeriveTest{
+       profile: "https://twitter.com/shahryar_tbiz",
+       social: %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldDeriveTest.Social1{
+         username: "shahryar_tbiz",
+         address: "https://twitter.com/shahryar_tbiz"
+       },
+       provider: "twitter"
+     }} =
+      assert ConditionalFieldDeriveTest.builder(%{
+               provider: "twitter",
+               social: %{address: "https://twitter.com/shahryar_tbiz", username: "shahryar_tbiz"},
+               profile: "https://twitter.com/shahryar_tbiz"
+             })
+  end
+
+  defmodule ConditionalFieldNoDeriveNoValidatorTest do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:provider, String.t())
+
+      conditional_field(:social, enforce: true) do
+        field(:social, String.t(), hint: "social1")
+        field(:social, String.t(), hint: "social2")
+      end
+
+      conditional_field(:profile, enforce: true) do
+        field(:profile, String.t(), hint: "profile1")
+        field(:profile, String.t(), hint: "profile2")
+      end
+    end
   end
 
   test "a bad test of conditional fields which have no validator and derive" do
-  end
-
-  test "a bad test of conditional fields which have no validator, have derive" do
+    # As you see, it puts the data on first field of our condition `field(:social, String.t(), hint: "social1")`
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStructTest.ConditionalFieldNoDeriveNoValidatorTest{
+       profile: "https://twitter.com/shahryar_tbiz",
+       social: %{
+         address: "https://twitter.com/shahryar_tbiz",
+         username: "shahryar_tbiz"
+       },
+       provider: "twitter"
+     }} =
+      assert ConditionalFieldNoDeriveNoValidatorTest.builder(%{
+               provider: "twitter",
+               social: %{address: "https://twitter.com/shahryar_tbiz", username: "shahryar_tbiz"},
+               profile: "https://twitter.com/shahryar_tbiz"
+             })
   end
 
   test "complex nested conditionals fields with nested sub_fields" do
