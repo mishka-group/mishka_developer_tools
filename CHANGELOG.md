@@ -1,13 +1,17 @@
 # Changelog for MishkaDeveloperTools 0.1.2
 
+---
+- [ ] Solving the problem of creating extra `atom` in case of a mistake or an attack on the system. It could be a `security` issue, please update.
+---
+
 - [x] Add allowed parent domain core key `Enum` derive style
 - [x] Add allowed parent domain core key `either` derive style
 - [x] Add allowed parent domain core key `equal` derive style
 - [x] Add allowed parent domain core key `custom` derive style
 - [x] Add driver for accepting `custom` function
 - [x] Add status to auto core key if the data of key exists do not create auto value
+- [x] Add Conditional field structure `macro` (**Multiple states of a field**)
 - [ ] Add driver for accepting JSON
-- [ ] Add Conditional field structure `macro` (**Multiple states of a field**)
 - [ ] Add driver for making JSON outputs
 - [ ] Add derives caller inside parent module
 - [ ] Add Supporting new `Typespecs` for `list(struct())` and previous one `struct()`

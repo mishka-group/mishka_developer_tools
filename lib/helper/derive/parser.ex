@@ -18,6 +18,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     _e -> nil
   end
 
+  def convert_to_atom_map({:error, _, _, _} = error), do: error
+
+  def convert_to_atom_map({:ok, map}) when is_map(map), do: convert_to_atom_map(map)
+
   def convert_to_atom_map(map) when is_map(map) do
     for {key, value} <- map, into: %{}, do: {convert_key(key), convert_value(value)}
   end
@@ -98,4 +102,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
   def is_data?(%{data: data, errors: errors}) do
     Enum.all?(Keyword.keys(errors), &(&1 in Keyword.keys(data)))
   end
+
+  @doc false
+  def map_keys(map_data, keys) when is_map(map_data) do
+    case List.first(Map.keys(map_data)) do
+      nil -> keys
+      data when is_atom(data) -> keys
+      data when is_binary(data) -> Enum.map(keys, &Atom.to_string(&1))
+    end
+  end
+
+  def map_keys(_map, keys), do: keys
 end

@@ -1400,15 +1400,15 @@ defmodule GuardedStruct do
     fields = h |> Enum.map(&elem(&1, 0))
     conditionals = Enum.at(t, 7)
 
-    Parser.convert_to_atom_map(attrs)
+    attrs
     |> before_revaluation(key)
+    |> authorized_fields(fields, authorized)
+    |> required_fields(enforces)
+    |> Parser.convert_to_atom_map()
     |> auto_core_key(core_keys, type)
     |> domain_core_key()
     |> on_core_key(attrs)
     |> from_core_key(attrs)
-    # TODO: shift to top
-    |> authorized_fields(fields, authorized)
-    |> required_fields(enforces)
     |> conditional_fields_validating(conditionals, type, key, attrs)
     |> sub_fields_validating(fields, module, external, attrs, key, type)
     |> fields_validating(validator, module)
@@ -1423,14 +1423,38 @@ defmodule GuardedStruct do
   defp before_revaluation(attrs, [:root]), do: attrs
 
   defp before_revaluation(attrs, key) when is_list(key) do
-    data = get_in(attrs, key)
+    data = get_in(attrs, Parser.map_keys(attrs, key))
     if is_map(data), do: data, else: Map.new([{:bad_parameters, data}])
   end
 
   defp before_revaluation(attrs, key) do
-    data = Map.get(attrs, key)
+    data = Map.get(attrs, Parser.map_keys(attrs, key))
     if is_map(data), do: data, else: Map.new([{:bad_parameters, data}])
   end
+
+  @doc false
+  def authorized_fields(attrs, fields, authorized) do
+    case check_authorized_fields(attrs, fields, authorized) do
+      {_, true, _} -> {:ok, attrs}
+      {_, false, filtered} -> {:error, :authorized_fields, filtered, :halt}
+    end
+  end
+
+  @doc false
+  def required_fields({:ok, attrs}, enforces) do
+    with missing_keys <- Enum.reject(Parser.map_keys(attrs, enforces), &Map.has_key?(attrs, &1)),
+         {:missing_keys, true, _missing_keys} <-
+           {:missing_keys, Enum.empty?(missing_keys), missing_keys} do
+      {:ok, attrs}
+    else
+      {:missing_keys, false, missing_keys} ->
+        {:error, :required_fields, missing_keys, :halt}
+    end
+  end
+
+  def required_fields({:error, _, _, :halt} = error, _), do: error
+
+  defp auto_core_key({:error, _, _, :halt} = error, _, _), do: error
 
   defp auto_core_key(attrs, core_keys, type) do
     reduce_attrs =
@@ -1458,6 +1482,8 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
+  defp domain_core_key({:error, _, _, :halt} = error), do: error
+
   defp domain_core_key({attrs, core_keys}) do
     domain_parameters_errors =
       Enum.map(core_keys, fn
@@ -1479,7 +1505,7 @@ defmodule GuardedStruct do
       else: {:error, :domain_parameters, domain_parameters_errors, :halt}
   end
 
-  defp on_core_key({:error, _, _, _} = error, _full_attrs), do: error
+  defp on_core_key({:error, _, _, :halt} = error, _full_attrs), do: error
 
   defp on_core_key({:ok, attrs, core_keys}, full_attrs) do
     dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
@@ -1489,7 +1515,7 @@ defmodule GuardedStruct do
       else: {:error, :dependent_keys, dependent_keys_errors, :halt}
   end
 
-  defp from_core_key({:error, _, _, _} = error, _full_attrs), do: error
+  defp from_core_key({:error, _, _, :halt} = error, _full_attrs), do: error
 
   defp from_core_key({:ok, attrs, core_keys}, full_attrs) do
     reduce_attrs =
@@ -1507,30 +1533,6 @@ defmodule GuardedStruct do
 
     {:ok, reduce_attrs}
   end
-
-  @doc false
-  def authorized_fields({:ok, attrs}, fields, authorized) do
-    case check_authorized_fields(attrs, fields, authorized) do
-      {_, true, _} -> {:ok, attrs}
-      {_, false, filtered} -> {:error, :authorized_fields, filtered, :halt}
-    end
-  end
-
-  def authorized_fields({:error, _, _, :halt} = error, _, _), do: error
-
-  @doc false
-  def required_fields({:ok, attrs}, enforces) do
-    with missing_keys <- Enum.reject(enforces, &Map.has_key?(attrs, &1)),
-         {:missing_keys, true, _missing_keys} <-
-           {:missing_keys, Enum.empty?(missing_keys), missing_keys} do
-      {:ok, attrs}
-    else
-      {:missing_keys, false, missing_keys} ->
-        {:error, :required_fields, missing_keys, :halt}
-    end
-  end
-
-  def required_fields({:error, _, _, :halt} = error, _), do: error
 
   defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _, _), do: error
 
@@ -2047,7 +2049,7 @@ defmodule GuardedStruct do
         {:authorized_fields, true, []}
 
       true ->
-        filtered = Enum.filter(Map.keys(attrs), &(&1 not in fields))
+        filtered = Enum.filter(Map.keys(attrs), &(&1 not in Parser.map_keys(attrs, fields)))
         {:authorized_fields, length(filtered) == 0, filtered}
     end
   end

@@ -1,7 +1,7 @@
 defmodule MishkaDeveloperToolsTest.GuardedStructTest do
   use ExUnit.Case, async: true
   alias MishkaDeveloperTools.Helper.Derive.ValidationDerive
-  ############## (▰˘◡˘▰) GuardedStructTest Data (▰˘◡˘▰) ##############
+  ############# (▰˘◡˘▰) GuardedStructTest Data (▰˘◡˘▰) ##############
   # Store the bytecode so we can get information from it.
   {:module, _name, bytecode, _exports} =
     defmodule TestStruct do
