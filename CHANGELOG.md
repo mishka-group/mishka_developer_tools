@@ -1,7 +1,7 @@
 # Changelog for MishkaDeveloperTools 0.1.2
 
 ---
-- [ ] Solving the problem of creating extra `atom` in case of a mistake or an attack on the system. It could be a `security` issue, please update.
+- [x] Solving the problem of creating extra `atom` in case of a mistake or an attack on the system. It could be a `security` issue, please update.
 ---
 
 - [x] Add allowed parent domain core key `Enum` derive style

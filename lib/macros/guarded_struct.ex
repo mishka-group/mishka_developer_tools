@@ -1408,9 +1408,9 @@ defmodule GuardedStruct do
     |> auto_core_key(core_keys, type)
     |> domain_core_key()
     |> on_core_key(attrs)
-    |> from_core_key(attrs)
-    |> conditional_fields_validating(conditionals, type, key, attrs)
-    |> sub_fields_validating(fields, module, external, attrs, key, type)
+    |> from_core_key()
+    |> conditional_fields_validating(conditionals, type, key)
+    |> sub_fields_validating(fields, module, external, key, type)
     |> fields_validating(validator, module)
     |> main_validating(found_main_validator, main_validator, module)
     |> replace_condition_fields_derives(derives)
@@ -1508,16 +1508,17 @@ defmodule GuardedStruct do
   defp on_core_key({:error, _, _, :halt} = error, _full_attrs), do: error
 
   defp on_core_key({:ok, attrs, core_keys}, full_attrs) do
+    full_attrs = Parser.convert_to_atom_map(full_attrs)
     dependent_keys_errors = check_dependent_keys(attrs, core_keys, full_attrs)
 
     if length(dependent_keys_errors) == 0,
-      do: {:ok, attrs, core_keys},
+      do: {:ok, attrs, core_keys, full_attrs},
       else: {:error, :dependent_keys, dependent_keys_errors, :halt}
   end
 
-  defp from_core_key({:error, _, _, :halt} = error, _full_attrs), do: error
+  defp from_core_key({:error, _, _, :halt} = error), do: error
 
-  defp from_core_key({:ok, attrs, core_keys}, full_attrs) do
+  defp from_core_key({:ok, attrs, core_keys, full_attrs}) do
     reduce_attrs =
       Enum.filter(core_keys, fn {_key, %{type: type, values: _}} -> type == :from end)
       |> Enum.reduce(attrs, fn {key, %{type: :from, values: pattern}}, acc ->
@@ -1531,12 +1532,12 @@ defmodule GuardedStruct do
         end
       end)
 
-    {:ok, reduce_attrs}
+    {:ok, reduce_attrs, full_attrs}
   end
 
-  defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _, _), do: error
+  defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _), do: error
 
-  defp conditional_fields_validating({:ok, attrs}, conditionals, type, key, full_attrs) do
+  defp conditional_fields_validating({:ok, attrs, full_attrs}, conditionals, type, key) do
     {cond_fields, uncond_fields} =
       Enum.reduce(attrs, {%{}, %{}}, fn {key, val}, {cond_acc, uncond_acc} ->
         if Keyword.has_key?(conditionals, key),
@@ -1587,13 +1588,13 @@ defmodule GuardedStruct do
       end)
 
     cond_data = conditionals_fields_data_divider(cond_builders)
-    {:ok, uncond_fields, cond_data}
+    {:ok, uncond_fields, cond_data, full_attrs}
   end
 
   @doc false
-  def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _, _), do: error
+  def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _), do: error
 
-  def sub_fields_validating({:ok, attrs, conds}, fields, module, external, full_attrs, key, type) do
+  def sub_fields_validating({:ok, attrs, conds, full_attrs}, fields, module, external, key, type) do
     allowed_fields = Map.take(attrs, fields) |> Map.keys()
     sub_modules = get_fields_sub_module(module, allowed_fields, external)
 
@@ -1974,6 +1975,7 @@ defmodule GuardedStruct do
 
       errors || {:ok, Enum.map(builders_output, &elem(&1, 1))}
     else
+      IO.inspect(attrs)
       {:error, :bad_parameters, "Your input must be a list of items"}
     end
   end

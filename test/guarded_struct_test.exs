@@ -2011,6 +2011,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
+  test "nested string map to atom with derive and validation" do
+    {:ok, _nested_struct} =
+      assert TestUserAuthStruct.builder(%{
+               "name" => "mishka",
+               "auth_path" => [
+                 %{"action" => "*:admin", "path" => %{"role" => "1"}},
+                 %{"action" => "*:user", "path" => %{"role" => "3"}}
+               ]
+             })
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do
