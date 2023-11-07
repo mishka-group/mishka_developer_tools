@@ -782,4 +782,24 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
        }
      ]} = assert TestCustomValidationDerive.builder(%{status: "error"})
   end
+
+  test "validate(:string_float, input, field)" do
+    {:error, _, :string_float, _} = assert ValidationDerive.validate(:string_float, "name", :test)
+    {:error, _, :string_float, _} = assert ValidationDerive.validate(:string_float, "0", :test)
+
+    {:error, _, :string_float, _} =
+      assert ValidationDerive.validate(:string_float, "3.5sss", :test)
+
+    "3.5" = assert ValidationDerive.validate(:string_float, "3.5", :test)
+  end
+
+  test "validate(:some_string_float, input, field)" do
+    {:error, _, :some_string_float, _} =
+      assert ValidationDerive.validate(:some_string_float, "name", :test)
+
+    "3.5" = assert ValidationDerive.validate(:some_string_float, "3.5", :test)
+    "3.5sss" = assert ValidationDerive.validate(:some_string_float, "3.5sss", :test)
+
+    "0" = assert ValidationDerive.validate(:some_string_float, "0", :test)
+  end
 end

@@ -15,6 +15,9 @@
 - [ ] Add driver for making JSON outputs
 - [ ] Add derives caller inside parent module
 - [ ] Add Supporting new `Typespecs` for `list(struct())` and previous one `struct()`
+- [x] Add Supporting new sanitizer for `:string_float`
+- [x] Add Supporting new validation for `:string_float`
+- [x] Add Supporting new validation for `:some_string_float`
 
 
 # Changelog for MishkaDeveloperTools 0.1.1

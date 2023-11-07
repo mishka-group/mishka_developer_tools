@@ -309,6 +309,8 @@ end
 | `"validate(equal=some_thing)"` | NO | Validate if the data is equal with validation value, which is any type|
 | `"validate(either=[string, enum=Integer[1::2::3]])"` | NO | Validate if the data is valid with each derive validation|
 | `"validate(custom=[Enum, all?])"` | NO | Validate if the you custom function returns trueو **Please read section 20**|
+| `"validate(some_string_float)"` | NO | Validate if the string data is float (Somewhat by removing the string)|
+| `"validate(string_float)"` | NO | Validate if the string data is float (Strict mode)|
 
 ```elixir
 defmodule MyModule do

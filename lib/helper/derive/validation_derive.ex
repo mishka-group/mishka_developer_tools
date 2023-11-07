@@ -477,6 +477,31 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
        "None of the conditions for checking the #{field} field isn not correct"}
   end
 
+  def validate(:string_float, input, field) do
+    # The is_float heare can be unnecessary, just to clear code and make "It seems to make sense"
+    _ = String.to_float(input)
+    input
+  rescue
+    _ ->
+      {:error, field, :string_float, "The output of the #{field} field cannot be Float"}
+  end
+
+  # it should be noted, the string_float can be an issue if you would not sanitize before.
+  # and use the other validation like string and not empty before this validation
+  def validate(:some_string_float, input, field) do
+    Float.parse(input)
+    |> case do
+      :error ->
+        {:error, field, :some_string_float, "The output of the #{field} field cannot be Float"}
+
+      {_converted_float, _} ->
+        input
+    end
+  rescue
+    _ ->
+      {:error, field, :some_string_float, "The output of the #{field} field cannot be Float"}
+  end
+
   def validate(action, input, field) do
     case Application.get_env(:guarded_struct, :validate_derive) do
       nil ->
