@@ -1132,9 +1132,9 @@ defmodule GuardedStruct do
   end
 
   @doc false
-  defmacro sub_field(name, _type, opts \\ [], do: block) do
+  defmacro sub_field(name, type, opts \\ [], do: block) do
     ast = register_struct(block, opts, name, __CALLER__.module)
-    type = Macro.escape(quote do: struct())
+    type = Macro.escape(type)
     is_error = !is_nil(Keyword.get(opts, :error))
 
     quote do
