@@ -53,6 +53,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     346.65 = assert SanitizerDerive.sanitize(:string_float, 346.65)
   end
 
+  test "sanitize(:string_integer, input)" do
+    2369 = assert SanitizerDerive.sanitize(:string_integer, "<p>2369</p>")
+    3 = assert SanitizerDerive.sanitize(:string_integer, "3s4s6.65")
+    346 = assert SanitizerDerive.sanitize(:string_integer, "346.65sss")
+    346 = assert SanitizerDerive.sanitize(:string_integer, "346.65")
+    346 = assert SanitizerDerive.sanitize(:string_integer, 346)
+    # We just sanitize string values
+    346.6 = assert SanitizerDerive.sanitize(:string_integer, 346.6)
+  end
+
   ############## (▰˘◡˘▰) Validation Derive (▰˘◡˘▰) ##############
   test "validate(:string, input, field)" do
     "Mishka" = assert ValidationDerive.validate(:string, "Mishka", :title)
@@ -791,6 +801,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
       assert ValidationDerive.validate(:string_float, "3.5sss", :test)
 
     "3.5" = assert ValidationDerive.validate(:string_float, "3.5", :test)
+    {:error, _, :string_float, _} = assert ValidationDerive.validate(:string_float, 3.5, :test)
   end
 
   test "validate(:some_string_float, input, field)" do
@@ -801,5 +812,31 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     "3.5sss" = assert ValidationDerive.validate(:some_string_float, "3.5sss", :test)
 
     "0" = assert ValidationDerive.validate(:some_string_float, "0", :test)
+  end
+
+  test "validate(:string_integer, input, field)" do
+    {:error, _, :string_integer, _} =
+      assert ValidationDerive.validate(:string_integer, "name", :test)
+
+    "0" = assert ValidationDerive.validate(:string_integer, "0", :test)
+
+    {:error, _, :string_integer, _} =
+      assert ValidationDerive.validate(:string_integer, "3.5sss", :test)
+
+    {:error, _, :string_integer, _} =
+      assert ValidationDerive.validate(:string_integer, "3.5", :test)
+
+    {:error, _, :string_integer, _} =
+      assert ValidationDerive.validate(:string_integer, 3.5, :test)
+  end
+
+  test "validate(:some_string_integer, input, field)" do
+    {:error, _, :some_string_integer, _} =
+      assert ValidationDerive.validate(:some_string_integer, "name", :test)
+
+    "3.5" = assert ValidationDerive.validate(:some_string_integer, "3.5", :test)
+    "3.5sss" = assert ValidationDerive.validate(:some_string_integer, "3.5sss", :test)
+
+    "0" = assert ValidationDerive.validate(:some_string_integer, "0", :test)
   end
 end

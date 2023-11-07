@@ -49,6 +49,17 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
     rescue
       _ -> 0.0
     end
+
+    def sanitize(:string_integer, input) when is_binary(input) do
+      sanitize(:strip_tags, input)
+      |> Integer.parse()
+      |> case do
+        :error -> 0
+        {converted_integer, _} -> converted_integer
+      end
+    rescue
+      _ -> 0
+    end
   else
     def sanitize(:string_float, input) when is_binary(input) do
       Float.parse(input)
@@ -58,6 +69,16 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
       end
     rescue
       _ -> 0.0
+    end
+
+    def sanitize(:string_integer, input) when is_binary(input) do
+      Integer.parse(input)
+      |> case do
+        :error -> 0
+        {converted_integer, _} -> converted_integer
+      end
+    rescue
+      _ -> 0
     end
   end
 

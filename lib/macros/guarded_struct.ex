@@ -382,6 +382,8 @@ defmodule GuardedStruct do
   | `"validate(custom=[Enum, all?])"` | NO | Validate if the you custom function returns true, **Please read section 20**|
   | `"validate(some_string_float)"` | NO | Validate if the string data is float (Somewhat by removing the string)|
   | `"validate(string_float)"` | NO | Validate if the string data is float (Strict mode)|
+  | `"validate(string_integer)"` | NO | Validate if the string data is integer (Strict mode)|
+  | `"validate(some_string_integer)"` | NO | Validate if the string data is integer (Somewhat by removing the string)|
 
   ```elixir
   defmodule MyModule do

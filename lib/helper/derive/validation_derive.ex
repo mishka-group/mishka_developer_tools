@@ -486,6 +486,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       {:error, field, :string_float, "The output of the #{field} field cannot be Float"}
   end
 
+  def validate(:string_integer, input, field) do
+    # The is_integer heare can be unnecessary, just to clear code and make "It seems to make sense"
+    _ = String.to_integer(input)
+    input
+  rescue
+    _ ->
+      {:error, field, :string_integer, "The output of the #{field} field cannot be Integer"}
+  end
+
   # it should be noted, the string_float can be an issue if you would not sanitize before.
   # and use the other validation like string and not empty before this validation
   def validate(:some_string_float, input, field) do
@@ -500,6 +509,21 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   rescue
     _ ->
       {:error, field, :some_string_float, "The output of the #{field} field cannot be Float"}
+  end
+
+  def validate(:some_string_integer, input, field) do
+    Integer.parse(input)
+    |> case do
+      :error ->
+        {:error, field, :some_string_integer,
+         "The output of the #{field} field cannot be Integer"}
+
+      {_converted_integer, _} ->
+        input
+    end
+  rescue
+    _ ->
+      {:error, field, :some_string_integer, "The output of the #{field} field cannot be Integer"}
   end
 
   def validate(action, input, field) do
