@@ -1243,8 +1243,9 @@ defmodule GuardedStruct do
     Enum.each(unquote(@temporary_revaluation), &Module.delete_attribute(module, &1))
   end
 
-  defmacro conditional_field(name, opts \\ [], do: block) do
-    type = Macro.escape(quote do: struct())
+  defmacro conditional_field(name, type, opts \\ [], do: block) do
+    # type = Macro.escape(quote do: struct())
+    type = Macro.escape(type)
 
     quote do
       GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__, true, true)

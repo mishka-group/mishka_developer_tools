@@ -1311,7 +1311,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:provider, String.t())
 
-      conditional_field(:social, enforce: true) do
+      conditional_field(:social, any(), enforce: true) do
         sub_field(:social, struct(), hint: "social1") do
           field(:address, String.t(), enforce: true)
           field(:username, String.t(), enforce: true)
@@ -1324,7 +1324,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         end
       end
 
-      conditional_field(:profile, enforce: true) do
+      conditional_field(:profile, any(), enforce: true) do
         sub_field(:profile, struct(), hint: "profile2") do
           field(:name, String.t(), enforce: true)
           field(:family, String.t(), enforce: true)
@@ -1425,7 +1425,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:provider, String.t())
 
-      conditional_field(:social, enforce: true) do
+      conditional_field(:social, any(), enforce: true) do
         field(:social, String.t(), hint: "social1", validator: {VAL, :is_string_data})
 
         sub_field(:social, struct(), hint: "social2", validator: {VAL, :is_map_data}) do
@@ -1434,7 +1434,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         end
       end
 
-      conditional_field(:profile, enforce: true) do
+      conditional_field(:profile, any(), enforce: true) do
         field(:profile, String.t(), hint: "profile1", validator: {VAL, :is_string_data})
 
         sub_field(:profile, struct(), hint: "profile2", validator: {VAL, :is_map_data}) do
@@ -1533,7 +1533,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:provider, String.t())
 
-      conditional_field(:social, enforce: true) do
+      conditional_field(:social, any(), enforce: true) do
         field(:social, String.t(), hint: "social1", validator: {VAL, :is_string_data})
 
         field(:social, String.t(),
@@ -1543,7 +1543,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         )
       end
 
-      conditional_field(:profile, enforce: true) do
+      conditional_field(:profile, any(), enforce: true) do
         field(:profile, String.t(), hint: "profile1", validator: {VAL, :is_string_data})
 
         field(:profile, String.t(),
@@ -1597,7 +1597,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:provider, String.t())
 
-      conditional_field(:social, enforce: true, priority: true) do
+      conditional_field(:social, any(), enforce: true, priority: true) do
         field(:social, String.t(), hint: "social1", validator: {VAL, :is_string_data})
 
         sub_field(:social, struct(), hint: "social2", validator: {VAL, :is_map_data}) do
@@ -1606,7 +1606,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         end
       end
 
-      conditional_field(:profile, enforce: true, priority: true) do
+      conditional_field(:profile, any(), enforce: true, priority: true) do
         field(:profile, String.t(), hint: "profile1", validator: {VAL, :is_string_data})
 
         sub_field(:profile, struct(), hint: "profile2", validator: {VAL, :is_map_data}) do
@@ -1657,7 +1657,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:provider, String.t())
 
-      conditional_field(:social, enforce: true, priority: true) do
+      conditional_field(:social, any(), enforce: true, priority: true) do
         field(:social, String.t(),
           hint: "social1",
           validator: {VAL, :is_string_data},
@@ -1670,7 +1670,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         end
       end
 
-      conditional_field(:profile, enforce: true, priority: true) do
+      conditional_field(:profile, any(), enforce: true, priority: true) do
         field(:profile, String.t(),
           hint: "profile1",
           validator: {VAL, :is_string_data},
@@ -1741,12 +1741,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     guardedstruct do
       field(:provider, String.t())
 
-      conditional_field(:social, enforce: true) do
+      conditional_field(:social, any(), enforce: true) do
         field(:social, String.t(), hint: "social1")
         field(:social, String.t(), hint: "social2")
       end
 
-      conditional_field(:profile, enforce: true) do
+      conditional_field(:profile, any(), enforce: true) do
         field(:profile, String.t(), hint: "profile1")
         field(:profile, String.t(), hint: "profile2")
       end
@@ -1782,7 +1782,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         field(:name, String.t(), enforce: true)
         field(:family, String.t(), enforce: true)
 
-        conditional_field(:address) do
+        conditional_field(:address, any()) do
           field(:address, String.t(), hint: "address1", validator: {VAL, :is_string_data})
 
           sub_field(:address, struct(), hint: "address2", validator: {VAL, :is_map_data}) do
@@ -1798,7 +1798,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
         end
       end
 
-      conditional_field(:product) do
+      conditional_field(:product, any()) do
         field(:product, String.t(), hint: "product1", validator: {VAL, :is_string_data})
 
         sub_field(:product, struct(), hint: "product2", validator: {VAL, :is_map_data}) do
@@ -1809,7 +1809,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
             field(:creator, String.t(), enforce: true)
             field(:company, String.t(), enforce: true)
 
-            conditional_field(:inventory, enforce: true) do
+            conditional_field(:inventory, integer() | struct(), enforce: true) do
               field(:inventory, integer(),
                 hint: "inventory1",
                 validator: {VAL, :is_int_data},
