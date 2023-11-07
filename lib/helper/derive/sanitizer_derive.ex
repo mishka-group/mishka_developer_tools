@@ -38,6 +38,27 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
       |> then(&sanitize(:downcase, &1))
       |> then(&sanitize(:trim, &1))
     end
+
+    def sanitize(:string_float, input) when is_binary(input) do
+      sanitize(:strip_tags, input)
+      |> Float.parse()
+      |> case do
+        :error -> 0.0
+        {converted_float, _} -> converted_float
+      end
+    rescue
+      _ -> 0.0
+    end
+  else
+    def sanitize(:string_float, input) when is_binary(input) do
+      Float.parse(input)
+      |> case do
+        :error -> 0.0
+        {converted_float, _} -> converted_float
+      end
+    rescue
+      _ -> 0.0
+    end
   end
 
   def sanitize(action, input) do

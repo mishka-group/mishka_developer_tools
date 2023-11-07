@@ -330,6 +330,7 @@ defmodule GuardedStruct do
   | `"sanitize(markdown_html)"` | `:html_sanitize_ex` | Sanitize your string base on `markdown_html` |
   | `"sanitize(strip_tags)"` | `:html_sanitize_ex` | Sanitize your string base on `strip_tags` |
   | `"sanitize(tag)"` | `:html_sanitize_ex` | Sanitize your string base on `html_sanitize_ex` selection |
+  | `"sanitize(string_float)"` | `:html_sanitize_ex` or `none` | Sanitize your string base on `html_sanitize_ex` and `Float.parse/1` |
 
   #### Validate
 
@@ -1975,7 +1976,6 @@ defmodule GuardedStruct do
 
       errors || {:ok, Enum.map(builders_output, &elem(&1, 1))}
     else
-      IO.inspect(attrs)
       {:error, :bad_parameters, "Your input must be a list of items"}
     end
   end

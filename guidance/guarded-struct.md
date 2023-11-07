@@ -259,6 +259,7 @@ end
 | `"sanitize(markdown_html)"` | `:html_sanitize_ex` | Sanitize your string base on `markdown_html` |
 | `"sanitize(strip_tags)"` | `:html_sanitize_ex` | Sanitize your string base on `strip_tags` |
 | `"sanitize(tag)"` | `:html_sanitize_ex` | Sanitize your string base on `html_sanitize_ex` selection |
+| `"sanitize(string_float)"` | `:html_sanitize_ex` or NO | Sanitize your string base on `html_sanitize_ex` and `Float.parse/1` |
 
 #### Validate
 

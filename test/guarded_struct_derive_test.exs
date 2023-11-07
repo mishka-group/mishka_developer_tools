@@ -45,6 +45,14 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
     "<p>Hi Shahryar</p>" = assert SanitizerDerive.sanitize(:not_exist, "<p>Hi Shahryar</p>")
   end
 
+  test "sanitize(:string_float, input)" do
+    2369.0 = assert SanitizerDerive.sanitize(:string_float, "<p>2369</p>")
+    3.0 = assert SanitizerDerive.sanitize(:string_float, "3s4s6.65")
+    346.65 = assert SanitizerDerive.sanitize(:string_float, "346.65sss")
+    346.65 = assert SanitizerDerive.sanitize(:string_float, "346.65")
+    346.65 = assert SanitizerDerive.sanitize(:string_float, 346.65)
+  end
+
   ############## (▰˘◡˘▰) Validation Derive (▰˘◡˘▰) ##############
   test "validate(:string, input, field)" do
     "Mishka" = assert ValidationDerive.validate(:string, "Mishka", :title)
