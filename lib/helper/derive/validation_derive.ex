@@ -130,7 +130,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
          "The maximum number of characters in the #{field} field is #{len} and you have sent more than this number of entries"}
   end
 
-  def validate({:max_len, len}, input, field) when is_integer(input) do
+  def validate({:max_len, len}, input, field) when is_integer(input) or is_float(input) do
     if input <= len,
       do: input,
       else:
@@ -159,7 +159,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       else: input
   end
 
-  def validate({:min_len, len}, input, field) when is_integer(input) do
+  def validate({:min_len, len}, input, field) when is_integer(input) or is_float(input) do
     if input < len,
       do:
         {:error, field, :min_len,
@@ -300,7 +300,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate(:range, input, field) do
-    Range.size(input)
+    _ = Range.size(input)
     input
   rescue
     _ ->
