@@ -35,6 +35,35 @@ Adding new Copyright (c) [2023] [Shahryar Tavakkoli at [Mishka Group](https://gi
 
 ---
 
+## Table of Contents
+
+1. [Defines a guarded struct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#defines-a-guarded-struct)
+2. [Defining a struct layer without additional options](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#defining-a-struct-layer-without-additional-options)
+3. [Define a struct with settings related to essential keys or `opaque` type](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#define-a-struct-with-settings-related-to-essential-keys-or-opaque-type)
+4. [Defining the struct by calling the validation module or calling from the module that contains the struct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#defining-the-struct-by-calling-the-validation-module-or-calling-from-the-module-that-contains-the-struct)
+5. [Define the struct by calling the `main_validator` for full access on the output](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#define-the-struct-by-calling-the-main_validator-for-full-access-on-the-output)
+6. [Define struct with `derive`](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#define-struct-with-derive)
+7. [Extending `derive` section](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#extending-derive-section)
+8. [Struct definition with `validator` and `derive` simultaneously](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#struct-definition-with-validator-and-derive-simultaneously)
+9. [Define a nested and complex struct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#define-a-nested-and-complex-struct)
+10. [Error and data output sample](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#error-and-data-output-sample)
+11. [Set config to show error inside `defexception`](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#error-and-data-output-sample)
+12. [Error `defexception` modules](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#error-defexception-modules)
+13. [`authorized_fields` option to limit user input](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#authorized_fields-option-to-limit-user-input)
+14. [List of structs](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#list-of-structs)
+15. [Struct information function](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#struct-information-function)
+16. [Transmitting whole output of builder function to its children](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#transmitting-whole-output-of-builder-function-to-its-children)
+17. [Auto core key](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#auto-core-key)
+18. [On core key](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#on-core-key)
+19. [From core key](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#from-core-key)
+20. [Domain core key](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#domain-core-key)
+21. [Domain core key with `equal` and `either` support](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#domain-core-key-with-equal-and-either-support)
+22. [Domain core key with Custom function support](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#domain-core-key-with-custom-function-support)
+23. [Conditional fields](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#conditional-fields)
+
+
+---
+
 ### Defines a guarded struct
 
 The beginning of the block consists of the introduction of a `Struct` with the `guardedstruct` macro, which is solely responsible for recording a series of information in order to create a struct, as well as all of the fields with the `field` macro, and if you need to create another struct within this struct (in actuality, a module child within another module), you must use the `sub_field` macro.
