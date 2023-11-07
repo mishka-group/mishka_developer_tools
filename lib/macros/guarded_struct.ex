@@ -1075,6 +1075,13 @@ defmodule GuardedStruct do
   It is important to notice that the `conditional_field` contained within this macro have
   the capability of supporting `sub_field`. You can look at some illustrations down below.
 
+  Note: Please read this if you want to document any conditional fields for your API.
+  For instance, your front team ought to be aware of which area of the output is for.
+  You have the option of adding the `hint` keyword in accordance with the aforementioned code.
+  And the clue is in your practice here.
+
+  **Output of hint**: `__hint__`
+
   ```elixir
   defmodule ConditionalFieldComplexTest do
     use GuardedStruct
