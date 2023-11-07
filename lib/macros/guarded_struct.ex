@@ -1065,6 +1065,102 @@ defmodule GuardedStruct do
   ```
 
   **Note**: You can see when you use it inside a derive, the GuardedStruct calculates the you module `alias`.
+
+  21. #### Conditional fields
+
+  One of the unique capabilities of this macro is the ability to define conditions
+  and differentiate between the various kinds of `fields`. Assume that you want the `social`
+  field to be able to take both a value `string` and a `map` where `address` and `provider`
+  are included in the `map`.
+  It is important to notice that the `conditional_field` contained within this macro have
+  the capability of supporting `sub_field`. You can look at some illustrations down below.
+
+  ```elixir
+  defmodule ConditionalFieldComplexTest do
+    use GuardedStruct
+    alias ConditionalFieldValidatorTestValidators, as: VAL
+
+    guardedstruct do
+      field(:provider, String.t())
+
+      sub_field(:profile, struct()) do
+        field(:name, String.t(), enforce: true)
+        field(:family, String.t(), enforce: true)
+
+        conditional_field(:address, any()) do
+          field(:address, String.t(), hint: "address1", validator: {VAL, :is_string_data})
+
+          sub_field(:address, struct(), hint: "address2", validator: {VAL, :is_map_data}) do
+            field(:location, String.t(), enforce: true)
+            field(:text_location, String.t(), enforce: true)
+          end
+
+          sub_field(:address, struct(), hint: "address3", validator: {VAL, :is_map_data}) do
+            field(:location, String.t(), enforce: true, derive: "validate(string, location)")
+            field(:text_location, String.t(), enforce: true)
+            field(:email, String.t(), enforce: true)
+          end
+        end
+      end
+
+      conditional_field(:product, any()) do
+        field(:product, String.t(), hint: "product1", validator: {VAL, :is_string_data})
+
+        sub_field(:product, struct(), hint: "product2", validator: {VAL, :is_map_data}) do
+          field(:name, String.t(), enforce: true)
+          field(:price, integer(), enforce: true)
+
+          sub_field(:information, struct()) do
+            field(:creator, String.t(), enforce: true)
+            field(:company, String.t(), enforce: true)
+
+            conditional_field(:inventory, integer() | struct(), enforce: true) do
+              field(:inventory, integer(),
+                hint: "inventory1",
+                validator: {VAL, :is_int_data},
+                derive: "validate(integer, max_len=33)"
+              )
+
+              sub_field(:inventory, struct(), hint: "inventory2", validator: {VAL, :is_map_data}) do
+                field(:count, integer(), enforce: true)
+                field(:expiration, integer(), enforce: true)
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+  ```
+
+  Call the builder
+
+  ```elixir
+  ConditionalFieldComplexTest.builder(%{
+    provider: "Mishka",
+    profile: %{
+      name: "Shahryar",
+      family: "Tavakkoli",
+      address: %{
+        location: "geo:48.198634,-16.371648,3.4;crs=wgs84;u=40.0",
+        text_location: "Nowhere",
+        email: "shahryar@mishka.group"
+      }
+    },
+    product: %{
+      name: "MishkaDeveloperTools",
+      price: 0,
+      information: %{
+        creator: "Shahryar Tavakkoli",
+        company: "mishka group",
+        inventory: %{
+          count: 3_000_000,
+          expiration: 33
+        }
+      }
+    }
+  })
+  ```
   """
   defmacro guardedstruct(opts \\ [], do: block) do
     ast = register_struct(block, opts, :root, __CALLER__.module)
