@@ -1834,7 +1834,7 @@ defmodule GuardedStruct do
       |> Enum.reverse()
       |> tl
       |> Enum.reduce_while([], fn item, acc ->
-        concated = Module.safe_concat(String.split(item, ".", trim: true))
+        concated = Module.concat(String.split(item, ".", trim: true))
 
         {Code.ensure_loaded(concated), function_exported?(concated, :__information__, 0)}
         |> case do

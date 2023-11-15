@@ -45,7 +45,8 @@ defmodule MishkaDeveloperTools.MixProject do
       {:ex_url, "~> 2.0", optional: true},
       {:ex_phone_number, "~> 0.4.2", optional: true},
       # Dev dependencies
-      {:ex_doc, "~> 0.30.7", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.30.7", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
     ]
   end
 
