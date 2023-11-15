@@ -19,8 +19,8 @@ defmodule MishkaDeveloperTools.Helper.Derive do
         if !is_nil(get_field) do
           {all_data, validated_errors} =
             {map.field, get_field}
-            |> SanitizerDerive.call(Map.get(parsed_derive, :sanitize))
-            |> ValidationDerive.call(Map.get(parsed_derive, :validate))
+            |> SanitizerDerive.call(Map.get(parsed_derive || %{}, :sanitize))
+            |> ValidationDerive.call(Map.get(parsed_derive || %{}, :validate))
 
           converted_validated_values =
             if length(validated_errors) > 0, do: {:error, validated_errors}, else: all_data
