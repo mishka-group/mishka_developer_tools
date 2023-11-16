@@ -2231,18 +2231,25 @@ defmodule GuardedStruct do
     # "!auth=String[admin, user]::?auth.social=Atom[banned, moderated]"
     # for example `auth.social` should be atom and between `banned` and `moderated`
     # ? and ! means the `auth.social` can exist or not and if yes it should be atom and between the values
-    pattern
-    |> String.trim()
-    |> String.split("::", trim: true)
-    |> Enum.map(&String.split(&1, "=", trim: true))
-    |> Enum.map(fn
-      ["!" <> field, converted_pattern] ->
-        domain_field_status(field, attrs, converted_pattern, key, :error)
+    Map.get(attrs, key)
+    |> case do
+      nil ->
+        []
 
-      ["?" <> field, converted_pattern] ->
-        domain_field_status(field, attrs, converted_pattern, key)
-    end)
-    |> Enum.reject(&is_nil(&1))
+      _ ->
+        pattern
+        |> String.trim()
+        |> String.split("::", trim: true)
+        |> Enum.map(&String.split(&1, "=", trim: true))
+        |> Enum.map(fn
+          ["!" <> field, converted_pattern] ->
+            domain_field_status(field, attrs, converted_pattern, key, :error)
+
+          ["?" <> field, converted_pattern] ->
+            domain_field_status(field, attrs, converted_pattern, key)
+        end)
+        |> Enum.reject(&is_nil(&1))
+    end
   end
 
   defp get_domain_field(field, attrs) do

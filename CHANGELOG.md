@@ -2,6 +2,7 @@
 
 - [x] Fix and Remove `downcase` bug in `strip_tags`
 - [x] Fix and Remove preventer of calling a `struct` inside itself
+- [x] Fix domain core key to prevent it not to check domain when the key is `nil`
 
 
 # Changelog for MishkaDeveloperTools 0.1.2
