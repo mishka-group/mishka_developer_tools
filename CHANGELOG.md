@@ -1,3 +1,9 @@
+# Changelog for MishkaDeveloperTools 0.1.2-fix-bug
+
+- [x] Fix and Remove `downcase` bug in `strip_tags`
+- [x] Fix and Remove preventer of calling a `struct` inside itself
+
+
 # Changelog for MishkaDeveloperTools 0.1.2
 
 ---

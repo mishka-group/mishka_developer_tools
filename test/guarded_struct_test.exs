@@ -580,7 +580,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
     {:ok,
      %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct{
-       username: "mishka",
+       username: "Mishka",
        profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Profile{
          nickname: "mishka",
          site: "https://elixir-lang.org"

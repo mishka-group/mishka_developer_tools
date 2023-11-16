@@ -38,7 +38,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
   end
 
   test "sanitize(:tag, input)" do
-    "hi shahryar" = assert SanitizerDerive.sanitize({:tag, :strip_tags}, "<p>Hi Shahryar</p>")
+    "Hi Shahryar" = assert SanitizerDerive.sanitize({:tag, :strip_tags}, "<p>Hi Shahryar</p>")
   end
 
   test "sanitize(:not_exist, input)" do

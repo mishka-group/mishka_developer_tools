@@ -35,7 +35,6 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
     def sanitize({:tag, type}, input) when is_binary(input) do
       sanitize(:trim, input)
       |> then(&sanitize(if(is_binary(type), do: String.to_atom(type), else: type), &1))
-      |> then(&sanitize(:downcase, &1))
       |> then(&sanitize(:trim, &1))
     end
 

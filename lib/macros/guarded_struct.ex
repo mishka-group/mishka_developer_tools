@@ -991,8 +991,8 @@ defmodule GuardedStruct do
   ```
 
   **In this part:**
-  - If `username` key is sentm you must have `auth.action` path which is string `admin` or string `user`
-  - If `username` key is sentm you you can have `auth.social` path which is just atom `:banned`
+  - If `username` key is sent you must have `auth.action` path which is string `admin` or string `user`
+  - If `username` key is sent you you can have `auth.social` path which is just atom `:banned`
   - So the `auth.social` can be nil and inside user input impossible nil
 
   **Note**: Within this section of the core keys, we are making use of the `:enum` Derive.
