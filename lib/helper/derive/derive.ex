@@ -13,27 +13,61 @@ defmodule MishkaDeveloperTools.Helper.Derive do
   def derive({:ok, data, derive_inputs}, extra_error \\ []) do
     reduced_fields =
       Enum.reduce(derive_inputs, %{}, fn map, acc ->
-        parsed_derive = Parser.parser(map.derive)
-        get_field = Map.get(data, map.field)
+        derives = Parser.parser(map.derive)
+        field = Map.get(data, map.field)
+        hint = Map.get(map, :hint) || []
 
-        if !is_nil(get_field) do
-          {all_data, validated_errors} =
-            {map.field, get_field}
-            |> SanitizerDerive.call(Map.get(parsed_derive || %{}, :sanitize))
-            |> ValidationDerive.call(Map.get(parsed_derive || %{}, :validate))
-
-          converted_validated_values =
-            if length(validated_errors) > 0, do: {:error, validated_errors}, else: all_data
-
-          Map.put(acc, map.field, converted_validated_values)
-        else
-          acc
-        end
+        update_reduced_fields(field, derives, hint, map, acc)
       end)
 
     {:error, :bad_parameters, get_error} = error = error_handler(reduced_fields, extra_error)
 
     if length(get_error) == 0, do: {:ok, Map.merge(data, reduced_fields)}, else: error
+  end
+
+  defp update_reduced_fields(nil, _parsed_derive, _hint, _map, acc), do: acc
+
+  defp update_reduced_fields(get_field, parsed_derive, hints, map, acc)
+       when is_list(parsed_derive) and parsed_derive != [] do
+    converted_validated_values =
+      Enum.zip([parsed_derive, get_field, hints])
+      |> Enum.map(fn {derive, value, hint} ->
+        derive = if(derive == [], do: nil, else: derive)
+
+        {all_data, validated_errors} =
+          {map.field, value}
+          |> SanitizerDerive.call(Map.get(derive || %{}, :sanitize))
+          |> ValidationDerive.call(Map.get(derive || %{}, :validate), hint)
+
+        if length(validated_errors) > 0, do: {:error, validated_errors}, else: all_data
+      end)
+
+    errors =
+      converted_validated_values
+      |> Enum.filter(&(is_tuple(&1) and elem(&1, 0) == :error))
+      |> Enum.map(fn {:error, errors} -> errors end)
+      |> Enum.concat()
+
+    Map.put(
+      acc,
+      map.field,
+      if(length(errors) > 0, do: {:error, errors}, else: converted_validated_values)
+    )
+  end
+
+  defp update_reduced_fields(get_field, parsed_derive, hint, map, acc) do
+    # destruct because we consider empty list default value when there is no derive
+    parsed_derive = if(parsed_derive == [], do: nil, else: parsed_derive)
+
+    {all_data, validated_errors} =
+      {map.field, get_field}
+      |> SanitizerDerive.call(Map.get(parsed_derive || %{}, :sanitize))
+      |> ValidationDerive.call(Map.get(parsed_derive || %{}, :validate), hint)
+
+    converted_validated_values =
+      if length(validated_errors) > 0, do: {:error, validated_errors}, else: all_data
+
+    Map.put(acc, map.field, converted_validated_values)
   end
 
   def error_handler(reduced_fields, extra_error \\ []) do
@@ -69,14 +103,23 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
   @doc false
   def get_derives_from_success_conditional_data(conds) do
-    Enum.reduce(conds, [], fn {field, {{:ok, _data}, opts}}, acc ->
-      get_cond_derive =
-        case Keyword.get(opts, :derive) do
-          nil -> []
-          derive -> [Map.new([{:derive, derive}, {:field, field}])]
-        end
+    Enum.reduce(conds, [], fn
+      {field, {{:ok, _data}, opts}}, acc ->
+        get_derive = Keyword.get(opts, :derive, [])
+        get_hint = Keyword.get(opts, :hint, [])
 
-      acc ++ get_cond_derive
+        acc ++ [Map.new([{:derive, get_derive}, {:field, field}, {:hint, get_hint}])]
+
+      {field, values}, acc ->
+        %{derive: derives, hint: hints} =
+          Enum.reduce(values, %{derive: [], hint: []}, fn {{:ok, _value}, opts}, acc ->
+            get_derive = Keyword.get(opts, :derive, [])
+            get_hint = Keyword.get(opts, :hint, [])
+
+            Map.merge(acc, %{derive: acc.derive ++ [get_derive], hint: acc.hint ++ [get_hint]})
+          end)
+
+        acc ++ [Map.new([{:derive, derives}, {:field, field}, {:hint, hints}])]
     end)
   end
 end

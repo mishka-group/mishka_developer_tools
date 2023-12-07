@@ -1647,53 +1647,15 @@ defmodule GuardedStruct do
   defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _), do: error
 
   defp conditional_fields_validating({:ok, attrs, full_attrs}, conditionals, type, key) do
-    {cond_fields, uncond_fields} =
-      Enum.reduce(attrs, {%{}, %{}}, fn {key, val}, {cond_acc, uncond_acc} ->
-        if Keyword.has_key?(conditionals, key),
-          do: {Map.put(cond_acc, key, val), uncond_acc},
-          else: {cond_acc, Map.put(uncond_acc, key, val)}
-      end)
+    {cond_fields, uncond_fields} = conditionals_fields_parameters_divider(attrs, conditionals)
 
     cond_builders =
       Enum.map(cond_fields, fn {field, value} ->
         cond_data = Keyword.get(conditionals, field)
+        list_conditional = Keyword.get(cond_data.opts, :structs)
 
-        output =
-          Enum.map(cond_data.fields, fn
-            # Normail field that has custom validator function, if it does not. should pass ok
-            # The priority is with the external module
-            %{sub?: false, opts: opts, module: nil, list?: false} ->
-              case Keyword.get(opts, :struct) do
-                nil ->
-                  {get_field_validator(opts, cond_data.caller, field, value), opts}
-
-                module ->
-                  if !Code.ensure_loaded?(module) do
-                    {get_field_validator(opts, cond_data.caller, field, value), opts}
-                  else
-                    {opts, cond_data.caller, field, value, type, module}
-                    |> execute_field_validator(:external)
-                  end
-              end
-
-            %{sub?: false, opts: opts, module: nil, list?: true} ->
-              # It is not a sub field, but it should load external module
-              # because we have no normal field which is list
-              {opts, cond_data.caller, field, value, key, type, full_attrs}
-              |> execute_field_validator(:list_external)
-
-            %{sub?: true, opts: opts, module: module, list?: false} ->
-              # It is a sub field and just accepts a map not list of map
-              {opts, cond_data.caller, field, value, module, key, full_attrs, type}
-              |> execute_field_validator(:sub_field)
-
-            %{sub?: true, opts: opts, module: module, list?: true} ->
-              # It is a sub field and accepts a list of maps
-              {opts, module, field, key, type, full_attrs}
-              |> execute_field_validator(:list_field)
-          end)
-
-        {field, output, Keyword.get(cond_data.opts, :priority) || false}
+        {cond_data, field, value, full_attrs, key, type, list_conditional}
+        |> conditional_fields_validating_pattern()
       end)
 
     cond_data = conditionals_fields_data_divider(cond_builders)
@@ -2276,16 +2238,29 @@ defmodule GuardedStruct do
   end
 
   defp conditionals_fields_data_divider(builders) do
-    Enum.reduce(builders, %{data: [], errors: []}, fn {field, conds, priority}, acc ->
-      %{data: data, errors: errors} =
-        {field, conds, acc, priority}
-        |> separate_conditions_based_priority()
+    Enum.reduce(builders, %{data: [], errors: []}, fn
+      {field, conds, priority}, acc ->
+        %{data: data, errors: errors} =
+          {field, conds, acc, priority}
+          |> separate_conditions_based_priority()
 
-      %{data: acc.data ++ data, errors: acc.errors ++ errors}
+        %{data: acc.data ++ data, errors: acc.errors ++ errors}
+
+      list, acc ->
+        grouped = Enum.group_by(list, fn {key, [{_, _, _} | _], _} -> key end)
+        field = grouped |> Map.keys() |> List.first()
+
+        %{data: data, errors: errors} =
+          {field, Map.get(grouped, field), acc, false}
+          |> separate_conditions_based_priority("list")
+
+        %{data: acc.data ++ data, errors: acc.errors ++ errors}
     end)
   end
 
-  defp separate_conditions_based_priority({field, conds, acc, true}) do
+  defp separate_conditions_based_priority(params, type \\ "normal")
+
+  defp separate_conditions_based_priority({field, conds, acc, true}, "normal") do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
 
     Map.merge(acc, %{
@@ -2294,12 +2269,33 @@ defmodule GuardedStruct do
     })
   end
 
-  defp separate_conditions_based_priority({field, conds, acc, false}) do
+  defp separate_conditions_based_priority({field, conds, acc, false}, "normal") do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
 
     Map.merge(acc, %{
       errors: if(length(error_data) > 0, do: [{field, error_data}], else: []),
       data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: [])
+    })
+  end
+
+  defp separate_conditions_based_priority({field, conds, acc, false}, "list") do
+    [success_data, error_data] =
+      Enum.map(conds, &elem(&1, 1))
+      |> Enum.reduce([[], []], fn values, [data, error] ->
+        ok_data = Enum.find(values, &Parser.field_status?(&1, :ok))
+        error_data = Enum.find(values, &Parser.field_status?(&1, :error))
+
+        if(!is_nil(ok_data)) do
+          {value, opts} = Parser.field_value(ok_data)
+          [data ++ [{{:ok, Map.new([{field, value}])}, opts}], error]
+        else
+          [data, error ++ [Parser.field_value(error_data)]]
+        end
+      end)
+
+    Map.merge(acc, %{
+      errors: if(length(error_data) > 0, do: [{field, error_data}], else: []),
+      data: if(length(success_data) > 0, do: [{field, success_data}], else: [])
     })
   end
 
@@ -2360,8 +2356,13 @@ defmodule GuardedStruct do
   end
 
   defp cond_data_converter(conds) do
-    Enum.reduce(conds.data, %{}, fn {field, {{:ok, data}, _opts}}, acc ->
-      Map.put(acc, field, Map.get(data, List.first(Map.keys(data))))
+    Enum.reduce(conds.data, %{}, fn
+      {field, {{:ok, data}, _opts}}, acc ->
+        Map.put(acc, field, Map.get(data, List.first(Map.keys(data))))
+
+      {field, values}, acc ->
+        data = Enum.map(values, &Map.get(Parser.field_value(&1) |> elem(0), field))
+        Map.put(acc, field, data)
     end)
   end
 
@@ -2413,12 +2414,16 @@ defmodule GuardedStruct do
     end
   end
 
+  # TODO: it should be consider, some full attars needs to be updated
   defp execute_field_validator(
          {opts, caller, field, value, key, type, full_attrs},
          :list_external
        ) do
+    IO.inspect(full_attrs)
+
     case get_field_validator(opts, caller, field, value) do
       {:ok, _field, _value} ->
+        full_attrs = update_in(full_attrs, key, &(&1 = value))
         {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type), field, opts}
 
       error ->
@@ -2447,6 +2452,8 @@ defmodule GuardedStruct do
           |> combine_parent_field(if(is_list(key), do: key, else: [key]))
           |> List.delete(:root)
 
+        full_attrs = update_in(full_attrs, keys, &(&1 = value))
+
         {module.builder({keys, full_attrs, type}), field, opts}
 
       error ->
@@ -2456,5 +2463,78 @@ defmodule GuardedStruct do
 
   defp execute_field_validator({opts, module, field, key, type, full_attrs}, :list_field) do
     {list_builder(full_attrs, module, field, key, type), field, opts}
+  end
+
+  defp conditionals_fields_parameters_divider(attrs, conditionals) do
+    Enum.reduce(attrs, {%{}, %{}}, fn {key, val}, {cond_acc, uncond_acc} ->
+      if Keyword.has_key?(conditionals, key),
+        do: {Map.put(cond_acc, key, val), uncond_acc},
+        else: {cond_acc, Map.put(uncond_acc, key, val)}
+    end)
+  end
+
+  def conditional_fields_validating_pattern(
+        {cond_data, field, list_values, full_attrs, key, type, true}
+      )
+      when is_list(list_values) do
+    outputs =
+      Enum.map(list_values, fn value ->
+        {cond_data, field, value, full_attrs, key, type, false}
+        |> conditional_fields_validating_pattern()
+      end)
+
+    outputs
+  end
+
+  def conditional_fields_validating_pattern(
+        {_cond_data, field, _list_values, _full_attrs, _key, _type, true}
+      ) do
+    [
+      [
+        {field,
+         [
+           {{:error, :bad_parameters, "Your input must be a list of maps"}, field, []}
+         ], false}
+      ]
+    ]
+  end
+
+  def conditional_fields_validating_pattern({cond_data, field, value, full_attrs, key, type, _}) do
+    output =
+      Enum.map(cond_data.fields, fn
+        # Normail field that has custom validator function, if it does not. should pass ok
+        # The priority is with the external module
+        %{sub?: false, opts: opts, module: nil, list?: false} ->
+          case Keyword.get(opts, :struct) do
+            nil ->
+              {get_field_validator(opts, cond_data.caller, field, value), opts}
+
+            module ->
+              if !Code.ensure_loaded?(module) do
+                {get_field_validator(opts, cond_data.caller, field, value), opts}
+              else
+                {opts, cond_data.caller, field, value, type, module}
+                |> execute_field_validator(:external)
+              end
+          end
+
+        %{sub?: false, opts: opts, module: nil, list?: true} ->
+          # It is not a sub field, but it should load external module
+          # because we have no normal field which is list
+          {opts, cond_data.caller, field, value, key, type, full_attrs}
+          |> execute_field_validator(:list_external)
+
+        %{sub?: true, opts: opts, module: module, list?: false} ->
+          # It is a sub field and just accepts a map not list of map
+          {opts, cond_data.caller, field, value, module, key, full_attrs, type}
+          |> execute_field_validator(:sub_field)
+
+        %{sub?: true, opts: opts, module: module, list?: true} ->
+          # It is a sub field and accepts a list of maps
+          {opts, module, field, key, type, full_attrs}
+          |> execute_field_validator(:list_field)
+      end)
+
+    {field, output, Keyword.get(cond_data.opts, :priority) || false}
   end
 end

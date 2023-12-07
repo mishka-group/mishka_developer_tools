@@ -1,6 +1,6 @@
 defmodule MishkaDeveloperTools.MixProject do
   use Mix.Project
-  @version "0.1.2"
+  @version "0.1.3"
 
   def project do
     [
@@ -46,7 +46,7 @@ defmodule MishkaDeveloperTools.MixProject do
       {:ex_phone_number, "~> 0.4.2", optional: true},
       # Dev dependencies
       {:ex_doc, "~> 0.30.7", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 

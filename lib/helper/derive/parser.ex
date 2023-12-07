@@ -1,4 +1,8 @@
 defmodule MishkaDeveloperTools.Helper.Derive.Parser do
+  def parser(inputs) when is_list(inputs) do
+    Enum.map(inputs, &parser(&1))
+  end
+
   def parser(input) do
     String.split(String.trim(input), ")")
     |> Enum.reject(&(&1 == ""))
@@ -113,4 +117,28 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
   end
 
   def map_keys(_map, keys), do: keys
+
+  def field_status?({{:error, _, _}, _}, status) when status === :error,
+    do: true
+
+  def field_status?({{:error, _, _}, _, _}, status) when status === :error,
+    do: true
+
+  def field_status?({{field_status, _, _}, _}, status) when field_status === status,
+    do: true
+
+  def field_status?({{field_status, _}, _, _}, status) when field_status === status,
+    do: true
+
+  def field_status?(_, _), do: false
+
+  def field_value({{:error, _, _}, _} = output), do: output
+
+  def field_value({{:error, _, _}, _, _} = output), do: output
+
+  def field_value({{:ok, _, value}, opts}), do: {value, opts}
+
+  def field_value({{:ok, value}, _, opts}), do: {value, opts}
+
+  def field_value({{:ok, value}, opts}), do: {value, opts}
 end

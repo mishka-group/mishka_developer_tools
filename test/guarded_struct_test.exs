@@ -2022,6 +2022,44 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
   end
 
+  defmodule ConditionalFieldStructs do
+    use GuardedStruct
+
+    guardedstruct do
+      conditional_field(:auth, any(), structs: true) do
+        sub_field(:auth, struct()) do
+          field(:username, String.t(), enforce: true)
+
+          field(:provider, String.t(), enforce: true)
+        end
+
+        field(:auth, String.t(), derive: "sanitize(trim) validate(not_empty)")
+      end
+
+      conditional_field(:address, any(), structs: true) do
+        sub_field(:address, struct(), derive: "sanitize(trim, upcase)", hint: "address1") do
+          field(:lat, String.t(), enforce: true)
+          field(:lan, String.t(), enforce: true)
+        end
+
+        field(:address, String.t(),
+          derive: "sanitize(trim) validate(not_empty)",
+          hint: "address2"
+        )
+      end
+    end
+  end
+
+  test "Add conditional field as a list on top level" do
+    ConditionalFieldStructs.builder(%{
+      address: [%{lat: "2021", lan: "202"}, ""],
+      # address: [%{lat: "2021", lan: "202"}, "https://github.com"],
+      # auth: [%{username: "mishka", provider: "github"}, "mishka"]
+      auth: [%{username: "mishka", provider: "github"}, ""]
+    })
+    |> IO.inspect(label: "==========>")
+  end
+
   ############## (▰˘◡˘▰) GuardedStructTest Tests helper functions (▰˘◡˘▰) ##############
   # Extracts the first type from a module.
   defp types(bytecode) do

@@ -1,13 +1,19 @@
 defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
-  def call({_field, input}, nil), do: {input, []}
+  def call({_field, input}, nil, _hint), do: {input, []}
 
-  def call({field, input}, actions) do
+  def call({field, input}, actions, hint) do
     validated = Enum.map(actions, &validate(&1, input, field))
 
     validated_errors =
       Enum.reduce(validated, [], fn map, acc ->
         if is_tuple(map) and elem(map, 0) == :error do
           converted_map = %{field: field, action: elem(map, 2), message: elem(map, 3)}
+
+          converted_map =
+            if(!is_nil(hint) and hint != [],
+              do: Map.merge(converted_map, %{__hint__: hint}),
+              else: converted_map
+            )
 
           map_list =
             case map do

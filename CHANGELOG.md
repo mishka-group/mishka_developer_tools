@@ -1,8 +1,11 @@
-# Changelog for MishkaDeveloperTools 0.1.2-fix-bug
+# Changelog for MishkaDeveloperTools 0.1.3
 
 - [x] Fix and Remove `downcase` bug in `strip_tags`
 - [x] Fix and Remove preventer of calling a `struct` inside itself
 - [x] Fix domain core key to prevent it not to check domain when the key is `nil`
+- [x] List `conditional_field`
+- [x] Covering `hint` inside derive `conditional_field` and normal `derive`
+- [ ] Separate all test of GuardedStruct macro in different files
 
 
 # Changelog for MishkaDeveloperTools 0.1.2
