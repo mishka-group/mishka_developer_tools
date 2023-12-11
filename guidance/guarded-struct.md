@@ -914,6 +914,15 @@ domain: "!auth.action=String[admin, user]::?auth.social=Atom[banned]"
 **Note**: Within this section of the core keys, we are making use of the `:enum` Derive. You are free to make advantage of any and all of the amenities that this Derive provides.
 
 
+---
+
+**Note:**:
+
+It is important to think about the fact that the `domain` core key does not consider any update of  the `auto` core key and instead examines the data that was initially entered in the `builder`.
+The information that was entered is not altered in any way by this function; it is merely validating it.
+
+---
+
 19. #### Domain core key with `equal` and `either` support
 
 This component supplies all of the facilities that are necessary to be able to utilize the two keys labeled `equal` and `either`, but because of a little interference, its style is different from the original style of each of these keys, and you are required to adhere to these guidelines. Play can be found in this section.

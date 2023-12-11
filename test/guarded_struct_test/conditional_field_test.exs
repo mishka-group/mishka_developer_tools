@@ -1,0 +1,659 @@
+defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
+  use ExUnit.Case, async: true
+
+  ############# (▰˘◡˘▰) ConditionalFieldTest GuardedStructTest Data (▰˘◡˘▰) ##############
+  defmodule ExtrenalConditiona do
+    use GuardedStruct
+
+    guardedstruct do
+      field(:post_id, integer())
+      field(:like, boolean(), enforce: true)
+    end
+  end
+
+  defmodule ConditionalProfileFieldStructs do
+    use GuardedStruct
+    alias ConditionalFieldValidatorTestValidators, as: VAL
+
+    guardedstruct do
+      field(:nickname, String.t())
+
+      conditional_field(:social, any()) do
+        sub_field(:social, struct(), hint: "social1", validator: {VAL, :is_map_data}) do
+          field(:address, String.t(), enforce: true)
+          field(:provider, String.t(), enforce: true)
+        end
+
+        field(:social, String.t(), hint: "social2", validator: {VAL, :is_string_data})
+      end
+
+      conditional_field(:location, any()) do
+        sub_field(:location, struct(), validator: {VAL, :is_map_data}, hint: "location1") do
+          field(:address, String.t())
+
+          field(:city, String.t(),
+            enforce: true,
+            derive: "sanitize(trim) validate(string, not_empty)"
+          )
+        end
+
+        field(:location, String.t(),
+          validator: {VAL, :is_string_data},
+          derive: "sanitize(trim) validate(string, location)",
+          hint: "location2"
+        )
+      end
+
+      conditional_field(:auth, any()) do
+        sub_field(:auth, struct(), hint: "auth1", structs: true, validator: {VAL, :is_list_data}) do
+          field(:username, String.t(), enforce: true)
+          field(:provider, String.t(), enforce: true)
+        end
+
+        sub_field(:auth, struct(), hint: "auth2", structs: true) do
+          field(:username, String.t(), enforce: true)
+          field(:provider, String.t(), enforce: true)
+        end
+
+        field(:auth, String.t(), hint: "auth3", validator: {VAL, :is_string_data})
+      end
+
+      conditional_field(:post_activity, any()) do
+        field(:post_activity, struct(), struct: ExtrenalConditiona, hint: "post_activity1")
+
+        field(:post_activity, String.t(),
+          hint: "post_activity2",
+          validator: {VAL, :is_string_data}
+        )
+      end
+
+      conditional_field(:post_activities, any(), default: []) do
+        field(:post_activities, struct(), structs: ExtrenalConditiona, hint: "post_activities1")
+
+        field(:post_activities, String.t(),
+          hint: "post_activities2",
+          validator: {VAL, :is_list_data}
+        )
+      end
+
+      conditional_field(:author, any()) do
+        sub_field(:author, struct(), enforce: true, validator: {VAL, :is_map_data}) do
+          field(:name, String.t())
+          field(:family, String.t())
+        end
+
+        field(:author, String.t(), validator: {VAL, :is_string_data})
+      end
+
+      # For domain
+      sub_field(:identity, struct()) do
+        field(:action, String.t())
+        field(:type, String.t())
+      end
+
+      conditional_field(:information, any(), domain: "?identity.type=Atom[female]") do
+        sub_field(:information, struct(), validator: {VAL, :is_map_data}) do
+          field(:name, String.t())
+
+          field(:gender, String.t(), domain: "!identity.action=String[admin, user]")
+        end
+
+        field(:information, String.t(), validator: {VAL, :is_string_data})
+      end
+
+      # On core key has strict error, it should support !, ? as optional stuff
+      field(:sub_identity, String.t(), on: "root::nickname")
+
+      field(:second_username, String.t(), from: "root::information::name")
+
+      field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+
+      conditional_field(:profile, any(), priority: true) do
+        field(:profile, String.t(), hint: "profile1", validator: {VAL, :is_string_data})
+
+        sub_field(:profile, struct(), hint: "profile2", validator: {VAL, :is_map_data}) do
+          field(:name, String.t(), enforce: true, derive: "validate(not_empty)")
+          field(:family, String.t(), enforce: true, derive: "validate(not_empty)")
+        end
+      end
+
+      # conditional_field(:auth, any(), structs: true) do
+      #   sub_field(:auth, struct()) do
+      #     field(:username, String.t(), enforce: true)
+
+      #     field(:provider, String.t(), enforce: true)
+      #   end
+
+      #   field(:auth, String.t(), derive: "sanitize(trim) validate(not_empty)")
+      # end
+
+      # conditional_field(:address, any(), structs: true) do
+      #   sub_field(:address, struct(), derive: "sanitize(trim, upcase)", hint: "address1") do
+      #     field(:lat, String.t(), enforce: true)
+      #     field(:lan, String.t(), enforce: true)
+      #   end
+
+      #   field(:address, String.t(),
+      #     derive: "sanitize(trim) validate(not_empty)",
+      #     hint: "address2"
+      #   )
+      # end
+    end
+  end
+
+  test "Conditional field as a map" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       social: "https://github.com/mishka-group",
+       nickname: "Mishka"
+     }} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               social: "https://github.com/mishka-group"
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       social: %__MODULE__.ConditionalProfileFieldStructs.Social1{
+         provider: "github",
+         address: "https://github.com/mishka-group"
+       },
+       nickname: "Mishka"
+     }} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               social: %{address: "https://github.com/mishka-group", provider: "github"}
+             })
+  end
+
+  test "Conditional field as a map with validator" do
+    {:error, :bad_parameters, "Your input must be a map or list of maps"} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder([
+               %{nickname: "Mishka", social: "https://github.com/mishka-group"}
+             ])
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :social,
+         errors:
+           {:conditionals,
+            [
+              {:social, "It is not map", [__hint__: "social1"]},
+              {:social, "It is not string", [__hint__: "social2"]}
+            ]}
+       }
+     ]} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               social: ["https://github.com/mishka-group"]
+             })
+  end
+
+  test "Conditional field as a map with derive" do
+    {:error, :bad_parameters,
+     [
+       %{
+         message:
+           "Invalid geo url format in the location field, you should send latitude and longitude",
+         field: :location,
+         action: :location,
+         __hint__: "location2"
+       }
+     ]} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               location: "bad_location"
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest.ConditionalProfileFieldStructs{
+       location: "48.198634,-16.371648,3.4;crs=wgs84;u=40.0",
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               location: "48.198634,-16.371648,3.4;crs=wgs84;u=40.0"
+             })
+  end
+
+  test "Conditional field as a map with list sub_field" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       auth: [
+         %__MODULE__.ConditionalProfileFieldStructs.Auth1{
+           provider: "github",
+           username: "Mishka"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.Auth1{
+           provider: "google",
+           username: "Mishka"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.Auth1{
+           provider: "yahoo",
+           username: "Mishka"
+         }
+       ],
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               auth: [
+                 %{username: "Mishka", provider: "github"},
+                 %{username: "Mishka", provider: "google"},
+                 %{username: "Mishka", provider: "yahoo"}
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :auth,
+         errors:
+           {:conditionals,
+            [
+              {:bad_parameters, "Your input must be a list of items", [__hint__: "auth1"]},
+              {:bad_parameters, "Your input must be a list of items", [__hint__: "auth2"]},
+              {:auth, "It is not string", [__hint__: "auth3"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               auth: %{username: "Mishka", provider: "github"}
+             })
+  end
+
+  test "Conditional field as a map with external field" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       post_activity: %__MODULE__.ExtrenalConditiona{
+         like: true,
+         post_id: 1
+       },
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               post_activity: %{post_id: 1, like: true}
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :post_activity,
+         errors:
+           {:conditionals,
+            [
+              {:required_fields, [:like], [__hint__: "post_activity1"]},
+              {:post_activity, "It is not string", [__hint__: "post_activity2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               post_activity: %{post_id: 1, provider: true}
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :post_activity,
+         errors:
+           {:conditionals,
+            [
+              {:bad_parameters, "Your input must be a map or list of maps",
+               [__hint__: "post_activity1"]},
+              {:post_activity, "It is not string", [__hint__: "post_activity2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               post_activity: [%{post_id: 1, like: true}]
+             })
+  end
+
+  test "Conditional field as a map with external list field" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       post_activities: [
+         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2}
+       ],
+       post_activity: nil,
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               post_activities: [%{post_id: 1, like: true}, %{post_id: 2, like: false}]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       post_activities: [1, 2],
+       post_activity: nil,
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               post_activities: [1, 2]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :post_activities,
+         errors:
+           {:conditionals,
+            [
+              {:bad_parameters, "Your input must be a list of items",
+               [__hint__: "post_activities1"]},
+              {:post_activities, "It is not list", [__hint__: "post_activities2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               post_activities: :test
+             })
+  end
+
+  test "Conditional field as a map with enforce as a parent" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :author,
+         errors: {:conditionals, [required_fields: [:family], author: "It is not string"]}
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author: %{name: "Mishka"}
+             })
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest.ConditionalProfileFieldStructs{
+       author:
+         %MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest.ConditionalProfileFieldStructs.Author1{
+           family: "Group",
+           name: "Mishka"
+         },
+       post_activities: [],
+       post_activity: nil,
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author: %{name: "Mishka", family: "Group"}
+             })
+  end
+
+  test "Conditional field as a map with enforce as a child" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       author: nil,
+       post_activities: [],
+       post_activity: nil,
+       auth: nil,
+       location: %__MODULE__.ConditionalProfileFieldStructs.Location1{
+         city: "melbourne",
+         address: "Melbourne"
+       },
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               location: %{
+                 city: "melbourne",
+                 address: "Melbourne"
+               }
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :location,
+         errors:
+           {:conditionals,
+            [
+              {:required_fields, [:city], [__hint__: "location1"]},
+              {:location, "It is not string", [__hint__: "location2"]}
+            ]}
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               location: %{
+                 address: "Melbourne"
+               }
+             })
+  end
+
+  test "Conditional field as a map with domain core key" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       information: %__MODULE__.ConditionalProfileFieldStructs.Information1{
+         gender: "female",
+         name: "Mishka"
+       },
+       identity: %__MODULE__.ConditionalProfileFieldStructs.Identity{
+         type: :female,
+         action: "user"
+       },
+       author: nil,
+       post_activities: [],
+       post_activity: nil,
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "user", type: :female},
+               information: %{name: "Mishka", gender: "female"}
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field information input you have to send authorized data",
+         field: :information,
+         field_path: "identity.type"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "user", type: :test},
+               information: %{name: "Mishka", gender: "female"}
+             })
+  end
+
+  test "Conditional field as a map with on core key" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       sub_identity: "@github",
+       information: %__MODULE__.ConditionalProfileFieldStructs.Information1{
+         gender: "female",
+         name: "Mishka"
+       },
+       identity: %__MODULE__.ConditionalProfileFieldStructs.Identity{
+         type: :female,
+         action: "user"
+       },
+       author: nil,
+       post_activities: [],
+       post_activity: nil,
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "user", type: :female},
+               information: %{name: "Mishka", gender: "female"},
+               sub_identity: "@github"
+             })
+
+    {:error, :dependent_keys,
+     [
+       %{
+         message:
+           "The required dependency for field sub_identity has not been submitted.\nYou must have field nickname in your input\n",
+         field: :sub_identity
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               identity: %{action: "user", type: :female},
+               information: %{name: "Mishka", gender: "female"},
+               sub_identity: "@github"
+             })
+  end
+
+  test "Conditional field as a map with from core key" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       second_username: "Mishka",
+       sub_identity: nil,
+       information: %__MODULE__.ConditionalProfileFieldStructs.Information1{
+         gender: "female",
+         name: "Mishka"
+       },
+       identity: nil,
+       author: nil,
+       post_activities: [],
+       post_activity: nil,
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               information: %{name: "Mishka", gender: "female"},
+               second_username: "mishka2"
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       second_username: "Mishka",
+       sub_identity: nil,
+       information: %__MODULE__.ConditionalProfileFieldStructs.Information1{
+         gender: "female",
+         name: "Mishka"
+       },
+       identity: nil,
+       author: nil,
+       post_activities: [],
+       post_activity: nil,
+       auth: nil,
+       location: nil,
+       social: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               information: %{name: "Mishka", gender: "female"}
+             })
+  end
+
+  test "Conditional field as a map with auto core key" do
+    {:ok, %__MODULE__.ConditionalProfileFieldStructs{record_id: record_id}} =
+      ConditionalProfileFieldStructs.builder(%{
+        nickname: "Mishka",
+        information: %{name: "Mishka", gender: "female"},
+        second_username: "mishka2"
+      })
+
+    assert !is_nil(record_id)
+  end
+
+  test "conditional fields with validator test, priority: true" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :profile,
+         errors: {:conditionals, [{:profile, "It is not string", [__hint__: "profile1"]}]}
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               profile: %{name: "", family: ""}
+             })
+  end
+
+  ############# (▰˘◡˘▰) List ConditionalFieldTest GuardedStructTest Data (▰˘◡˘▰) ##############
+
+  test "Conditional field as a map level/priority" do
+  end
+
+  test "Conditional field as a list on top level" do
+  end
+
+  test "Conditional field as a list on top level with validator" do
+    # ConditionalFieldStructs.builder(%{
+    #   address: [%{lat: "2021", lan: "202"}, ""],
+    #   # address: [%{lat: "2021", lan: "202"}, "https://github.com"],
+    #   # auth: [%{username: "mishka", provider: "github"}, "mishka"]
+    #   auth: [%{username: "mishka", provider: "github"}, ""]
+    # })
+    # |> IO.inspect(label: "==========>")
+  end
+
+  test "Conditional field as a list on top level with derive" do
+  end
+
+  test "Conditional field as a list on top level and subfield children validator" do
+  end
+
+  test "Conditional field as a list on top level and subfield children derive" do
+  end
+
+  test "Conditional field as a list on top level and subfield children derive/validator __hint__" do
+  end
+
+  test "Conditional field as a list on top level/external field" do
+  end
+
+  test "Conditional field as a list on top level/external list field" do
+  end
+
+  test "Conditional field as a list on top level/priority" do
+  end
+
+  test "Conditional field as a list with enforce as a parent" do
+  end
+
+  test "Conditional field as a list with enforce as a child" do
+  end
+
+  test "Conditional field as a list with domain core key" do
+  end
+
+  test "Conditional field as a list with on core key" do
+  end
+
+  test "Conditional field as a list with from core key" do
+  end
+
+  test "Conditional field as a list with auto core key" do
+  end
+end

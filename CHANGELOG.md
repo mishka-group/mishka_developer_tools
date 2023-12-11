@@ -5,7 +5,9 @@
 - [x] Fix domain core key to prevent it not to check domain when the key is `nil`
 - [x] List `conditional_field`
 - [x] Covering `hint` inside derive `conditional_field` and normal `derive`
-- [ ] Separate all test of GuardedStruct macro in different files
+- [ ] Separate all test of `GuardedStruct` macro in different files
+- [ ] Add `dialyzer` for GuardedStruct macro
+- [x] Support `domain` key inside children fields
 
 
 # Changelog for MishkaDeveloperTools 0.1.2

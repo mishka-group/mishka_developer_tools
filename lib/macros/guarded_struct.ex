@@ -998,6 +998,16 @@ defmodule GuardedStruct do
   **Note**: Within this section of the core keys, we are making use of the `:enum` Derive.
   You are free to make advantage of any and all of the amenities that this Derive provides.
 
+  ---
+
+  **Note:**:
+
+  It is important to think about the fact that the `domain` core key does not
+  consider any update of  the `auto` core key and instead examines the data that was initially entered in the `builder`.
+  The information that was entered is not altered in any way by this function; it is merely validating it.
+
+  ---
+
   19. #### Domain core key with `equal` and `either` support
 
   This component supplies all of the facilities that are necessary to be able to utilize the
@@ -1515,7 +1525,7 @@ defmodule GuardedStruct do
     |> required_fields(enforces)
     |> Parser.convert_to_atom_map()
     |> auto_core_key(core_keys, type)
-    |> domain_core_key()
+    |> domain_core_key(attrs)
     |> on_core_key(attrs)
     |> from_core_key()
     |> conditional_fields_validating(conditionals, type, key)
@@ -1591,14 +1601,17 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
-  defp domain_core_key({:error, _, _, :halt} = error), do: error
+  defp domain_core_key({:error, _, _, :halt} = error, _), do: error
 
-  defp domain_core_key({attrs, core_keys}) do
+  defp domain_core_key({attrs, core_keys}, full_attars) do
+    # It is important to think about the fact that the `domain` core key does not
+    # consider any update of  the `auto` core key and instead examines the data that was initially entered in the `builder`.
+    # The information that was entered is not altered in any way by this function; it is merely validating it.
     domain_parameters_errors =
       Enum.map(core_keys, fn
         {key, %{type: :domain, values: pattern}} ->
           parsed =
-            parse_domain_patterns(pattern, key, attrs)
+            parse_domain_patterns(pattern, key, full_attars)
             |> List.flatten()
 
           if length(parsed) == 0, do: nil, else: parsed
@@ -1614,7 +1627,7 @@ defmodule GuardedStruct do
       else: {:error, :domain_parameters, domain_parameters_errors, :halt}
   end
 
-  defp on_core_key({:error, _, _, :halt} = error, _full_attrs), do: error
+  defp on_core_key({:error, _, _, :halt} = error, _), do: error
 
   defp on_core_key({:ok, attrs, core_keys}, full_attrs) do
     full_attrs = Parser.convert_to_atom_map(full_attrs)
@@ -2030,6 +2043,31 @@ defmodule GuardedStruct do
      "Unfortunately, the appropriate settings have not been applied to the desired field."}
   end
 
+  defp list_builder(_attrs, true, _field, _key, _type) do
+    # Developers are advised to use special conditional settings for conditional data that
+    # will be checked as a list. If you need a standard field to accommodate a list,
+    # there are two options:
+
+    # The first method: there is no need to include it in the `structs: true` subset;
+    # instead, you can derive or validate each piece of data.
+    # The alternative is to utilize an external module.
+    # Invoking a different structure from a different module within the corresponding section
+
+    # The reason why this issue exists:
+    # Due to the macro structure, I opted for a list data iteration that was appropriate.
+    # For each subfield, I generate a module and struct.
+    # If a standard field is called again without the module,
+    # the source data is repeated in this field. Additionally,
+    # this field cannot be sent alone,
+    # as the constructor module functions as a pipeline that verifies every
+    # requirement until it reaches its conclusion. You are required to transmit all data.
+
+    # An alternative course of action is to update the library. Remember to send PR to this lib :)
+    # **That is why we should construct a builder that verifies this key exclusively from the root path.**
+    {:error, :runtime_error,
+     "We do not currently support using a normal field as a list without an extra module."}
+  end
+
   defp list_builder(attrs, module, field, key, type) do
     field_path =
       reverse_module_keys(Module.split(module), field)
@@ -2247,7 +2285,15 @@ defmodule GuardedStruct do
         %{data: acc.data ++ data, errors: acc.errors ++ errors}
 
       list, acc ->
-        grouped = Enum.group_by(list, fn {key, [{_, _, _} | _], _} -> key end)
+        grouped =
+          Enum.group_by(list, fn
+            {key, [{_, _, _} | _], _} ->
+              key
+
+            [{key, _field_errors, _} | _] ->
+              key
+          end)
+
         field = grouped |> Map.keys() |> List.first()
 
         %{data: data, errors: errors} =
@@ -2280,7 +2326,14 @@ defmodule GuardedStruct do
 
   defp separate_conditions_based_priority({field, conds, acc, false}, "list") do
     [success_data, error_data] =
-      Enum.map(conds, &elem(&1, 1))
+      Enum.map(conds, fn
+        item when is_tuple(item) ->
+          elem(item, 1)
+
+        item when is_list(item) ->
+          [{_key, field_errors, _} | _] = item
+          field_errors
+      end)
       |> Enum.reduce([[], []], fn values, [data, error] ->
         ok_data = Enum.find(values, &Parser.field_status?(&1, :ok))
         error_data = Enum.find(values, &Parser.field_status?(&1, :error))
@@ -2414,16 +2467,12 @@ defmodule GuardedStruct do
     end
   end
 
-  # TODO: it should be consider, some full attars needs to be updated
   defp execute_field_validator(
          {opts, caller, field, value, key, type, full_attrs},
          :list_external
        ) do
-    IO.inspect(full_attrs)
-
     case get_field_validator(opts, caller, field, value) do
       {:ok, _field, _value} ->
-        full_attrs = update_in(full_attrs, key, &(&1 = value))
         {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type), field, opts}
 
       error ->
