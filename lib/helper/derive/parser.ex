@@ -105,13 +105,6 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   def is_data?(%{data: _data, errors: errors}) when errors != [], do: false
 
-  def is_data?(%{data: data, errors: errors}) do
-    # TODO: do not let error and data comes to stack with each other
-    # TODO: or we have a flag it is list conditional field not map one
-    # IO.inspect(errors)
-    Enum.all?(Keyword.keys(errors), &(&1 in Keyword.keys(data)))
-  end
-
   @doc false
   def map_keys(map_data, keys) when is_map(map_data) do
     case List.first(Map.keys(map_data)) do
@@ -146,4 +139,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
   def field_value({{:ok, value}, _, opts}), do: {value, opts}
 
   def field_value({{:ok, value}, opts}), do: {value, opts}
+
+  def field_value(nil),
+    do:
+      raise(
+        "Oh no!, I think you have not made all the subfields of a conditional field to the same name"
+      )
 end

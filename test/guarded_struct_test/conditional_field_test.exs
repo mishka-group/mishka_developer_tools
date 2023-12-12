@@ -130,16 +130,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         )
       end
 
-      # conditional_field(:auth, any(), structs: true) do
-      #   sub_field(:auth, struct()) do
-      #     field(:username, String.t(), enforce: true)
-
-      #     field(:provider, String.t(), enforce: true)
-      #   end
-
-      #   field(:auth, String.t(), derive: "sanitize(trim) validate(not_empty)")
-      # end
-
       conditional_field(:address, any(), structs: true) do
         sub_field(:address, struct(),
           derive: "sanitize(trim, upcase)",
@@ -156,6 +146,51 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
           validator: {VAL, :is_string_data}
         )
       end
+
+      conditional_field(:extera_auth, any(), structs: true) do
+        sub_field(:extera_auth, struct(), validator: {VAL, :is_map_data}) do
+          field(:username, String.t(),
+            enforce: true,
+            validator: {VAL, :is_string_data},
+            derive: "sanitize(trim) validate(string)"
+          )
+
+          field(:provider, String.t(), enforce: true)
+        end
+
+        field(:extera_auth, String.t(), derive: "sanitize(trim) validate(string, not_empty)")
+      end
+
+      conditional_field(:extera_auth2, any(), structs: true) do
+        sub_field(:extera_auth2, struct(), validator: {VAL, :is_map_data}, hint: "extera_auth1") do
+          field(:username, String.t(),
+            enforce: true,
+            validator: {VAL, :is_string_data},
+            derive: "sanitize(trim) validate(string)"
+          )
+
+          field(:provider, String.t(), enforce: true)
+        end
+
+        field(:extera_auth2, String.t(),
+          derive: "sanitize(trim) validate(string, not_empty)",
+          hint: "extera_auth2",
+          validator: {VAL, :is_string_data}
+        )
+      end
+
+      # conditional_field(:extera_social, any(), structs: true) do
+      #   sub_field(:social, struct(),
+      #     structs: true,
+      #     hint: "social1",
+      #     validator: {VAL, :is_list_data}
+      #   ) do
+      #     field(:address, String.t(), enforce: true)
+      #     field(:provider, String.t(), enforce: true)
+      #   end
+
+      #   field(:extera_social, String.t(), hint: "social2", validator: {VAL, :is_string_data})
+      # end
     end
   end
 
@@ -703,13 +738,147 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
              })
   end
 
-  test "Conditional field as a list on top level and subfield children validator" do
-  end
+  test "Conditional field as a list on top level and subfield children validator/derive" do
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The extera_auth field must be string",
+         field: :extera_auth,
+         action: :string
+       },
+       %{
+         message: "The extera_auth field must be string",
+         field: :extera_auth,
+         action: :string
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               extera_auth: [
+                 %{username: :test, provider: :test},
+                 %{username: :test, provider: :test}
+               ]
+             })
 
-  test "Conditional field as a list on top level and subfield children derive" do
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The extera_auth field must be string",
+         field: :extera_auth,
+         action: :string
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               extera_auth: [
+                 %{username: "Mishka", provider: "Github"},
+                 %{username: :test, provider: :test}
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       extera_auth: [
+         %__MODULE__.ConditionalProfileFieldStructs.ExteraAuth1{
+           provider: "Github",
+           username: "Mishka"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.ExteraAuth1{
+           provider: "Github",
+           username: "Mishka1"
+         }
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               extera_auth: [
+                 %{username: "Mishka", provider: "Github"},
+                 %{username: "Mishka1", provider: "Github"}
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       extera_auth: [
+         %__MODULE__.ConditionalProfileFieldStructs.ExteraAuth1{
+           provider: "Github",
+           username: "Mishka"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.ExteraAuth1{
+           provider: "Github",
+           username: "Mishka1"
+         },
+         "mishka@github"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               extera_auth: [
+                 %{username: "Mishka", provider: "Github"},
+                 %{username: "Mishka1", provider: "Github"},
+                 "mishka@github"
+               ]
+             })
   end
 
   test "Conditional field as a list on top level and subfield children derive/validator __hint__" do
+    {:error, :bad_parameters,
+     [
+       %{message: "The extera_auth field must be string", field: :extera_auth, action: :string},
+       %{message: "The extera_auth field must be string", field: :extera_auth, action: :string}
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               extera_auth: [
+                 %{username: :test, provider: :test},
+                 %{username: :test, provider: :test}
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :extera_auth2,
+         errors: [
+           {:bad_parameters, [%{message: "It is not string", field: :username}],
+            [__hint__: "extera_auth1"]},
+           {:bad_parameters, [%{message: "It is not string", field: :username}],
+            [__hint__: "extera_auth1"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               extera_auth2: [
+                 %{username: :test, provider: "@github"},
+                 %{username: :test, provider: "@github"},
+                 "mishka@github"
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       extera_auth2: [
+         %__MODULE__.ConditionalProfileFieldStructs.ExteraAuth21{
+           provider: "@github",
+           username: "Mishka"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.ExteraAuth21{
+           provider: "@github",
+           username: "Mishka1"
+         },
+         "mishka@github"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               extera_auth2: [
+                 %{username: "Mishka", provider: "@github"},
+                 %{username: "Mishka1", provider: "@github"},
+                 "mishka@github"
+               ]
+             })
   end
 
   test "Conditional field as a list on top level/external field" do
