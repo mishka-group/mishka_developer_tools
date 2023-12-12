@@ -6,7 +6,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     use GuardedStruct
 
     guardedstruct do
-      field(:post_id, integer())
+      field(:post_id, integer(), derive: "validate(integer)")
       field(:like, boolean(), enforce: true)
     end
   end
@@ -117,6 +117,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         end
       end
 
+      conditional_field(:activity, any()) do
+        field(:activity, struct(),
+          structs: ExtrenalConditiona,
+          hint: "activity1",
+          validator: {VAL, :is_list_data}
+        )
+
+        field(:activity, String.t(),
+          hint: "activity2",
+          validator: {VAL, :is_string_data}
+        )
+      end
+
       # conditional_field(:auth, any(), structs: true) do
       #   sub_field(:auth, struct()) do
       #     field(:username, String.t(), enforce: true)
@@ -127,17 +140,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
       #   field(:auth, String.t(), derive: "sanitize(trim) validate(not_empty)")
       # end
 
-      # conditional_field(:address, any(), structs: true) do
-      #   sub_field(:address, struct(), derive: "sanitize(trim, upcase)", hint: "address1") do
-      #     field(:lat, String.t(), enforce: true)
-      #     field(:lan, String.t(), enforce: true)
-      #   end
+      conditional_field(:address, any(), structs: true) do
+        sub_field(:address, struct(),
+          derive: "sanitize(trim, upcase)",
+          validator: {VAL, :is_map_data},
+          hint: "address1"
+        ) do
+          field(:lat, String.t(), enforce: true)
+          field(:lan, String.t(), enforce: true)
+        end
 
-      #   field(:address, String.t(),
-      #     derive: "sanitize(trim) validate(not_empty)",
-      #     hint: "address2"
-      #   )
-      # end
+        field(:address, String.t(),
+          derive: "sanitize(trim) validate(not_empty)",
+          hint: "address2",
+          validator: {VAL, :is_string_data}
+        )
+      end
     end
   end
 
@@ -176,12 +194,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :social,
-         errors:
-           {:conditionals,
-            [
-              {:social, "It is not map", [__hint__: "social1"]},
-              {:social, "It is not string", [__hint__: "social2"]}
-            ]}
+         action: :conditionals,
+         errors: [
+           {:social, "It is not map", [__hint__: "social1"]},
+           {:social, "It is not string", [__hint__: "social2"]}
+         ]
        }
      ]} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
@@ -207,7 +224,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest.ConditionalProfileFieldStructs{
+     %__MODULE__.ConditionalProfileFieldStructs{
        location: "48.198634,-16.371648,3.4;crs=wgs84;u=40.0",
        social: nil,
        nickname: "Mishka"
@@ -252,13 +269,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :auth,
-         errors:
-           {:conditionals,
-            [
-              {:bad_parameters, "Your input must be a list of items", [__hint__: "auth1"]},
-              {:bad_parameters, "Your input must be a list of items", [__hint__: "auth2"]},
-              {:auth, "It is not string", [__hint__: "auth3"]}
-            ]}
+         action: :conditionals,
+         errors: [
+           {:bad_parameters, "Your input must be a list of items", [__hint__: "auth1"]},
+           {:bad_parameters, "Your input must be a list of items", [__hint__: "auth2"]},
+           {:auth, "It is not string", [__hint__: "auth3"]}
+         ]
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -274,9 +290,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
          like: true,
          post_id: 1
        },
-       auth: nil,
-       location: nil,
-       social: nil,
        nickname: "Mishka"
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -288,12 +301,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :post_activity,
-         errors:
-           {:conditionals,
-            [
-              {:required_fields, [:like], [__hint__: "post_activity1"]},
-              {:post_activity, "It is not string", [__hint__: "post_activity2"]}
-            ]}
+         action: :conditionals,
+         errors: [
+           {:required_fields, [:like], [__hint__: "post_activity1"]},
+           {:post_activity, "It is not string", [__hint__: "post_activity2"]}
+         ]
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -305,13 +317,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :post_activity,
-         errors:
-           {:conditionals,
-            [
-              {:bad_parameters, "Your input must be a map or list of maps",
-               [__hint__: "post_activity1"]},
-              {:post_activity, "It is not string", [__hint__: "post_activity2"]}
-            ]}
+         action: :conditionals,
+         errors: [
+           {:bad_parameters, "Your input must be a map or list of maps",
+            [__hint__: "post_activity1"]},
+           {:post_activity, "It is not string", [__hint__: "post_activity2"]}
+         ]
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -327,10 +338,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
          %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
          %__MODULE__.ExtrenalConditiona{like: false, post_id: 2}
        ],
-       post_activity: nil,
-       auth: nil,
-       location: nil,
-       social: nil,
        nickname: "Mishka"
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -341,10 +348,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
        post_activities: [1, 2],
-       post_activity: nil,
-       auth: nil,
-       location: nil,
-       social: nil,
        nickname: "Mishka"
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -356,13 +359,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :post_activities,
-         errors:
-           {:conditionals,
-            [
-              {:bad_parameters, "Your input must be a list of items",
-               [__hint__: "post_activities1"]},
-              {:post_activities, "It is not list", [__hint__: "post_activities2"]}
-            ]}
+         action: :conditionals,
+         errors: [
+           {:bad_parameters, "Your input must be a list of items",
+            [__hint__: "post_activities1"]},
+           {:post_activities, "It is not list", [__hint__: "post_activities2"]}
+         ]
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -376,7 +378,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :author,
-         errors: {:conditionals, [required_fields: [:family], author: "It is not string"]}
+         action: :conditionals,
+         errors: [required_fields: [:family], author: "It is not string"]
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -385,12 +388,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest.ConditionalProfileFieldStructs{
-       author:
-         %MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest.ConditionalProfileFieldStructs.Author1{
-           family: "Group",
-           name: "Mishka"
-         },
+     %__MODULE__.ConditionalProfileFieldStructs{
+       author: %__MODULE__.ConditionalProfileFieldStructs.Author1{
+         family: "Group",
+         name: "Mishka"
+       },
        post_activities: [],
        post_activity: nil,
        auth: nil,
@@ -407,15 +409,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   test "Conditional field as a map with enforce as a child" do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
-       author: nil,
-       post_activities: [],
-       post_activity: nil,
-       auth: nil,
        location: %__MODULE__.ConditionalProfileFieldStructs.Location1{
          city: "melbourne",
          address: "Melbourne"
        },
-       social: nil,
        nickname: "Mishka"
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -430,12 +427,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :location,
-         errors:
-           {:conditionals,
-            [
-              {:required_fields, [:city], [__hint__: "location1"]},
-              {:location, "It is not string", [__hint__: "location2"]}
-            ]}
+         action: :conditionals,
+         errors: [
+           {:required_fields, [:city], [__hint__: "location1"]},
+           {:location, "It is not string", [__hint__: "location2"]}
+         ]
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -457,12 +453,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
          type: :female,
          action: "user"
        },
-       author: nil,
-       post_activities: [],
-       post_activity: nil,
-       auth: nil,
-       location: nil,
-       social: nil,
        nickname: "Mishka"
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -498,12 +488,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
          type: :female,
          action: "user"
        },
-       author: nil,
-       post_activities: [],
-       post_activity: nil,
-       auth: nil,
-       location: nil,
-       social: nil,
        nickname: "Mishka"
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -537,13 +521,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
          gender: "female",
          name: "Mishka"
        },
-       identity: nil,
-       author: nil,
-       post_activities: [],
-       post_activity: nil,
-       auth: nil,
-       location: nil,
-       social: nil,
        nickname: "Mishka"
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -586,12 +563,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     assert !is_nil(record_id)
   end
 
-  test "conditional fields with validator test, priority: true" do
+  test "Conditional field as a map level/priority" do
     {:error, :bad_parameters,
      [
        %{
          field: :profile,
-         errors: {:conditionals, [{:profile, "It is not string", [__hint__: "profile1"]}]}
+         action: :conditionals,
+         errors: [{:profile, "It is not string", [__hint__: "profile1"]}]
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -600,25 +578,129 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
              })
   end
 
-  ############# (▰˘◡˘▰) List ConditionalFieldTest GuardedStructTest Data (▰˘◡˘▰) ##############
+  test "Conditional field as a map with list values" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       address: nil,
+       activity: [
+         %__MODULE__.ExtrenalConditiona{
+           like: true,
+           post_id: 2
+         },
+         %__MODULE__.ExtrenalConditiona{
+           like: false,
+           post_id: 1
+         }
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activity: [%{post_id: 2, like: true}, %{post_id: 1, like: false}]
+             })
 
-  test "Conditional field as a map level/priority" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activity,
+         errors: [
+           {:bad_parameters,
+            [
+              %{
+                message: "The post_id field must be integer",
+                field: :post_id,
+                action: :integer
+              }
+            ], [__hint__: "activity1"]},
+           {:activity, "It is not string", [__hint__: "activity2"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activity: [%{post_id: "2", like: true}, %{post_id: 1, like: false}]
+             })
   end
 
+  ############# (▰˘◡˘▰) List ConditionalFieldTest GuardedStructTest Data (▰˘◡˘▰) ##############
+
   test "Conditional field as a list on top level" do
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The address field must not be empty",
+         field: :address,
+         action: :not_empty,
+         __hint__: "address2"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               address: [%{lat: "2021", lan: "202"}, ""]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       address: [
+         %__MODULE__.ConditionalProfileFieldStructs.Address1{
+           lan: "202",
+           lat: "2021"
+         },
+         "https://github.com"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               address: [%{lat: "2021", lan: "202"}, "https://github.com"]
+             })
   end
 
   test "Conditional field as a list on top level with validator" do
-    # ConditionalFieldStructs.builder(%{
-    #   address: [%{lat: "2021", lan: "202"}, ""],
-    #   # address: [%{lat: "2021", lan: "202"}, "https://github.com"],
-    #   # auth: [%{username: "mishka", provider: "github"}, "mishka"]
-    #   auth: [%{username: "mishka", provider: "github"}, ""]
-    # })
-    # |> IO.inspect(label: "==========>")
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :address,
+         errors: [{:address, "It is not map", [__hint__: "address1"]}],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               address: [%{lat: "2021", lan: "202"}, 1]
+             })
   end
 
   test "Conditional field as a list on top level with derive" do
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The address field must not be empty",
+         field: :address,
+         action: :not_empty,
+         __hint__: "address2"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               address: [%{lat: "2021", lan: "202"}, ""]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       address: [
+         %__MODULE__.ConditionalProfileFieldStructs.Address1{
+           lan: "202",
+           lat: "2021"
+         },
+         "2024"
+       ],
+       profile: nil,
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               address: [%{lat: "2021", lan: "202"}, "2024"]
+             })
   end
 
   test "Conditional field as a list on top level and subfield children validator" do
@@ -655,5 +737,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with auto core key" do
+  end
+
+  test "Conditional field as a list with nested list as a field" do
   end
 end

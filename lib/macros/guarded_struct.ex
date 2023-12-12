@@ -2287,11 +2287,9 @@ defmodule GuardedStruct do
       list, acc ->
         grouped =
           Enum.group_by(list, fn
-            {key, [{_, _, _} | _], _} ->
-              key
-
-            [{key, _field_errors, _} | _] ->
-              key
+            {key, [{_, _, _} | _], _} -> key
+            [{key, _field_errors, _} | _] -> key
+            {key, _field_errors, _} -> key
           end)
 
         field = grouped |> Map.keys() |> List.first()
@@ -2310,7 +2308,11 @@ defmodule GuardedStruct do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
 
     Map.merge(acc, %{
-      errors: if(length(error_data) > 0, do: [{field, [List.first(error_data)]}], else: []),
+      errors:
+        if(length(error_data) > 0 and length(success_data) == 0,
+          do: [{field, [List.first(error_data)]}],
+          else: []
+        ),
       data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: [])
     })
   end
@@ -2319,7 +2321,11 @@ defmodule GuardedStruct do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
 
     Map.merge(acc, %{
-      errors: if(length(error_data) > 0, do: [{field, error_data}], else: []),
+      errors:
+        if(length(error_data) > 0 and length(success_data) == 0,
+          do: [{field, error_data}],
+          else: []
+        ),
       data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: [])
     })
   end
@@ -2374,6 +2380,7 @@ defmodule GuardedStruct do
          {status, validated_errors, sub_builders_errors, conds, module, main_error_or_data,
           sub_builders}
        ) do
+    # TODO: we can not confirm it is error or not!
     {status, length(validated_errors), length(sub_builders_errors), Parser.is_data?(conds)}
     |> case do
       {:ok, 0, 0, true} ->
@@ -2438,10 +2445,8 @@ defmodule GuardedStruct do
             |> add_hint(Keyword.get(opts, :hint))
         end)
 
-      acc ++ [%{field: field, errors: {:conditionals, transformed_errors}}]
+      acc ++ [%{field: field, action: :conditionals, errors: transformed_errors}]
     end)
-    # We reject the keys that have success data
-    |> Enum.reject(&(&1.field in Keyword.keys(conds.data)))
   end
 
   defp add_hint(error, nil) when is_tuple(error), do: error

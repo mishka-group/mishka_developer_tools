@@ -103,7 +103,12 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   def is_data?(%{data: data, errors: errors}) when data != [] and errors == [], do: true
 
+  def is_data?(%{data: _data, errors: errors}) when errors != [], do: false
+
   def is_data?(%{data: data, errors: errors}) do
+    # TODO: do not let error and data comes to stack with each other
+    # TODO: or we have a flag it is list conditional field not map one
+    # IO.inspect(errors)
     Enum.all?(Keyword.keys(errors), &(&1 in Keyword.keys(data)))
   end
 
