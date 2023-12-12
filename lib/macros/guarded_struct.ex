@@ -2064,8 +2064,9 @@ defmodule GuardedStruct do
 
     # An alternative course of action is to update the library. Remember to send PR to this lib :)
     # **That is why we should construct a builder that verifies this key exclusively from the root path.**
-    {:error, :runtime_error,
-     "We do not currently support using a normal field as a list without an extra module."}
+    raise(
+      "Oh no!, We do not currently support using a normal field as a list without an extra module."
+    )
   end
 
   defp list_builder(attrs, module, field, key, type) do
