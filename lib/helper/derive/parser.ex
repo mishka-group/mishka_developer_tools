@@ -130,15 +130,17 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   def field_status?(_, _), do: false
 
-  def field_value({{:error, _, _}, _} = output), do: output
+  def field_value({{:error, _, _}, _} = output), do: [output]
 
-  def field_value({{:error, _, _}, _, _} = output), do: output
+  def field_value({{:error, _, _}, _, _} = output), do: [output]
 
   def field_value({{:ok, _, value}, opts}), do: {value, opts}
 
   def field_value({{:ok, value}, _, opts}), do: {value, opts}
 
   def field_value({{:ok, value}, opts}), do: {value, opts}
+
+  def field_value(output) when is_list(output), do: output
 
   def field_value(nil),
     do:

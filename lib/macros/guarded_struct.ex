@@ -2038,12 +2038,14 @@ defmodule GuardedStruct do
     end)
   end
 
-  defp list_builder(_attrs, nil, _field, _key, _type) do
+  defp list_builder(attrs, module, field, key, type, cond_list \\ nil)
+
+  defp list_builder(_attrs, nil, _field, _key, _type, _cond_list) do
     {:error, :bad_parameters,
      "Unfortunately, the appropriate settings have not been applied to the desired field."}
   end
 
-  defp list_builder(_attrs, true, _field, _key, _type) do
+  defp list_builder(_attrs, true, _field, _key, _type, _cond_list) do
     # Developers are advised to use special conditional settings for conditional data that
     # will be checked as a list. If you need a standard field to accommodate a list,
     # there are two options:
@@ -2069,21 +2071,37 @@ defmodule GuardedStruct do
     )
   end
 
-  defp list_builder(attrs, module, field, key, type) do
+  defp list_builder(attrs, module, field, key, type, cond_list) do
     field_path =
       reverse_module_keys(Module.split(module), field)
       |> combine_parent_field(if(is_list(key), do: key, else: [key]))
       |> List.delete(:root)
 
-    get_field = get_in(attrs, field_path)
+    get_field =
+      if is_nil(cond_list),
+        do: get_in(attrs, field_path),
+        else: update_in(attrs, field_path, &(&1 = cond_list)) |> get_in(field_path)
 
     if is_list(get_field) do
       builders_output =
-        Enum.map(get_field, &module.builder({field_path, Map.put(attrs, field, &1), type}))
+        Enum.map(get_field, fn
+          item when is_list(item) ->
+            Enum.map(item, &module.builder({field_path, Map.put(attrs, field, &1), type}))
 
-      errors = Enum.find(builders_output, &(elem(&1, 0) == :error))
+          item ->
+            module.builder({field_path, Map.put(attrs, field, item), type})
+        end)
 
-      errors || {:ok, Enum.map(builders_output, &elem(&1, 1))}
+      errors =
+        List.flatten(builders_output)
+        |> Enum.find(&(elem(&1, 0) == :error))
+
+      errors ||
+        {:ok,
+         Enum.map(builders_output, fn
+           item when is_list(item) -> Enum.map(item, &elem(&1, 1))
+           item -> elem(item, 1)
+         end)}
     else
       {:error, :bad_parameters, "Your input must be a list of items"}
     end
@@ -2343,18 +2361,18 @@ defmodule GuardedStruct do
       end)
       |> Enum.reduce([[], []], fn values, [data, error] ->
         ok_data = Enum.find(values, &Parser.field_status?(&1, :ok))
-        error_data = Enum.find(values, &Parser.field_status?(&1, :error))
+        error_data = Enum.filter(values, &Parser.field_status?(&1, :error))
 
         if(!is_nil(ok_data)) do
           {value, opts} = Parser.field_value(ok_data)
           [data ++ [{{:ok, Map.new([{field, value}])}, opts}], error]
         else
-          [data, error ++ [Parser.field_value(error_data)]]
+          [data, error ++ Parser.field_value(error_data)]
         end
       end)
 
     Map.merge(acc, %{
-      errors: if(length(error_data) > 0, do: [{field, error_data}], else: []),
+      errors: if(length(error_data) > 0, do: [{field, error_data |> Enum.uniq()}], else: []),
       data: if(length(success_data) > 0, do: [{field, success_data}], else: [])
     })
   end
@@ -2381,7 +2399,6 @@ defmodule GuardedStruct do
          {status, validated_errors, sub_builders_errors, conds, module, main_error_or_data,
           sub_builders}
        ) do
-    # TODO: we can not confirm it is error or not!
     {status, length(validated_errors), length(sub_builders_errors), Parser.is_data?(conds)}
     |> case do
       {:ok, 0, 0, true} ->
@@ -2478,8 +2495,9 @@ defmodule GuardedStruct do
          :list_external
        ) do
     case get_field_validator(opts, caller, field, value) do
-      {:ok, _field, _value} ->
-        {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type), field, opts}
+      {:ok, _field, value} ->
+        {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type, value), field,
+         opts}
 
       error ->
         {error, opts}

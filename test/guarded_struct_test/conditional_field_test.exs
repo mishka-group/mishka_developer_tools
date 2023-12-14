@@ -179,6 +179,25 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         )
       end
 
+      conditional_field(:activities, any(), structs: true) do
+        field(:activities, struct(),
+          struct: ExtrenalConditiona,
+          validator: {VAL, :is_map_data},
+          hint: "activities1"
+        )
+
+        field(:activities, struct(),
+          structs: ExtrenalConditiona,
+          validator: {VAL, :is_list_data},
+          hint: "activities2"
+        )
+
+        field(:activities, String.t(),
+          hint: "activities3",
+          validator: {VAL, :is_string_data}
+        )
+      end
+
       # conditional_field(:extera_social, any(), structs: true) do
       #   sub_field(:social, struct(),
       #     structs: true,
@@ -695,7 +714,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      [
        %{
          field: :address,
-         errors: [{:address, "It is not map", [__hint__: "address1"]}],
+         errors: [
+           {:address, "It is not map", [__hint__: "address1"]},
+           {:address, "It is not string", [__hint__: "address2"]}
+         ],
          action: :conditionals
        }
      ]} =
@@ -842,8 +864,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
          errors: [
            {:bad_parameters, [%{message: "It is not string", field: :username}],
             [__hint__: "extera_auth1"]},
-           {:bad_parameters, [%{message: "It is not string", field: :username}],
-            [__hint__: "extera_auth1"]}
+           {:extera_auth2, "It is not string", [__hint__: "extera_auth2"]}
          ],
          action: :conditionals
        }
@@ -882,9 +903,109 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level/external field" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activities: [
+         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         "mishka@github"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 "mishka@github"
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities,
+         errors: [
+           {:bad_parameters,
+            [%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
+            [__hint__: "activities1"]},
+           {:activities, "It is not list", [__hint__: "activities2"]},
+           {:activities, "It is not string", [__hint__: "activities3"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities: [
+                 %{post_id: "1", like: true},
+                 %{post_id: 2, like: false},
+                 "mishka@github"
+               ]
+             })
   end
 
   test "Conditional field as a list on top level/external list field" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities,
+         errors: [
+           {:bad_parameters,
+            [
+              %{
+                message: "The post_id field must be integer",
+                field: :post_id,
+                action: :integer
+              }
+            ], [__hint__: "activities1"]},
+           {:activities, "It is not list", [__hint__: "activities2"]},
+           {:activities, "It is not string", [__hint__: "activities3"]},
+           {:activities, "It is not map", [__hint__: "activities1"]},
+           {:bad_parameters,
+            [
+              %{
+                message: "The post_id field must be integer",
+                field: :post_id,
+                action: :integer
+              }
+            ], [__hint__: "activities2"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities: [
+                 %{post_id: "1", like: true},
+                 %{post_id: "2", like: false},
+                 [%{post_id: "3", like: false}, %{post_id: 4, like: true}],
+                 "mishka@github",
+                 1,
+                 [[]]
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activities: [
+         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         [
+           %__MODULE__.ExtrenalConditiona{like: false, post_id: 3},
+           %__MODULE__.ExtrenalConditiona{like: true, post_id: 4}
+         ],
+         "mishka@github"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 [%{post_id: 3, like: false}, %{post_id: 4, like: true}],
+                 "mishka@github"
+               ]
+             })
   end
 
   test "Conditional field as a list on top level/priority" do
