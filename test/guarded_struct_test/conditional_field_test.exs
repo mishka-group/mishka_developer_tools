@@ -198,18 +198,31 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         )
       end
 
-      # conditional_field(:extera_social, any(), structs: true) do
-      #   sub_field(:social, struct(),
-      #     structs: true,
-      #     hint: "social1",
-      #     validator: {VAL, :is_list_data}
-      #   ) do
-      #     field(:address, String.t(), enforce: true)
-      #     field(:provider, String.t(), enforce: true)
-      #   end
+      conditional_field(:activities2, any(), structs: true) do
+        field(:activities2, struct(),
+          struct: ExtrenalConditiona,
+          validator: {VAL, :is_map_data},
+          hint: "activities1"
+        )
 
-      #   field(:extera_social, String.t(), hint: "social2", validator: {VAL, :is_string_data})
-      # end
+        sub_field(:activities2, struct(),
+          structs: true,
+          validator: {VAL, :is_list_data},
+          hint: "activities2"
+        ) do
+          field(:role, String.t(),
+            enforce: true,
+            derive: "sanitize(trim) validate(string, not_empty)"
+          )
+
+          field(:action, String.t(), enforce: true)
+        end
+
+        field(:activities2, String.t(),
+          hint: "activities3",
+          validator: {VAL, :is_string_data}
+        )
+      end
     end
   end
 
@@ -325,7 +338,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
          field: :auth,
          action: :conditionals,
          errors: [
-           {:bad_parameters, "Your input must be a list of items", [__hint__: "auth1"]},
+           {:auth, "It is not list", [__hint__: "auth1"]},
            {:bad_parameters, "Your input must be a list of items", [__hint__: "auth2"]},
            {:auth, "It is not string", [__hint__: "auth3"]}
          ]
@@ -1006,6 +1019,173 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                  "mishka@github"
                ]
              })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities,
+         errors: [
+           {:required_fields, [:like], [__hint__: "activities1"]},
+           {:activities, "It is not list", [__hint__: "activities2"]},
+           {:activities, "It is not string", [__hint__: "activities3"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities: [
+                 %{post_id: 1},
+                 %{post_id: 2, like: false},
+                 [%{post_id: 3, like: false}, %{post_id: 4, like: true}],
+                 "mishka@github"
+               ]
+             })
+  end
+
+  test "Conditional field as a list on top level/external list field and sub_field as a list" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities2,
+         errors: [
+           {:bad_parameters,
+            [%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
+            [__hint__: "activities1"]},
+           {:activities2, "It is not list", [__hint__: "activities2"]},
+           {:activities2, "It is not string", [__hint__: "activities3"]},
+           {:activities2, "It is not map", [__hint__: "activities1"]},
+           {:bad_parameters,
+            [
+              %{
+                message:
+                  "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
+                field: :role,
+                action: :not_empty
+              },
+              %{message: "The role field must be string", field: :role, action: :string}
+            ], [__hint__: "activities2"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities2: [
+                 %{post_id: "1", like: true},
+                 %{post_id: "2", like: false},
+                 [%{role: 3, action: false}, %{role: 4, action: true}],
+                 "mishka@github",
+                 1,
+                 [[]]
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities2,
+         errors: [
+           {:required_fields, [:like], [__hint__: "activities1"]},
+           {:activities2, "It is not list", [__hint__: "activities2"]},
+           {:activities2, "It is not string", [__hint__: "activities3"]},
+           {:activities2, "It is not map", [__hint__: "activities1"]},
+           {:bad_parameters,
+            [
+              %{
+                message:
+                  "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
+                field: :role,
+                action: :not_empty
+              },
+              %{message: "The role field must be string", field: :role, action: :string}
+            ], [__hint__: "activities2"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities2: [
+                 %{post_id: 1},
+                 %{post_id: 2, like: false},
+                 [%{role: 3, action: false}, %{role: 4, action: true}],
+                 "mishka@github"
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activities2: [
+         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         [
+           %__MODULE__.ConditionalProfileFieldStructs.Activities21{action: "add", role: "3"},
+           %__MODULE__.ConditionalProfileFieldStructs.Activities21{action: "delete", role: "4"}
+         ],
+         "mishka@github"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities2: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 [%{role: "3", action: "add"}, %{role: "4", action: "delete"}],
+                 "mishka@github"
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities2,
+         errors: [
+           {:activities2, "It is not map", [__hint__: "activities1"]},
+           {:required_fields, [:action], [__hint__: "activities2"]},
+           {:activities2, "It is not string", [__hint__: "activities3"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities2: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 [%{role: 3}, %{role: 4, action: "delete"}],
+                 "mishka@github"
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities2,
+         errors: [
+           {:activities2, "It is not map", [__hint__: "activities1"]},
+           {:bad_parameters,
+            [
+              %{
+                message: "The role field must not be empty",
+                field: :role,
+                action: :not_empty
+              }
+            ], [__hint__: "activities2"]},
+           {:activities2, "It is not string", [__hint__: "activities3"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities2: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 [%{role: "", action: "delete"}, %{role: 4, action: "delete"}],
+                 "mishka@github"
+               ]
+             })
   end
 
   test "Conditional field as a list on top level/priority" do
@@ -1027,8 +1207,5 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with auto core key" do
-  end
-
-  test "Conditional field as a list with nested list as a field" do
   end
 end

@@ -2490,6 +2490,19 @@ defmodule GuardedStruct do
     end
   end
 
+  # We could merge these 2 function with `when` but, I think we need it in the future.
+  defp execute_field_validator({opts, module, field, value, key, type, full_attrs}, :list_field) do
+    structs = if Keyword.get(opts, :structs), do: module, else: Keyword.get(opts, :structs)
+
+    case get_field_validator(opts, module, field, value) do
+      {:ok, _field, value} ->
+        {list_builder(full_attrs, structs, field, key, type, value), field, opts}
+
+      error ->
+        {error, opts}
+    end
+  end
+
   defp execute_field_validator(
          {opts, caller, field, value, key, type, full_attrs},
          :list_external
@@ -2532,10 +2545,6 @@ defmodule GuardedStruct do
       error ->
         {error, opts}
     end
-  end
-
-  defp execute_field_validator({opts, module, field, key, type, full_attrs}, :list_field) do
-    {list_builder(full_attrs, module, field, key, type), field, opts}
   end
 
   defp conditionals_fields_parameters_divider(attrs, conditionals) do
@@ -2604,7 +2613,7 @@ defmodule GuardedStruct do
 
         %{sub?: true, opts: opts, module: module, list?: true} ->
           # It is a sub field and accepts a list of maps
-          {opts, module, field, key, type, full_attrs}
+          {opts, module, field, value, key, type, full_attrs}
           |> execute_field_validator(:list_field)
       end)
 
