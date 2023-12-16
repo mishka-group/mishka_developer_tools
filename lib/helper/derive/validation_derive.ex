@@ -128,6 +128,26 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
      "Invalid NotEmpty format in the #{field} field, you must pass data which is string, list or map."}
   end
 
+  def validate(:not_flatten_empty, input, field) when is_list(input) do
+    if List.flatten(input) == [],
+      do: {:error, field, :not_empty, "The #{field} field must not be empty"},
+      else: input
+  end
+
+  def validate(:not_flatten_empty_item, input, field) when is_list(input) do
+    case List.flatten(input) do
+      [] ->
+        {:error, field, :not_empty, "The #{field} field item must not be empty"}
+
+      data ->
+        if Enum.find(data, &(&1 == [])) do
+          {:error, field, :not_empty, "The #{field} field item must not be empty"}
+        else
+          input
+        end
+    end
+  end
+
   def validate({:max_len, len}, input, field) when is_binary(input) do
     if String.length(input) <= len,
       do: input,
@@ -150,6 +170,14 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       else:
         {:error, field, :max_len,
          "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
+  end
+
+  def validate({:max_len, len}, input, field) when is_list(input) do
+    if String.length(input) <= len,
+      do: input,
+      else:
+        {:error, field, :max_len,
+         "The maximum number of items in the #{field} field list is #{len} and you have sent more than this number of entries"}
   end
 
   def validate(:max_len, _, field) do
@@ -179,6 +207,14 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       else:
         {:error, field, :min_len,
          "The minimum range the #{field} field is #{len} and you have sent less than this number of entries"}
+  end
+
+  def validate({:min_len, len}, input, field) when is_list(input) do
+    if length(input) < len,
+      do:
+        {:error, field, :min_len,
+         "The minimum number of items in the #{field} field list is #{len} and you have sent less than this number of entries"},
+      else: input
   end
 
   def validate(:min_len, _, field) do

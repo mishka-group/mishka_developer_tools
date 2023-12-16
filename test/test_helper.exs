@@ -72,6 +72,12 @@ defmodule ConditionalFieldValidatorTestValidators do
     if is_list(value), do: {:ok, field, value}, else: {:error, field, "It is not list"}
   end
 
+  def is_flat_list_data(field, value) do
+    if is_list(value),
+      do: {:ok, field, List.flatten(value)},
+      else: {:error, field, "It is not list"}
+  end
+
   def is_int_data(field, value) do
     if is_integer(value), do: {:ok, field, value}, else: {:error, field, "It is not integer"}
   end

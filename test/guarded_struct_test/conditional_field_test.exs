@@ -233,8 +233,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
         sub_field(:activities3, struct(),
           structs: true,
-          validator: {VAL, :is_list_data},
-          hint: "activities2"
+          validator: {VAL, :is_flat_list_data},
+          hint: "activities2",
+          derive: "validate(not_flatten_empty_item)"
         ) do
           field(:role, String.t(),
             enforce: true,
@@ -1317,6 +1318,58 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                  %{post_id: 2, like: false},
                  [%{role: "", action: "delete"}, %{role: 4, action: "delete"}],
                  "mishka@github"
+               ]
+             })
+
+    # TODO: non of condition we want does not exist for this [[]]
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The activities3 field item must not be empty",
+         field: :activities3,
+         action: :not_empty,
+         __hint__: "activities2"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 [[]]
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The activities3 field item must not be empty",
+         field: :activities3,
+         action: :not_empty,
+         __hint__: "activities2"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 [],
+                 [[], %{role: "1", action: "delete"}, []]
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activities3: [
+         [
+           %__MODULE__.ConditionalProfileFieldStructs.Activities31{
+             action: "delete",
+             role: "1"
+           }
+         ]
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 [[], %{role: "1", action: "delete"}, []]
                ]
              })
   end
