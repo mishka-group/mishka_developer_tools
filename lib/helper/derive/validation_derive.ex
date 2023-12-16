@@ -130,18 +130,18 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
 
   def validate(:not_flatten_empty, input, field) when is_list(input) do
     if List.flatten(input) == [],
-      do: {:error, field, :not_empty, "The #{field} field must not be empty"},
+      do: {:error, field, :not_flatten_empty, "The #{field} field must not be empty"},
       else: input
   end
 
   def validate(:not_flatten_empty_item, input, field) when is_list(input) do
     case List.flatten(input) do
       [] ->
-        {:error, field, :not_empty, "The #{field} field item must not be empty"}
+        {:error, field, :not_flatten_empty_item, "The #{field} field item must not be empty"}
 
-      data ->
-        if Enum.find(data, &(&1 == [])) do
-          {:error, field, :not_empty, "The #{field} field item must not be empty"}
+      _data ->
+        if Enum.find(input, &(&1 == [])) do
+          {:error, field, :not_flatten_empty_item, "The #{field} field item must not be empty"}
         else
           input
         end

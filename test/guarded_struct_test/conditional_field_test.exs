@@ -58,6 +58,20 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         field(:auth, String.t(), hint: "auth3", validator: {VAL, :is_string_data})
       end
 
+      conditional_field(:auth2, any()) do
+        sub_field(:auth2, struct(),
+          hint: "auth1",
+          structs: true,
+          validator: {VAL, :is_list_data},
+          derive: "validate(not_flatten_empty_item)"
+        ) do
+          field(:username, String.t(), enforce: true)
+          field(:provider, String.t(), enforce: true)
+        end
+
+        field(:auth2, String.t(), hint: "auth3", validator: {VAL, :is_string_data})
+      end
+
       conditional_field(:post_activity, any()) do
         field(:post_activity, struct(), struct: ExtrenalConditiona, hint: "post_activity1")
 
@@ -374,6 +388,46 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
                auth: %{username: "Mishka", provider: "github"}
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "The auth2 field item must not be empty",
+         field: :auth2,
+         action: :not_flatten_empty_item,
+         __hint__: "auth1"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               auth2: [
+                 [],
+                 %{username: "Mishka", provider: "github"},
+                 %{username: "Mishka", provider: "google"},
+                 %{username: "Mishka", provider: "yahoo"}
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :auth2,
+         errors: [
+           {:required_fields, [:provider, :username], [__hint__: "auth1"]},
+           {:auth2, "It is not string", [__hint__: "auth3"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               auth2: [
+                 [[]],
+                 %{username: "Mishka", provider: "github"},
+                 %{username: "Mishka", provider: "google"},
+                 %{username: "Mishka", provider: "yahoo"}
+               ]
              })
   end
 
@@ -1321,13 +1375,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    # TODO: non of condition we want does not exist for this [[]]
     {:error, :bad_parameters,
      [
        %{
          message: "The activities3 field item must not be empty",
          field: :activities3,
-         action: :not_empty,
+         action: :not_flatten_empty_item,
          __hint__: "activities2"
        }
      ]} =
@@ -1343,7 +1396,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          message: "The activities3 field item must not be empty",
          field: :activities3,
-         action: :not_empty,
+         action: :not_flatten_empty_item,
          __hint__: "activities2"
        }
      ]} =
