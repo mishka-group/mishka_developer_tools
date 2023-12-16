@@ -223,6 +223,32 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
           validator: {VAL, :is_string_data}
         )
       end
+
+      conditional_field(:activities3, any(), structs: true, priority: true) do
+        field(:activities3, struct(),
+          struct: ExtrenalConditiona,
+          validator: {VAL, :is_map_data},
+          hint: "activities1"
+        )
+
+        sub_field(:activities3, struct(),
+          structs: true,
+          validator: {VAL, :is_list_data},
+          hint: "activities2"
+        ) do
+          field(:role, String.t(),
+            enforce: true,
+            derive: "sanitize(trim) validate(string, not_empty)"
+          )
+
+          field(:action, String.t(), enforce: true)
+        end
+
+        field(:activities3, String.t(),
+          hint: "activities3",
+          validator: {VAL, :is_string_data}
+        )
+      end
     end
   end
 
@@ -1189,6 +1215,110 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level/priority" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities3,
+         errors: [
+           {:bad_parameters,
+            [
+              %{
+                message: "The post_id field must be integer",
+                field: :post_id,
+                action: :integer
+              }
+            ], [__hint__: "activities1"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 %{post_id: "1", like: true},
+                 %{post_id: "2", like: false},
+                 [%{role: 3, action: false}, %{role: 4, action: true}],
+                 "mishka@github",
+                 1,
+                 [[]]
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities3,
+         errors: [{:required_fields, [:like], [__hint__: "activities1"]}],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 %{post_id: 1},
+                 %{post_id: 2, like: false},
+                 [%{role: 3, action: false}, %{role: 4, action: true}],
+                 "mishka@github"
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activities3: [
+         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         [
+           %__MODULE__.ConditionalProfileFieldStructs.Activities31{action: "add", role: "3"},
+           %__MODULE__.ConditionalProfileFieldStructs.Activities31{action: "delete", role: "4"}
+         ],
+         "mishka@github"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 [%{role: "3", action: "add"}, %{role: "4", action: "delete"}],
+                 "mishka@github"
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities3,
+         errors: [{:activities3, "It is not map", [__hint__: "activities1"]}],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 [%{role: 3}, %{role: 4, action: "delete"}],
+                 "mishka@github"
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activities3,
+         errors: [{:activities3, "It is not map", [__hint__: "activities1"]}],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activities3: [
+                 %{post_id: 1, like: true},
+                 %{post_id: 2, like: false},
+                 [%{role: "", action: "delete"}, %{role: 4, action: "delete"}],
+                 "mishka@github"
+               ]
+             })
   end
 
   test "Conditional field as a list with enforce as a parent" do

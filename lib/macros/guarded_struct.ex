@@ -2313,8 +2313,17 @@ defmodule GuardedStruct do
 
         field = grouped |> Map.keys() |> List.first()
 
+        field_data = Map.get(grouped, field)
+
+        priority =
+          if is_list(field_data) and is_tuple(List.first(field_data)) do
+            List.first(field_data) |> elem(2)
+          else
+            false
+          end
+
         %{data: data, errors: errors} =
-          {field, Map.get(grouped, field), acc, false}
+          {field, Map.get(grouped, field), acc, priority}
           |> separate_conditions_based_priority("list")
 
         %{data: acc.data ++ data, errors: acc.errors ++ errors}
@@ -2323,33 +2332,20 @@ defmodule GuardedStruct do
 
   defp separate_conditions_based_priority(params, type \\ "normal")
 
-  defp separate_conditions_based_priority({field, conds, acc, true}, "normal") do
+  defp separate_conditions_based_priority({field, conds, acc, priority}, "normal") do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
 
     Map.merge(acc, %{
       errors:
         if(length(error_data) > 0 and length(success_data) == 0,
-          do: [{field, [List.first(error_data)]}],
+          do: [{field, if(priority, do: [List.first(error_data)], else: error_data)}],
           else: []
         ),
       data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: [])
     })
   end
 
-  defp separate_conditions_based_priority({field, conds, acc, false}, "normal") do
-    [success_data, error_data] = reduce_success_data_and_error_data(conds)
-
-    Map.merge(acc, %{
-      errors:
-        if(length(error_data) > 0 and length(success_data) == 0,
-          do: [{field, error_data}],
-          else: []
-        ),
-      data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: [])
-    })
-  end
-
-  defp separate_conditions_based_priority({field, conds, acc, false}, "list") do
+  defp separate_conditions_based_priority({field, conds, acc, priority}, "list") do
     [success_data, error_data] =
       Enum.map(conds, fn
         item when is_tuple(item) ->
@@ -2372,7 +2368,14 @@ defmodule GuardedStruct do
       end)
 
     Map.merge(acc, %{
-      errors: if(length(error_data) > 0, do: [{field, error_data |> Enum.uniq()}], else: []),
+      errors:
+        if(length(error_data) > 0,
+          do: [
+            {field,
+             if(priority, do: [List.first(Enum.uniq(error_data))], else: Enum.uniq(error_data))}
+          ],
+          else: []
+        ),
       data: if(length(success_data) > 0, do: [{field, success_data}], else: [])
     })
   end
@@ -2617,6 +2620,6 @@ defmodule GuardedStruct do
           |> execute_field_validator(:list_field)
       end)
 
-    {field, output, Keyword.get(cond_data.opts, :priority) || false}
+    {field, output, Keyword.get(cond_data.opts, :priority, false)}
   end
 end
