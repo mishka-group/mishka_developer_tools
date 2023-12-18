@@ -1611,7 +1611,7 @@ defmodule GuardedStruct do
       Enum.map(core_keys, fn
         {key, %{type: :domain, values: pattern}} ->
           parsed =
-            parse_domain_patterns(pattern, key, full_attars)
+            parse_domain_patterns(pattern, key, full_attars, attrs)
             |> List.flatten()
 
           if length(parsed) == 0, do: nil, else: parsed
@@ -2246,11 +2246,12 @@ defmodule GuardedStruct do
     end
   end
 
-  defp parse_domain_patterns(pattern, key, attrs) do
+  defp parse_domain_patterns(pattern, key, full_attrs, attrs) do
     # "!auth=String[admin, user]::?auth.social=Atom[banned, moderated]"
     # for example `auth.social` should be atom and between `banned` and `moderated`
     # ? and ! means the `auth.social` can exist or not and if yes it should be atom and between the values
-    Map.get(attrs, key)
+    # We change attrs instead of full_attrs inside Map get to support it inside children
+    (Map.get(full_attrs, key) || Map.get(attrs, key))
     |> case do
       nil ->
         []
@@ -2262,10 +2263,10 @@ defmodule GuardedStruct do
         |> Enum.map(&String.split(&1, "=", trim: true))
         |> Enum.map(fn
           ["!" <> field, converted_pattern] ->
-            domain_field_status(field, attrs, converted_pattern, key, :error)
+            domain_field_status(field, full_attrs, converted_pattern, key, :error)
 
           ["?" <> field, converted_pattern] ->
-            domain_field_status(field, attrs, converted_pattern, key)
+            domain_field_status(field, full_attrs, converted_pattern, key)
         end)
         |> Enum.reject(&is_nil(&1))
     end

@@ -2,6 +2,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   use ExUnit.Case, async: true
 
   ############# (▰˘◡˘▰) ConditionalFieldTest GuardedStructTest Data (▰˘◡˘▰) ##############
+  # TODO: We need to support derive and validator on conditional field macro, as like children
   defmodule ExtrenalConditiona do
     use GuardedStruct
 
@@ -17,6 +18,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
     guardedstruct do
       field(:nickname, String.t())
+
+      # For domain
+      sub_field(:identity, struct()) do
+        field(:action, String.t())
+        field(:type, String.t())
+      end
 
       conditional_field(:social, any()) do
         sub_field(:social, struct(), hint: "social1", validator: {VAL, :is_map_data}) do
@@ -97,12 +104,6 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         end
 
         field(:author, String.t(), validator: {VAL, :is_string_data})
-      end
-
-      # For domain
-      sub_field(:identity, struct()) do
-        field(:action, String.t())
-        field(:type, String.t())
       end
 
       conditional_field(:information, any(), domain: "?identity.type=Atom[female]") do
@@ -263,6 +264,55 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
           hint: "activities3",
           validator: {VAL, :is_string_data}
         )
+      end
+
+      conditional_field(:author2, any(), structs: true) do
+        sub_field(:author2, struct(), enforce: true, validator: {VAL, :is_map_data}) do
+          field(:name, String.t())
+          field(:family, String.t())
+        end
+
+        field(:author2, String.t(), validator: {VAL, :is_string_data})
+      end
+
+      conditional_field(:author3, any(), structs: true) do
+        sub_field(:author3, struct(), validator: {VAL, :is_map_data}, hint: "author1") do
+          field(:name, String.t())
+          field(:family, String.t(), enforce: true)
+        end
+
+        sub_field(:author3, struct(),
+          structs: true,
+          enforce: true,
+          validator: {VAL, :is_flat_list_data},
+          derive: "validate(not_flatten_empty_item)",
+          hint: "author2"
+        ) do
+          field(:name, String.t())
+          field(:family, String.t())
+        end
+
+        field(:author3, String.t(), validator: {VAL, :is_string_data}, hint: "author3")
+      end
+
+      conditional_field(:information2, any(),
+        structs: true,
+        domain: "?identity.type=Atom[female]"
+      ) do
+        sub_field(:information2, struct(), validator: {VAL, :is_map_data}, hint: "information1") do
+          field(:name, String.t())
+          field(:gender, String.t(), domain: "!identity.action=String[admin, user]")
+        end
+
+        sub_field(:information2, struct(),
+          validator: {VAL, :is_flat_list_data},
+          hint: "information2"
+        ) do
+          field(:name, String.t())
+          field(:gender, String.t(), domain: "!identity.action=String[admin, user]")
+        end
+
+        field(:information2, String.t(), validator: {VAL, :is_string_data}, hint: "information3")
       end
     end
   end
@@ -622,6 +672,20 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                identity: %{action: "user", type: :test},
                information: %{name: "Mishka", gender: "female"}
              })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field information input you have to send authorized data",
+         field: :information,
+         field_path: "identity.type"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "user", type: :female1},
+               information: %{name: "Mishka", gender: "female"}
+             })
   end
 
   test "Conditional field as a map with on core key" do
@@ -673,29 +737,45 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               identity: %{action: "admin", type: :female},
                information: %{name: "Mishka", gender: "female"},
                second_username: "mishka2"
              })
 
-    {:ok,
-     %__MODULE__.ConditionalProfileFieldStructs{
-       second_username: "Mishka",
-       sub_identity: nil,
-       information: %__MODULE__.ConditionalProfileFieldStructs.Information1{
-         gender: "female",
-         name: "Mishka"
-       },
-       identity: nil,
-       author: nil,
-       post_activities: [],
-       post_activity: nil,
-       auth: nil,
-       location: nil,
-       social: nil,
-       nickname: "Mishka"
-     }} =
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field information input you have to send authorized data",
+         field: :information,
+         field_path: "identity.type"
+       }
+     ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               identity: %{action: "admin", type: :test},
+               information: %{name: "Mishka", gender: "female"}
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :information,
+         errors: [
+           domain_parameters: [
+             %{
+               message: "Based on field gender input you have to send authorized data",
+               field: :gender,
+               field_path: "identity.action"
+             }
+           ],
+           information: "It is not string"
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "test", type: :female},
                information: %{name: "Mishka", gender: "female"}
              })
   end
@@ -705,6 +785,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
       ConditionalProfileFieldStructs.builder(%{
         nickname: "Mishka",
         information: %{name: "Mishka", gender: "female"},
+        identity: %{action: "admin", type: :female},
         second_username: "mishka2"
       })
 
@@ -1428,12 +1509,177 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with enforce as a parent" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :author2,
+         errors: [
+           required_fields: [:family],
+           author2: "It is not string",
+           author2: "It is not map"
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author2: [%{name: "Mishka"}, 1]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       author2: [
+         %__MODULE__.ConditionalProfileFieldStructs.Author21{
+           family: "Group",
+           name: "Mishka"
+         },
+         "Mishka"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author2: [%{name: "Mishka", family: "Group"}, "Mishka"]
+             })
   end
 
   test "Conditional field as a list with enforce as a child" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :author3,
+         errors: [
+           {:required_fields, [:family], [__hint__: "author1"]},
+           {:author3, "It is not list", [__hint__: "author2"]},
+           {:author3, "It is not string", [__hint__: "author3"]},
+           {:author3, "It is not map", [__hint__: "author1"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author3: [%{name: "Mishka"}, 1]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       author3: [
+         %__MODULE__.ConditionalProfileFieldStructs.Author31{
+           family: "Group",
+           name: "Mishka"
+         },
+         "Mishka"
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author3: [%{name: "Mishka", family: "Group"}, "Mishka"]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :author3,
+         errors: [
+           {:author3, "It is not map", [__hint__: "author1"]},
+           {:required_fields, [:family], [__hint__: "author2"]},
+           {:author3, "It is not string", [__hint__: "author3"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author3: [
+                 %{name: "Mishka", family: "Group"},
+                 "Mishka",
+                 [%{name: "Mishka"}]
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       author3: [
+         %__MODULE__.ConditionalProfileFieldStructs.Author31{
+           family: "Group",
+           name: "Mishka"
+         },
+         "Mishka",
+         [
+           %__MODULE__.ConditionalProfileFieldStructs.Author32{family: "Group", name: "Mishka"},
+           %__MODULE__.ConditionalProfileFieldStructs.Author32{family: "Group2", name: "Mishka1"}
+         ]
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               author3: [
+                 %{name: "Mishka", family: "Group"},
+                 "Mishka",
+                 [%{name: "Mishka", family: "Group"}, %{name: "Mishka1", family: "Group2"}]
+               ]
+             })
   end
 
   test "Conditional field as a list with domain core key" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :information2,
+         errors: [
+           {:domain_parameters,
+            [
+              %{
+                message: "Based on field gender input you have to send authorized data",
+                field: :gender,
+                field_path: "identity.action"
+              }
+            ], [__hint__: "information1"]},
+           {:information2, "It is not list", [__hint__: "information2"]},
+           {:information2, "It is not string", [__hint__: "information3"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "test", type: :female},
+               information2: [%{name: "Mishka", gender: "female"}]
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field information2 input you have to send authorized data",
+         field: :information2,
+         field_path: "identity.type"
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "user", type: :test},
+               information2: [%{name: "Mishka", gender: "female"}]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       information2: [
+         %__MODULE__.ConditionalProfileFieldStructs.Information21{
+           gender: "female",
+           name: "Mishka"
+         }
+       ],
+       identity: %__MODULE__.ConditionalProfileFieldStructs.Identity{
+         type: :female,
+         action: "user"
+       },
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               identity: %{action: "user", type: :female},
+               information2: [%{name: "Mishka", gender: "female"}]
+             })
   end
 
   test "Conditional field as a list with on core key" do
