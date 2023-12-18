@@ -586,12 +586,43 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
              })
   end
 
-  test "normal from auto key" do
-  end
+  test "test auto core key" do
+    {:ok,
+     %__MODULE__.CoreKeysStructs{
+       different_code_bases: nil,
+       code_base: nil,
+       different_projects: [
+         %__MODULE__.CoreKeysStructs.DifferentProjects1{
+           record_id: record_id1
+         },
+         %__MODULE__.CoreKeysStructs.DifferentProjects1{
+           record_id: record_id2
+         },
+         [
+           %__MODULE__.CoreKeysStructs.DifferentProjects2{
+             record_id: record_id3
+           }
+         ],
+         "develop"
+       ],
+       project: %__MODULE__.CoreKeysStructs.Project{
+         record_id: record_id4
+       }
+     }} =
+      assert CoreKeysStructs.builder(%{
+               provider: "mishka",
+               provider_path: "https://mishka.life",
+               project: %{type: "new"},
+               different_projects: [
+                 %{action: "admin", from_provider: "test"},
+                 %{action: "user", from_provider: "test1"},
+                 [%{action: "user", from_provider: "test1", from_nothing: "test"}],
+                 "develop"
+               ]
+             })
 
-  test "map conditional field auto core key" do
-  end
+    get_ids = record_id1 == record_id2 == record_id3 == record_id4
 
-  test "list conditional field auto core key" do
+    assert !get_ids
   end
 end
