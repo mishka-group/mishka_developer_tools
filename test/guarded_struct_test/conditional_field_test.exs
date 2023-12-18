@@ -333,6 +333,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         )
       end
 
+      field(:from_test_field, String.t())
+
       conditional_field(:activity4, any(), structs: true, on: "root::list_sub_field_on_header") do
         sub_field(:activity4, struct(),
           on: "root::nickname",
@@ -341,6 +343,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
         ) do
           field(:action, String.t())
           field(:type, String.t(), on: "root::sub_field_on_header")
+          field(:from_test, String.t(), from: "root::from_test_field")
+          field(:auto_test, String.t(), auto: {Ecto.UUID, :generate})
         end
 
         field(:activity4, String.t(),
@@ -1887,8 +1891,88 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with from core key" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activity4: [
+         %__MODULE__.ConditionalProfileFieldStructs.Activity41{
+           from_test: "from_test_field",
+           type: "normal",
+           action: "admin:edit"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.Activity41{
+           from_test: "from_test_field",
+           type: "high",
+           action: "admin:view"
+         }
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               from_test_field: "from_test_field",
+               sub_field_on_header: "activity",
+               list_sub_field_on_header: "activity",
+               activity4: [
+                 %{action: "admin:edit", type: "normal"},
+                 %{action: "admin:view", type: "high"}
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activity4: [
+         %__MODULE__.ConditionalProfileFieldStructs.Activity41{
+           from_test: nil,
+           type: "normal",
+           action: "admin:edit"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.Activity41{
+           from_test: nil,
+           type: "high",
+           action: "admin:view"
+         }
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               sub_field_on_header: "activity",
+               list_sub_field_on_header: "activity",
+               activity4: [
+                 %{action: "admin:edit", type: "normal"},
+                 %{action: "admin:view", type: "high"}
+               ]
+             })
   end
 
   test "Conditional field as a list with auto core key" do
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activity4: [
+         %__MODULE__.ConditionalProfileFieldStructs.Activity41{
+           auto_test: auto_test,
+           from_test: "from_test_field",
+           type: "normal",
+           action: "admin:edit"
+         },
+         %__MODULE__.ConditionalProfileFieldStructs.Activity41{
+           auto_test: auto_test1,
+           from_test: "from_test_field",
+           type: "high",
+           action: "admin:view"
+         }
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               from_test_field: "from_test_field",
+               sub_field_on_header: "activity",
+               list_sub_field_on_header: "activity",
+               activity4: [
+                 %{action: "admin:edit", type: "normal"},
+                 %{action: "admin:view", type: "high"}
+               ]
+             })
+
+    uuid = auto_test != auto_test1
+    assert uuid
   end
 end

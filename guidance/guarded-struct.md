@@ -839,6 +839,8 @@ If you pay attention to the routing method, the routing will start from the sent
 
 > Note: It is possible that you will need to check that the field you wish to duplicate exists, and in order to do so, you can use either the `on` key or the `enforce` option.
 
+> Note: You can use this feature from inside the `conditional_field` list to outside the data, but you cannot point to the inside of the list from outside the list.
+
 ```elixir
 defmodule TestAutoValueStruct do
   use GuardedStruct
