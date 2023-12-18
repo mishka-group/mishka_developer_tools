@@ -579,15 +579,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     {:error, :required_fields, [:username, :auth, :age]} = assert TestNestedStruct.builder(%{})
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct{
+     %__MODULE__.TestNestedStruct{
        username: "Mishka",
-       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Profile{
+       profile: %__MODULE__.TestNestedStruct.Profile{
          nickname: "mishka",
          site: "https://elixir-lang.org"
        },
-       auth: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Auth{
+       auth: %__MODULE__.TestNestedStruct.Auth{
          last_activity: "2023-08-20 16:54:07.841434Z",
-         role: %MishkaDeveloperToolsTest.GuardedStructTest.TestNestedStruct.Auth.Role{
+         role: %__MODULE__.TestNestedStruct.Auth.Role{
            action: "true",
            name: :user,
            status: %{status: 2}
@@ -873,9 +873,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
   test "auto generate value nested and root map" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
-       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile{
-         social: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile.Social{
+     %__MODULE__.TestAutoValueStruct{
+       profile: %__MODULE__.TestAutoValueStruct.Profile{
+         social: %__MODULE__.TestAutoValueStruct.Profile.Social{
            skype: "mishka_skype",
            id: social_UUID,
            username: "mishka"
@@ -904,7 +904,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
     assert social_UUID != profile_UUID != user_UUID
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
+     %__MODULE__.TestAutoValueStruct{
        parent_id: _edit_parent_id,
        user_id: "test_not_to_be_replaced"
      }} =
@@ -948,9 +948,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
   test "call on value in a nested struct and extra module" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct{
-       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.Profile{
-         identity: %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.Profile.Identity{
+     %__MODULE__.TestOnValueStruct{
+       profile: %__MODULE__.TestOnValueStruct.Profile{
+         identity: %__MODULE__.TestOnValueStruct.Profile.Identity{
            id: id1,
            provider: "git",
            sub_identity: %{id: _id}
@@ -988,7 +988,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
                 field: :identity,
                 errors:
                   {:dependent_keys,
-                   [%{message: _msg2, field: :rel}, %{message: _msg1, field: :provider}]}
+                   [
+                     %{
+                       message:
+                         "The required dependency for field provider has not been submitted.\nYou must have field github in your input\n",
+                       field: :provider
+                     }
+                   ]}
               }
             ]}
        }
@@ -1004,12 +1010,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
   test "check list struct depend on a key in another struct" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct{
+     %__MODULE__.TestOnValueStruct{
        last_activity: [
-         %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
+         %__MODULE__.TestOnValueStruct.LastActivity{
            action: "login"
          },
-         %MishkaDeveloperToolsTest.GuardedStructTest.TestOnValueStruct.LastActivity{
+         %__MODULE__.TestOnValueStruct.LastActivity{
            action: "logout"
          }
        ],
@@ -1024,9 +1030,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
   test "call from value in a nested struct and extra module" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
-       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile{
-         social: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile.Social{
+     %__MODULE__.TestAutoValueStruct{
+       profile: %__MODULE__.TestAutoValueStruct.Profile{
+         social: %__MODULE__.TestAutoValueStruct.Profile.Social{
            username: "user_mishka"
          }
        }
@@ -1041,9 +1047,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
-       profile: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile{
-         social: %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Profile.Social{
+     %__MODULE__.TestAutoValueStruct{
+       profile: %__MODULE__.TestAutoValueStruct.Profile{
+         social: %__MODULE__.TestAutoValueStruct.Profile.Social{
            username: "user_mishka"
          }
        }
@@ -1057,17 +1063,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
   test "check list struct from a key in another struct" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct{
+     %__MODULE__.TestAutoValueStruct{
        items: [
-         %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Items{
+         %__MODULE__.TestAutoValueStruct.Items{
            something: "mishka",
            id: _
          },
-         %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Items{
+         %__MODULE__.TestAutoValueStruct.Items{
            something: "mishka",
            id: _
          },
-         %MishkaDeveloperToolsTest.GuardedStructTest.TestAutoValueStruct.Items{
+         %__MODULE__.TestAutoValueStruct.Items{
            something: "mishka",
            id: _
          }
@@ -1150,8 +1156,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
-       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
          social: :banned,
          action: "admin"
        },
@@ -1163,8 +1169,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
-       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
          type: %{name: "mishka"},
          social: :banned,
          action: "admin"
@@ -1191,8 +1197,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
-       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
          equal: :name,
          type: nil,
          social: :banned,
@@ -1208,8 +1214,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
-       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
          either: "test",
          equal: nil,
          type: nil,
@@ -1240,8 +1246,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
              })
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain{
-       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentDomain.Auth{
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
          either: 3,
          equal: nil,
          type: nil,
@@ -1280,8 +1286,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStructTest do
 
   test "check Custom function inside domain core key" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentCustomDomain{
-       auth: %MishkaDeveloperToolsTest.GuardedStructTest.AllowedParentCustomDomain.Auth{
+     %__MODULE__.AllowedParentCustomDomain{
+       auth: %__MODULE__.AllowedParentCustomDomain.Auth{
          action: "ok"
        },
        username: "mishka"

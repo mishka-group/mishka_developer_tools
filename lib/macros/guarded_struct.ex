@@ -2149,17 +2149,22 @@ defmodule GuardedStruct do
         splited_pattern = Parser.parse_core_keys_pattern(pattern)
         [h | t] = splited_pattern
 
-        if !is_nil(
-             if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern))
-           ),
-           do: nil,
-           else: %{
-             message: """
-             The required dependency for field #{Atom.to_string(key)} has not been submitted.
-             You must have field #{List.last(splited_pattern) |> Atom.to_string()} in your input
-             """,
-             field: key
-           }
+        with get_key_value <- Map.get(full_attrs, key) || Map.get(attrs, key),
+             {:get_key_value, false} <- {:get_key_value, is_nil(get_key_value)},
+             get_value <-
+               if(h == :root, do: get_in(full_attrs, t), else: get_in(attrs, splited_pattern)),
+             {:get_value, false} <- {:get_value, !is_nil(get_value)} do
+          %{
+            message: """
+            The required dependency for field #{Atom.to_string(key)} has not been submitted.
+            You must have field #{List.last(splited_pattern) |> Atom.to_string()} in your input
+            """,
+            field: key
+          }
+        else
+          {:get_key_value, true} -> nil
+          {:get_value, true} -> nil
+        end
 
       _ ->
         nil

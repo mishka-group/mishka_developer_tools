@@ -1974,5 +1974,43 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
     uuid = auto_test != auto_test1
     assert uuid
+
+    {:error, :dependent_keys,
+     [
+       %{
+         message:
+           "The required dependency for field activity4 has not been submitted.\nYou must have field list_sub_field_on_header in your input\n",
+         field: :activity4
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               activity4: [
+                 %{action: "admin:edit", type: "normal"},
+                 %{action: "admin:view", type: "high"}
+               ]
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activity3,
+         errors: [
+           {:dependent_keys,
+            [
+              %{
+                message:
+                  "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
+                field: :type
+              }
+            ], [__hint__: "activity3"]},
+           {:activity3, "It is not string", [__hint__: "activity2"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               activity3: %{action: "admin:edit", type: "normal"}
+             })
   end
 end
