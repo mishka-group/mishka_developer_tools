@@ -12,6 +12,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
 
       field(:provider_path, String.t(), on: "root::provider")
 
+      field(:from_nothing, String.t(), from: "root::test")
+
+      field(:from_provider2, String.t(), from: "root::provider2")
+
       sub_field(:projects, struct(), structs: true, on: "root::provider") do
         field(:action, String.t())
         field(:type, String.t(), on: "root::provider_path")
@@ -467,12 +471,119 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
   end
 
   test "normal from core key" do
+    {:ok,
+     %__MODULE__.CoreKeysStructs{
+       from_nothing: "nothing"
+     }} =
+      assert CoreKeysStructs.builder(%{from_nothing: "nothing"})
+
+    {:ok, %__MODULE__.CoreKeysStructs{from_provider2: "mishka"}} =
+      assert CoreKeysStructs.builder(%{provider2: "mishka", from_provider2: "nothing"})
+
+    {:ok, %__MODULE__.CoreKeysStructs{from_provider2: "mishka"}} =
+      assert CoreKeysStructs.builder(%{provider2: "mishka"})
+  end
+
+  test "sub_field from core key" do
+    {:ok,
+     %__MODULE__.CoreKeysStructs{
+       projects: [
+         %__MODULE__.CoreKeysStructs.Projects{
+           from_nothing: nil,
+           from_provider: "mishka",
+           action: "admin"
+         },
+         %__MODULE__.CoreKeysStructs.Projects{
+           from_nothing: nil,
+           from_provider: "mishka",
+           action: "user"
+         }
+       ],
+       provider: "mishka"
+     }} =
+      assert CoreKeysStructs.builder(%{
+               provider: "mishka",
+               projects: [%{action: "admin"}, %{action: "user"}]
+             })
   end
 
   test "map conditional field from core key" do
+    {:ok,
+     %__MODULE__.CoreKeysStructs{
+       different_code_bases: %__MODULE__.CoreKeysStructs.DifferentCodeBases1{
+         from_provider: "mishka",
+         action: "admin"
+       },
+       code_base: %__MODULE__.CoreKeysStructs.CodeBase{
+         from_provider: "mishka",
+         type: "new"
+       },
+       provider: "mishka"
+     }} =
+      assert CoreKeysStructs.builder(%{
+               provider: "mishka",
+               code_base: %{type: "new"},
+               different_code_bases: %{action: "admin"}
+             })
   end
 
   test "list conditional field from core key" do
+    {:ok,
+     %__MODULE__.CoreKeysStructs{
+       different_code_bases: nil,
+       code_base: nil,
+       different_projects: [
+         %__MODULE__.CoreKeysStructs.DifferentProjects1{from_provider: "mishka", action: "admin"},
+         %__MODULE__.CoreKeysStructs.DifferentProjects1{from_provider: "mishka", action: "user"},
+         "develop"
+       ],
+       project: %__MODULE__.CoreKeysStructs.Project{from_provider: "mishka", type: "new"},
+       provider_path: "https://mishka.life",
+       provider: "mishka"
+     }} =
+      assert CoreKeysStructs.builder(%{
+               provider: "mishka",
+               provider_path: "https://mishka.life",
+               project: %{type: "new"},
+               different_projects: [
+                 %{action: "admin", from_provider: "test"},
+                 %{action: "user", from_provider: "test1"},
+                 "develop"
+               ]
+             })
+
+    {:ok,
+     %__MODULE__.CoreKeysStructs{
+       different_projects: [
+         %__MODULE__.CoreKeysStructs.DifferentProjects1{from_provider: "mishka", action: "admin"},
+         %__MODULE__.CoreKeysStructs.DifferentProjects1{from_provider: "mishka", action: "user"},
+         [
+           %__MODULE__.CoreKeysStructs.DifferentProjects2{
+             from_nothing: "test",
+             from_provider: "mishka",
+             action: "user"
+           }
+         ],
+         "develop"
+       ],
+       project: %__MODULE__.CoreKeysStructs.Project{
+         from_provider: "mishka",
+         type: "new"
+       },
+       provider_path: "https://mishka.life",
+       provider: "mishka"
+     }} =
+      assert CoreKeysStructs.builder(%{
+               provider: "mishka",
+               provider_path: "https://mishka.life",
+               project: %{type: "new"},
+               different_projects: [
+                 %{action: "admin", from_provider: "test"},
+                 %{action: "user", from_provider: "test1"},
+                 [%{action: "user", from_provider: "test1", from_nothing: "test"}],
+                 "develop"
+               ]
+             })
   end
 
   test "normal from auto key" do
