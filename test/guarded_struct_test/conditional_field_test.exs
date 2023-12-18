@@ -314,6 +314,40 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
         field(:information2, String.t(), validator: {VAL, :is_string_data}, hint: "information3")
       end
+
+      field(:sub_field_on_header, String.t())
+
+      conditional_field(:activity3, any()) do
+        sub_field(:activity3, struct(),
+          on: "root::nickname",
+          validator: {VAL, :is_map_data},
+          hint: "activity3"
+        ) do
+          field(:action, String.t())
+          field(:type, String.t(), on: "root::sub_field_on_header")
+        end
+
+        field(:activity3, String.t(),
+          validator: {VAL, :is_string_data},
+          hint: "activity2"
+        )
+      end
+
+      conditional_field(:activity4, any(), structs: true, on: "root::list_sub_field_on_header") do
+        sub_field(:activity4, struct(),
+          on: "root::nickname",
+          validator: {VAL, :is_map_data},
+          hint: "activity3"
+        ) do
+          field(:action, String.t())
+          field(:type, String.t(), on: "root::sub_field_on_header")
+        end
+
+        field(:activity4, String.t(),
+          validator: {VAL, :is_string_data},
+          hint: "activity2"
+        )
+      end
     end
   end
 
@@ -325,6 +359,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                social: "https://github.com/mishka-group"
              })
 
@@ -338,6 +373,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                social: %{address: "https://github.com/mishka-group", provider: "github"}
              })
   end
@@ -345,7 +381,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   test "Conditional field as a map with validator" do
     {:error, :bad_parameters, "Your input must be a map or list of maps"} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder([
-               %{nickname: "Mishka", social: "https://github.com/mishka-group"}
+               %{
+                 nickname: "Mishka",
+                 list_sub_field_on_header: "Mishka",
+                 social: "https://github.com/mishka-group"
+               }
              ])
 
     {:error, :bad_parameters,
@@ -361,6 +401,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                social: ["https://github.com/mishka-group"]
              })
   end
@@ -378,6 +419,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                location: "bad_location"
              })
 
@@ -389,6 +431,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                location: "48.198634,-16.371648,3.4;crs=wgs84;u=40.0"
              })
   end
@@ -416,6 +459,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                auth: [
                  %{username: "Mishka", provider: "github"},
                  %{username: "Mishka", provider: "google"},
@@ -437,6 +481,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                auth: %{username: "Mishka", provider: "github"}
              })
 
@@ -451,6 +496,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                auth2: [
                  [],
                  %{username: "Mishka", provider: "github"},
@@ -472,6 +518,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                auth2: [
                  [[]],
                  %{username: "Mishka", provider: "github"},
@@ -492,6 +539,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                post_activity: %{post_id: 1, like: true}
              })
 
@@ -508,6 +556,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                post_activity: %{post_id: 1, provider: true}
              })
 
@@ -525,6 +574,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                post_activity: [%{post_id: 1, like: true}]
              })
   end
@@ -540,6 +590,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                post_activities: [%{post_id: 1, like: true}, %{post_id: 2, like: false}]
              })
 
@@ -550,6 +601,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                post_activities: [1, 2]
              })
 
@@ -567,6 +619,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                post_activities: :test
              })
   end
@@ -582,6 +635,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author: %{name: "Mishka"}
              })
 
@@ -600,6 +654,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author: %{name: "Mishka", family: "Group"}
              })
   end
@@ -615,6 +670,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                location: %{
                  city: "melbourne",
                  address: "Melbourne"
@@ -634,6 +690,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                location: %{
                  address: "Melbourne"
                }
@@ -655,6 +712,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "user", type: :female},
                information: %{name: "Mishka", gender: "female"}
              })
@@ -669,6 +727,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "user", type: :test},
                information: %{name: "Mishka", gender: "female"}
              })
@@ -683,6 +742,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "user", type: :female1},
                information: %{name: "Mishka", gender: "female"}
              })
@@ -704,6 +764,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "user", type: :female},
                information: %{name: "Mishka", gender: "female"},
                sub_identity: "@github"
@@ -719,8 +780,49 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                identity: %{action: "user", type: :female},
+               list_sub_field_on_header: "Mishka",
                information: %{name: "Mishka", gender: "female"},
                sub_identity: "@github"
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activity3: %__MODULE__.ConditionalProfileFieldStructs.Activity31{
+         type: "normal",
+         action: "admin:edit"
+       },
+       sub_field_on_header: "activity",
+       nickname: "Mishka"
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
+               sub_field_on_header: "activity",
+               activity3: %{action: "admin:edit", type: "normal"}
+             })
+
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activity3,
+         errors: [
+           {:dependent_keys,
+            [
+              %{
+                message:
+                  "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
+                field: :type
+              }
+            ], [__hint__: "activity3"]},
+           {:activity3, "It is not string", [__hint__: "activity2"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
+               activity3: %{action: "admin:edit", type: "normal"}
              })
   end
 
@@ -737,6 +839,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "admin", type: :female},
                information: %{name: "Mishka", gender: "female"},
                second_username: "mishka2"
@@ -752,6 +855,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "admin", type: :test},
                information: %{name: "Mishka", gender: "female"}
              })
@@ -775,6 +879,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "test", type: :female},
                information: %{name: "Mishka", gender: "female"}
              })
@@ -784,6 +889,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     {:ok, %__MODULE__.ConditionalProfileFieldStructs{record_id: record_id}} =
       ConditionalProfileFieldStructs.builder(%{
         nickname: "Mishka",
+        list_sub_field_on_header: "Mishka",
         information: %{name: "Mishka", gender: "female"},
         identity: %{action: "admin", type: :female},
         second_username: "mishka2"
@@ -803,6 +909,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                profile: %{name: "", family: ""}
              })
   end
@@ -824,6 +931,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activity: [%{post_id: 2, like: true}, %{post_id: 1, like: false}]
              })
 
@@ -847,6 +955,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activity: [%{post_id: "2", like: true}, %{post_id: 1, like: false}]
              })
   end
@@ -865,6 +974,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                address: [%{lat: "2021", lan: "202"}, ""]
              })
 
@@ -880,6 +990,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                address: [%{lat: "2021", lan: "202"}, "https://github.com"]
              })
   end
@@ -898,6 +1009,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                address: [%{lat: "2021", lan: "202"}, 1]
              })
   end
@@ -914,6 +1026,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                address: [%{lat: "2021", lan: "202"}, ""]
              })
 
@@ -931,6 +1044,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                address: [%{lat: "2021", lan: "202"}, "2024"]
              })
   end
@@ -951,6 +1065,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                extera_auth: [
                  %{username: :test, provider: :test},
                  %{username: :test, provider: :test}
@@ -967,6 +1082,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                extera_auth: [
                  %{username: "Mishka", provider: "Github"},
                  %{username: :test, provider: :test}
@@ -988,6 +1104,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                extera_auth: [
                  %{username: "Mishka", provider: "Github"},
                  %{username: "Mishka1", provider: "Github"}
@@ -1010,6 +1127,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                extera_auth: [
                  %{username: "Mishka", provider: "Github"},
                  %{username: "Mishka1", provider: "Github"},
@@ -1026,6 +1144,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                extera_auth: [
                  %{username: :test, provider: :test},
                  %{username: :test, provider: :test}
@@ -1046,6 +1165,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                extera_auth2: [
                  %{username: :test, provider: "@github"},
                  %{username: :test, provider: "@github"},
@@ -1069,6 +1189,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                extera_auth2: [
                  %{username: "Mishka", provider: "@github"},
                  %{username: "Mishka1", provider: "@github"},
@@ -1088,6 +1209,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1111,6 +1233,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities: [
                  %{post_id: "1", like: true},
                  %{post_id: 2, like: false},
@@ -1150,6 +1273,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities: [
                  %{post_id: "1", like: true},
                  %{post_id: "2", like: false},
@@ -1174,6 +1298,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1196,6 +1321,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities: [
                  %{post_id: 1},
                  %{post_id: 2, like: false},
@@ -1233,6 +1359,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities2: [
                  %{post_id: "1", like: true},
                  %{post_id: "2", like: false},
@@ -1268,6 +1395,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities2: [
                  %{post_id: 1},
                  %{post_id: 2, like: false},
@@ -1290,6 +1418,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities2: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1312,6 +1441,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities2: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1341,6 +1471,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities2: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1370,6 +1501,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  %{post_id: "1", like: true},
                  %{post_id: "2", like: false},
@@ -1390,6 +1522,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  %{post_id: 1},
                  %{post_id: 2, like: false},
@@ -1412,6 +1545,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1430,6 +1564,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1448,6 +1583,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  %{post_id: 1, like: true},
                  %{post_id: 2, like: false},
@@ -1467,6 +1603,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  [[]]
                ]
@@ -1483,6 +1620,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  [],
                  [[], %{role: "1", action: "delete"}, []]
@@ -1502,6 +1640,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                activities3: [
                  [[], %{role: "1", action: "delete"}, []]
                ]
@@ -1523,6 +1662,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author2: [%{name: "Mishka"}, 1]
              })
 
@@ -1538,6 +1678,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author2: [%{name: "Mishka", family: "Group"}, "Mishka"]
              })
   end
@@ -1558,6 +1699,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author3: [%{name: "Mishka"}, 1]
              })
 
@@ -1573,6 +1715,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author3: [%{name: "Mishka", family: "Group"}, "Mishka"]
              })
 
@@ -1590,6 +1733,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author3: [
                  %{name: "Mishka", family: "Group"},
                  "Mishka",
@@ -1613,6 +1757,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                author3: [
                  %{name: "Mishka", family: "Group"},
                  "Mishka",
@@ -1643,6 +1788,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "test", type: :female},
                information2: [%{name: "Mishka", gender: "female"}]
              })
@@ -1657,6 +1803,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "user", type: :test},
                information2: [%{name: "Mishka", gender: "female"}]
              })
@@ -1677,12 +1824,66 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      }} =
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
+               list_sub_field_on_header: "Mishka",
                identity: %{action: "user", type: :female},
                information2: [%{name: "Mishka", gender: "female"}]
              })
   end
 
   test "Conditional field as a list with on core key" do
+    {:error, :bad_parameters,
+     [
+       %{
+         field: :activity4,
+         errors: [
+           {:dependent_keys,
+            [
+              %{
+                message:
+                  "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
+                field: :type
+              }
+            ], [__hint__: "activity3"]},
+           {:activity4, "It is not string", [__hint__: "activity2"]}
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               list_sub_field_on_header: "activity",
+               activity4: [%{action: "admin:edit", type: "normal"}]
+             })
+
+    {:ok,
+     %__MODULE__.ConditionalProfileFieldStructs{
+       activity4: [
+         %__MODULE__.ConditionalProfileFieldStructs.Activity41{
+           type: "normal",
+           action: "admin:edit"
+         }
+       ]
+     }} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               sub_field_on_header: "activity",
+               list_sub_field_on_header: "activity",
+               activity4: [%{action: "admin:edit", type: "normal"}]
+             })
+
+    {:error, :dependent_keys,
+     [
+       %{
+         message:
+           "The required dependency for field activity4 has not been submitted.\nYou must have field list_sub_field_on_header in your input\n",
+         field: :activity4
+       }
+     ]} =
+      assert ConditionalProfileFieldStructs.builder(%{
+               nickname: "Mishka",
+               sub_field_on_header: "activity",
+               activity4: [%{action: "admin:edit", type: "normal"}]
+             })
   end
 
   test "Conditional field as a list with from core key" do

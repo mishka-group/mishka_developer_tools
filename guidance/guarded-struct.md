@@ -1082,3 +1082,10 @@ ConditionalFieldComplexTest.builder(%{
   }
 })
 ```
+
+21. #### List Conditional fields
+// TODO: sooon ...
+
+##### Note:
+
+> Using a list `conditional_field` in a nested list can create a logical bug for you if the list is not flattened.
