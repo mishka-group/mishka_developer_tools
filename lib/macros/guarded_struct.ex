@@ -872,6 +872,11 @@ defmodule GuardedStruct do
 
   > When the core keys are called, the entire primary map is sent to each child.
 
+  ##### Note:
+
+  > By default, `on` core key is called when the value of the calling field is sent;
+  > To force the field to be non-empty, you must use enforce.
+
   ```elixir
   defmodule TestOnValueStruct do
     use GuardedStruct

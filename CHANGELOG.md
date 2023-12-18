@@ -5,9 +5,13 @@
 - [x] Fix domain core key to prevent it not to check domain when the key is `nil`
 - [x] List `conditional_field`
 - [x] Covering `hint` inside derive `conditional_field` and normal `derive`
+- [x] Support `domain` key inside children fields
+- [x] Changing the structure of on core key based on the value of the caller
+- [x] Support new derives: `not_flatten_empty`, `not_flatten_empty_item` as validation
+- [x] Support `not_empty` and `max_len`, `min_len` for list in validation derive.
+- [x] Support calling struct inside itself
 - [ ] Separate all test of `GuardedStruct` macro in different files
 - [ ] Add `dialyzer` for GuardedStruct macro
-- [x] Support `domain` key inside children fields
 
 
 # Changelog for MishkaDeveloperTools 0.1.2

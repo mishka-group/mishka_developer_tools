@@ -797,6 +797,11 @@ If you pay attention to the routing method, the routing will start from the sent
 
 > When the core keys are called, the entire primary map is sent to each child.
 
+##### Note:
+
+> By default, `on` core key is called when the value of the calling field is sent; To force the field to be non-empty, you must use enforce.
+
+
 ```elixir
 defmodule TestOnValueStruct do
   use GuardedStruct

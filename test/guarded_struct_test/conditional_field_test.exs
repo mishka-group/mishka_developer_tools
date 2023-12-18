@@ -3,7 +3,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
   ############# (▰˘◡˘▰) ConditionalFieldTest GuardedStructTest Data (▰˘◡˘▰) ##############
   # TODO: We need to support derive and validator on conditional field macro, as like children
-  defmodule ExtrenalConditiona do
+  defmodule ExtrenalConditional do
     use GuardedStruct
 
     guardedstruct do
@@ -80,7 +80,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
       end
 
       conditional_field(:post_activity, any()) do
-        field(:post_activity, struct(), struct: ExtrenalConditiona, hint: "post_activity1")
+        field(:post_activity, struct(), struct: ExtrenalConditional, hint: "post_activity1")
 
         field(:post_activity, String.t(),
           hint: "post_activity2",
@@ -89,7 +89,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
       end
 
       conditional_field(:post_activities, any(), default: []) do
-        field(:post_activities, struct(), structs: ExtrenalConditiona, hint: "post_activities1")
+        field(:post_activities, struct(), structs: ExtrenalConditional, hint: "post_activities1")
 
         field(:post_activities, String.t(),
           hint: "post_activities2",
@@ -134,7 +134,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
       conditional_field(:activity, any()) do
         field(:activity, struct(),
-          structs: ExtrenalConditiona,
+          structs: ExtrenalConditional,
           hint: "activity1",
           validator: {VAL, :is_list_data}
         )
@@ -196,13 +196,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
       conditional_field(:activities, any(), structs: true) do
         field(:activities, struct(),
-          struct: ExtrenalConditiona,
+          struct: ExtrenalConditional,
           validator: {VAL, :is_map_data},
           hint: "activities1"
         )
 
         field(:activities, struct(),
-          structs: ExtrenalConditiona,
+          structs: ExtrenalConditional,
           validator: {VAL, :is_list_data},
           hint: "activities2"
         )
@@ -215,7 +215,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
       conditional_field(:activities2, any(), structs: true) do
         field(:activities2, struct(),
-          struct: ExtrenalConditiona,
+          struct: ExtrenalConditional,
           validator: {VAL, :is_map_data},
           hint: "activities1"
         )
@@ -241,7 +241,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
       conditional_field(:activities3, any(), structs: true, priority: true) do
         field(:activities3, struct(),
-          struct: ExtrenalConditiona,
+          struct: ExtrenalConditional,
           validator: {VAL, :is_map_data},
           hint: "activities1"
         )
@@ -535,7 +535,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   test "Conditional field as a map with external field" do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
-       post_activity: %__MODULE__.ExtrenalConditiona{
+       post_activity: %__MODULE__.ExtrenalConditional{
          like: true,
          post_id: 1
        },
@@ -587,8 +587,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
        post_activities: [
-         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
-         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2}
+         %__MODULE__.ExtrenalConditional{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditional{like: false, post_id: 2}
        ],
        nickname: "Mishka"
      }} =
@@ -923,11 +923,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
      %__MODULE__.ConditionalProfileFieldStructs{
        address: nil,
        activity: [
-         %__MODULE__.ExtrenalConditiona{
+         %__MODULE__.ExtrenalConditional{
            like: true,
            post_id: 2
          },
-         %__MODULE__.ExtrenalConditiona{
+         %__MODULE__.ExtrenalConditional{
            like: false,
            post_id: 1
          }
@@ -1206,8 +1206,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
        activities: [
-         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
-         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         %__MODULE__.ExtrenalConditional{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditional{like: false, post_id: 2},
          "mishka@github"
        ]
      }} =
@@ -1291,11 +1291,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
        activities: [
-         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
-         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         %__MODULE__.ExtrenalConditional{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditional{like: false, post_id: 2},
          [
-           %__MODULE__.ExtrenalConditiona{like: false, post_id: 3},
-           %__MODULE__.ExtrenalConditiona{like: true, post_id: 4}
+           %__MODULE__.ExtrenalConditional{like: false, post_id: 3},
+           %__MODULE__.ExtrenalConditional{like: true, post_id: 4}
          ],
          "mishka@github"
        ]
@@ -1411,8 +1411,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
        activities2: [
-         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
-         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         %__MODULE__.ExtrenalConditional{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditional{like: false, post_id: 2},
          [
            %__MODULE__.ConditionalProfileFieldStructs.Activities21{action: "add", role: "3"},
            %__MODULE__.ConditionalProfileFieldStructs.Activities21{action: "delete", role: "4"}
@@ -1538,8 +1538,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     {:ok,
      %__MODULE__.ConditionalProfileFieldStructs{
        activities3: [
-         %__MODULE__.ExtrenalConditiona{like: true, post_id: 1},
-         %__MODULE__.ExtrenalConditiona{like: false, post_id: 2},
+         %__MODULE__.ExtrenalConditional{like: true, post_id: 1},
+         %__MODULE__.ExtrenalConditional{like: false, post_id: 2},
          [
            %__MODULE__.ConditionalProfileFieldStructs.Activities31{action: "add", role: "3"},
            %__MODULE__.ConditionalProfileFieldStructs.Activities31{action: "delete", role: "4"}
