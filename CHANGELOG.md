@@ -1,18 +1,34 @@
 # Changelog for MishkaDeveloperTools 0.1.3
 
+**Features**:
+- [x] Support List `conditional_field`
+```elixir
+"actor": [
+  "http://joe.example.org",
+  {
+    "type": "Person",
+    "id": "http://sally.example.org",
+    "name": "Sally"
+  },
+  :test
+]
+```
+- [x] Covering `hint` inside derive `conditional_field` and normal `derive`
+- [x] Support `domain` key inside children fields
+- [x] Support new derives: `not_flatten_empty`, `not_flatten_empty_item` as validation
+- [x] Support `not_empty` and `max_len`, `min_len` for list in validation derive.
+- [ ] Add `condition_field` fields inside `__information__` function
+
+**Fixed bugs**:
 - [x] Fix and Remove `downcase` bug in `strip_tags`
 - [x] Fix and Remove preventer of calling a `struct` inside itself
 - [x] Fix domain core key to prevent it not to check domain when the key is `nil`
-- [x] List `conditional_field`
-- [x] Covering `hint` inside derive `conditional_field` and normal `derive`
-- [x] Support `domain` key inside children fields
-- [x] Changing the structure of on core key based on the value of the caller
-- [x] Support new derives: `not_flatten_empty`, `not_flatten_empty_item` as validation
-- [x] Support `not_empty` and `max_len`, `min_len` for list in validation derive.
-- [x] Support calling struct inside itself
-- [ ] Separate all test of `GuardedStruct` macro in different files
-- [ ] Add `dialyzer` for GuardedStruct macro
 
+**Improvements**:
+- [x] Changing the structure of on core key based on the value of the caller
+- [x] Support calling struct inside itself
+- [x] Separate all test of `GuardedStruct` macro in different files
+- [ ] Add `dialyzer` for GuardedStruct macro
 
 # Changelog for MishkaDeveloperTools 0.1.2
 
