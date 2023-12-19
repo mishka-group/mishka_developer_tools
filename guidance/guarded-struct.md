@@ -60,6 +60,7 @@ Adding new Copyright (c) [2023] [Shahryar Tavakkoli at [Mishka Group](https://gi
 21. [Domain core key with `equal` and `either` support](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#domain-core-key-with-equal-and-either-support)
 22. [Domain core key with Custom function support](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#domain-core-key-with-custom-function-support)
 23. [Conditional fields](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#conditional-fields)
+24. [List Conditional fields](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md#list-conditional-fields)
 
 
 ---
@@ -342,6 +343,8 @@ end
 | `"validate(string_float)"` | NO | Validate if the string data is float (Strict mode)|
 | `"validate(string_integer)"` | NO | Validate if the string data is integer (Strict mode)|
 | `"validate(some_string_integer)"` | NO | Validate if the string data is integer (Somewhat by removing the string)|
+| `"validate(not_flatten_empty)"` | NO | Validate the list if it is empty by summing and flattening the entire list|
+| `"validate(not_flatten_empty_item)"` | NO | Validate the list if it is empty by summing and flattening the entire list and first level children|
 
 ```elixir
 defmodule MyModule do
@@ -1090,9 +1093,22 @@ ConditionalFieldComplexTest.builder(%{
 })
 ```
 
-21. #### List Conditional fields
-// TODO: sooon ...
+22. #### List Conditional fields
+
+The `conditional_fields` is one of the most important aspects of this macro, which is available to the programmer in all of its many variants. Typically, you have the ability to send a map through the `builder`. If the map is compliant with one of the requirements, your output will be returned. Additionally, you have the ability to transmit the value of one of the keys related to the map in the form of a list.
+Now, with this option, you are able to transmit the complete entry as a list. In addition, you are able to send one of the items on this list as another list, and nesting functionality has been made available to you.
+
+```elixir
+conditional_field(:activities, any(), structs: true) do
+  field(:activities, struct(), struct: ExtrenalConditional, validator: {VAL, :is_map_data}, hint: "activities1")
+
+  field(:activities, struct(), structs: ExtrenalConditional, validator: {VAL, :is_list_data}, hint: "activities2")
+
+  field(:activities, String.t(), hint: "activities3", validator: {VAL, :is_string_data})
+end
+```
+As you can see in the code above, you only need to give the macro the `structs: true` option
 
 ##### Note:
 
-> Using a list `conditional_field` in a nested list can create a logical bug for you if the list is not flattened.
+> Using a list `conditional_field` in a nested list can create a logical bug for you if the list is not flattened, **Please test your builder before releasing to production**.
