@@ -41,25 +41,28 @@ If the project was useful for you, the only way you can donate to me is the foll
 | ----------------------------------| --------------------------------- | --------------------------------- | --------------------------------- |
 | <img src="https://github.com/mishka-group/mishka_developer_tools/assets/8413604/230ea4bf-7e8f-4f18-99c9-0f940dd3c6eb" width="150">| <img src="https://github.com/mishka-group/mishka_developer_tools/assets/8413604/0c8e677b-7240-4b0d-8b9e-bd1efca970fb" width="150">|<img src="https://github.com/mishka-group/mishka_developer_tools/assets/8413604/3de9183e-c4c0-40fe-b2a1-2b9bb4268e3a" width="150">|<img src="https://github.com/mishka-group/mishka_developer_tools/assets/8413604/aaa1f103-a7c7-43ed-8f39-20e4c8b9975e" width="150">|
 
-**BTC**:‌
-```
-bc1q24pmrpn8v9dddgpg3vw9nld6hl9n5dkw5zkf2c
-```
+<details>
+  <summary>Donate addresses</summary>
+  
+  **BTC**:‌
+  ```
+  bc1q24pmrpn8v9dddgpg3vw9nld6hl9n5dkw5zkf2c
+  ```
 
-**ETH**:
-```
-0xD99feB9db83245dE8B9D23052aa8e62feedE764D
-```
+  **ETH**:
+  ```
+  0xD99feB9db83245dE8B9D23052aa8e62feedE764D
+  ```
 
-**DOGE**:
-```
-DGGT5PfoQsbz3H77sdJ1msfqzfV63Q3nyH
-```
+  **DOGE**:
+  ```
+  DGGT5PfoQsbz3H77sdJ1msfqzfV63Q3nyH
+  ```
 
-**TRX**: 
-```
-TBamHas3wAxSEvtBcWKuT3zphckZo88puz
-```
-
+  **TRX**: 
+  ```
+  TBamHas3wAxSEvtBcWKuT3zphckZo88puz
+  ```
+</details>
 
 
