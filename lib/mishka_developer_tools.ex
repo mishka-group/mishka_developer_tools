@@ -11,7 +11,7 @@ defmodule MishkaDeveloperTools do
   project and our other projects, which we are gradually publishing in this library.
 
   > **NOTICE**: Do not use the master branch; this library is under heavy development.
-  Expect version `0.1.2`, and for using the new features, please wait until a new release is out.
+  Expect version `0.1.3`, and for using the new features, please wait until a new release is out.
   ---
 
   - #### [GuardedStruct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md)
@@ -31,7 +31,7 @@ defmodule MishkaDeveloperTools do
   ```elixir
   def deps do
     [
-      {:mishka_developer_tools, "~> 0.1.2"}
+      {:mishka_developer_tools, "~> 0.1.3"}
     ]
   end
   ```

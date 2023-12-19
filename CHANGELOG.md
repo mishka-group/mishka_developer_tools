@@ -17,7 +17,6 @@
 - [x] Support `domain` key inside children fields
 - [x] Support new derives: `not_flatten_empty`, `not_flatten_empty_item` as validation
 - [x] Support `not_empty` and `max_len`, `min_len` for list in validation derive.
-- [ ] Add `condition_field` fields inside `__information__` function
 
 **Fixed bugs**:
 - [x] Fix and Remove `downcase` bug in `strip_tags`
@@ -28,7 +27,7 @@
 - [x] Changing the structure of on core key based on the value of the caller
 - [x] Support calling struct inside itself
 - [x] Separate all test of `GuardedStruct` macro in different files
-- [ ] Add `dialyzer` for GuardedStruct macro
+- [x] Add `dialyzer` for GuardedStruct macro
 
 # Changelog for MishkaDeveloperTools 0.1.2
 
