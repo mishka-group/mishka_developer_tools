@@ -98,6 +98,61 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
     end
   end
 
+  defmodule AllowedParentDomain do
+    use GuardedStruct
+
+    guardedstruct authorized_fields: true do
+      field(:username, String.t(),
+        domain: "!auth.action=String[admin, user]::?auth.social=Atom[banned]",
+        derive: "validate(string)"
+      )
+
+      field(:type_social, String.t(),
+        domain: "?auth.type=Map[%{name: \"mishka\"}, %{name: \"mishka2\"}]",
+        derive: "validate(string)"
+      )
+
+      field(:social_equal, atom(),
+        domain: "?auth.equal=Equal[Atom>>name]",
+        derive: "validate(atom)"
+      )
+
+      field(:social_either, atom(),
+        domain: "?auth.either=Either[string, enum>>Integer[1>>2>>3]]",
+        derive: "validate(atom)"
+      )
+
+      sub_field(:auth, struct(), authorized_fields: true) do
+        field(:action, String.t(), derive: "validate(not_empty)")
+        field(:social, atom(), derive: "validate(atom)")
+        field(:type, map(), derive: "validate(map)")
+        field(:equal, atom(), derive: "validate(atom)")
+        field(:either, atom())
+      end
+    end
+  end
+
+  defmodule AllowedParentCustomDomain do
+    use GuardedStruct
+    @module_path "MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain"
+
+    guardedstruct authorized_fields: true do
+      field(:username, String.t(),
+        domain: "!auth.action=Custom[#{@module_path}, is_stuff?]",
+        derive: "validate(string)"
+      )
+
+      sub_field(:auth, struct(), authorized_fields: true) do
+        field(:action, String.t(), derive: "validate(not_empty)")
+      end
+    end
+
+    def is_stuff?(data) when data == "ok", do: true
+    def is_stuff?(_data), do: false
+  end
+
+  ############# (▰˘◡˘▰) Core Key GuardedStructTest Tests (▰˘◡˘▰) ##############
+
   test "normal on core key" do
     {:ok, %__MODULE__.CoreKeysStructs{provider_path: "https://mishka.life", provider: "mishka"}} =
       assert CoreKeysStructs.builder(%{provider: "mishka", provider_path: "https://mishka.life"})
@@ -624,5 +679,170 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
     get_ids = record_id1 == record_id2 == record_id3 == record_id4
 
     assert !get_ids
+  end
+
+  test "domain parent and parameters domain core key" do
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field username input you have to send authorized data",
+         field: :username,
+         field_path: "auth.action"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{username: "mishka", auth: %{action: "admin1"}})
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message:
+           "Based on field username input you have to send authorized data and required key",
+         field: :username,
+         field_path: "auth.action"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{username: "mishka", auth: %{action1: "admin"}})
+
+    {:error, :domain_parameters, _} =
+      assert AllowedParentDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "admin", social: "test"}
+             })
+
+    {:ok,
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
+         social: :banned,
+         action: "admin"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "admin", social: :banned}
+             })
+
+    {:ok,
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
+         type: %{name: "mishka"},
+         social: :banned,
+         action: "admin"
+       },
+       type_social: "github",
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               type_social: "github",
+               auth: %{action: "admin", social: :banned, type: %{name: "mishka"}}
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field type_social input you have to send authorized data",
+         field: :type_social,
+         field_path: "auth.type"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{
+               type_social: "github",
+               auth: %{action: "admin", social: :banned, type: %{name: "test"}}
+             })
+
+    {:ok,
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
+         equal: :name,
+         type: nil,
+         social: :banned,
+         action: "admin"
+       },
+       social_equal: :github,
+       type_social: nil,
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               social_equal: :github,
+               auth: %{action: "admin", social: :banned, equal: :name}
+             })
+
+    {:ok,
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
+         either: "test",
+         equal: nil,
+         type: nil,
+         social: :banned,
+         action: "admin"
+       },
+       social_either: :github,
+       social_equal: nil,
+       type_social: nil,
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               social_either: :github,
+               auth: %{action: "admin", social: :banned, either: "test"}
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field social_either input you have to send authorized data",
+         field: :social_either,
+         field_path: "auth.either"
+       }
+     ]} =
+      assert AllowedParentDomain.builder(%{
+               social_either: :github,
+               auth: %{action: "admin", social: :banned, either: 5}
+             })
+
+    {:ok,
+     %__MODULE__.AllowedParentDomain{
+       auth: %__MODULE__.AllowedParentDomain.Auth{
+         either: 3,
+         equal: nil,
+         type: nil,
+         social: :banned,
+         action: "admin"
+       },
+       social_either: :github,
+       social_equal: nil,
+       type_social: nil,
+       username: nil
+     }} =
+      assert AllowedParentDomain.builder(%{
+               social_either: :github,
+               auth: %{action: "admin", social: :banned, either: 3}
+             })
+  end
+
+  test "check Custom function inside domain core key" do
+    {:ok,
+     %__MODULE__.AllowedParentCustomDomain{
+       auth: %__MODULE__.AllowedParentCustomDomain.Auth{
+         action: "ok"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentCustomDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "ok"}
+             })
+
+    {:error, :domain_parameters,
+     [
+       %{
+         message: "Based on field username input you have to send authorized data",
+         field: :username,
+         field_path: "auth.action"
+       }
+     ]} =
+      assert AllowedParentCustomDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "error"}
+             })
   end
 end
