@@ -1239,6 +1239,7 @@ defmodule GuardedStruct do
   ################### (▰˘◡˘▰) Macros (▰˘◡˘▰) ###################
   ####################################################################
 
+  @spec create_error_module() :: Macro.t()
   defmacro create_error_module() do
     quote do
       defmodule Error do
@@ -1256,6 +1257,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec __type__(any(), keyword()) :: Macro.t()
   @doc false
   defmacro __type__(types, opts) do
     if Keyword.get(opts, :opaque, false) do
@@ -1269,6 +1271,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec field(atom(), any(), keyword()) :: Macro.t()
   @doc false
   defmacro field(name, type, opts \\ []) do
     quote bind_quoted: [name: name, type: Macro.escape(type), opts: opts] do
@@ -1276,6 +1279,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec sub_field(atom(), any(), keyword(), [{:do, any()}]) :: Macro.t()
   @doc false
   defmacro sub_field(name, type, opts \\ [], do: block) do
     ast = register_struct(block, opts, name, __CALLER__.module)
@@ -1297,6 +1301,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec create_builder(Macro.Env.t()) :: Macro.t()
   @doc false
   defmacro create_builder(%Macro.Env{module: module}) do
     exists_validator?(module, :main_validator, :gs_main_validator)
@@ -1383,11 +1388,13 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec delete_temporary_revaluation(Macro.Env.t()) :: :ok
   @doc false
   defmacro delete_temporary_revaluation(%Macro.Env{module: module}) do
     Enum.each(unquote(@temporary_revaluation), &Module.delete_attribute(module, &1))
   end
 
+  @spec conditional_field(atom(), any(), keyword(), [{:do, any()}]) :: Macro.t()
   defmacro conditional_field(name, type, opts \\ [], do: block) do
     # type = Macro.escape(quote do: struct())
     type = Macro.escape(type)
@@ -1460,6 +1467,7 @@ defmodule GuardedStruct do
   #                                          |                  |
   #                                          +------------------+
 
+  @spec register_struct(any(), nil | maybe_improper_list() | map(), atom(), module()) :: Macro.t()
   @doc false
   def register_struct(block, opts, key, caller) do
     quote do
@@ -1513,6 +1521,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec __field__(atom(), any(), keyword(), Macro.Env.t(), boolean(), boolean()) :: nil | :ok
   @doc false
   def __field__(name, type, opts, env_data, subfield, cond? \\ false)
 
@@ -1543,6 +1552,12 @@ defmodule GuardedStruct do
     raise ArgumentError, "a field name must be an atom, got #{inspect(name)}"
   end
 
+  @spec builder(
+          %{:attrs => any(), :module => any(), :revaluation => list(), optional(any()) => any()},
+          :root | [atom()],
+          :add | :edit,
+          any()
+        ) :: {:ok, any()} | {:error, any(), any()}
   @doc false
   def builder(actions, key, type, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
@@ -1583,6 +1598,8 @@ defmodule GuardedStruct do
     if is_map(data), do: data, else: Map.new([{:bad_parameters, data}])
   end
 
+  @spec authorized_fields(map() | list(), list(atom()), list()) ::
+          {:ok, any()} | {:error, :authorized_fields, list(), :halt}
   @doc false
   def authorized_fields(attrs, fields, authorized) do
     case check_authorized_fields(attrs, fields, authorized) do
@@ -1591,6 +1608,8 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec required_fields({:ok, map()} | {:error, any(), any(), :halt}, any()) ::
+          {:ok, map()} | {:error, any(), any(), :halt}
   @doc false
   def required_fields({:ok, attrs}, enforces) do
     with missing_keys <- Enum.reject(Parser.map_keys(attrs, enforces), &Map.has_key?(attrs, &1)),
@@ -1707,6 +1726,14 @@ defmodule GuardedStruct do
     {:ok, uncond_fields, cond_data, full_attrs}
   end
 
+  @spec sub_fields_validating(
+          {:error, any(), any(), :halt} | {:ok, map(), list(), map() | list()},
+          list(atom()),
+          module(),
+          keyword(),
+          atom(),
+          :add | :edit
+        ) :: {:error, any(), any(), :halt} | {map(), list(), list(), list(), any()}
   @doc false
   def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _), do: error
 
@@ -1738,6 +1765,11 @@ defmodule GuardedStruct do
     }
   end
 
+  @spec fields_validating(
+          {:error, any(), any(), :halt} | {map(), map() | list(map()), list(), list(), keyword()},
+          any(),
+          any()
+        ) :: {:error, any(), any(), :halt} | {list(), any(), any(), any(), any()}
   @doc false
   def fields_validating({:error, _, _, :halt} = error, _, _), do: error
 
@@ -1765,6 +1797,19 @@ defmodule GuardedStruct do
     {validated_errors, validated_allowed_data, sub_data, sub_errors, conds}
   end
 
+  @spec main_validating(
+          {:error, any(), any()}
+          | {:error, any(), any(), :halt}
+          | {list(), any(), any(), list(),
+             %{:data => any(), :errors => any(), optional(any()) => any()}},
+          nil | tuple(),
+          list(boolean()),
+          module()
+        ) ::
+          {:error, any(), any()}
+          | {:ok, map(), any()}
+          | {:error, any(), any(), :halt}
+          | {:error, :bad_parameters, :nested, list(), struct(), any()}
   @doc false
   def main_validating({:error, _, _, :halt} = error, _, _, _), do: error
 
@@ -1793,6 +1838,7 @@ defmodule GuardedStruct do
     |> validation_errors_aggregator()
   end
 
+  @spec replace_condition_fields_derives(tuple(), list(map())) :: any()
   @doc false
   def replace_condition_fields_derives({:ok, data, conds}, derives) do
     new_derives =
@@ -1817,6 +1863,8 @@ defmodule GuardedStruct do
 
   def replace_condition_fields_derives(error, _derives), do: error
 
+  @spec exceptions_handler({:ok, any()} | {:error, any(), any()}, module(), boolean()) ::
+          {:ok, any()} | {:error, any(), any()}
   def exceptions_handler(ouput, module, exception \\ false)
 
   def exceptions_handler({:ok, _} = successful_output, _, _), do: successful_output
@@ -1832,6 +1880,7 @@ defmodule GuardedStruct do
   ################### (▰˘◡˘▰) Helpers (▰˘◡˘▰) ##################
   ####################################################################
 
+  @spec reverse_module_keys(list(String.t()), atom()) :: list()
   @doc false
   def reverse_module_keys(splited_module, key) do
     path =
@@ -1861,6 +1910,7 @@ defmodule GuardedStruct do
     path ++ [key]
   end
 
+  @spec find_validator(atom(), any(), keyword(), module()) :: any()
   @doc false
   def find_validator(field, data, gs_validator, caller_module) do
     case Enum.find(gs_validator, &(&1 != true && &1.field == field)) do
@@ -1874,6 +1924,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec get_fields_sub_module(module(), list(atom()), keyword(), boolean()) :: list()
   @doc false
   def get_fields_sub_module(module, fields, external, list \\ false) do
     Enum.map(fields, fn field ->
@@ -1900,6 +1951,7 @@ defmodule GuardedStruct do
     |> Enum.reject(&is_nil(&1))
   end
 
+  @spec show_nested_keys(atom() | tuple(), atom()) :: list()
   @doc false
   def show_nested_keys(module, type \\ :keys) do
     apply(module, type, [])
@@ -1914,6 +1966,7 @@ defmodule GuardedStruct do
     end)
   end
 
+  @spec create_module_name(atom(), Macro.t(), atom()) :: atom()
   @doc false
   def create_module_name(name, module_name, type \\ :macro) do
     name
@@ -1921,6 +1974,14 @@ defmodule GuardedStruct do
     |> then(&Module.concat(if(type == :macro, do: module_name.module, else: module_name), &1))
   end
 
+  @spec config(
+          :conditional,
+          keyword(),
+          module(),
+          atom(),
+          nil | %{:fields => list(), optional(any()) => any()},
+          boolean()
+        ) :: :ok
   @doc false
   def config(:conditional, opts, mod, name, nil, _sub?) do
     Module.put_attribute(
@@ -1975,6 +2036,7 @@ defmodule GuardedStruct do
     )
   end
 
+  @spec config(:fields_types | :struct, keyword(), module(), atom(), any()) :: nil | :ok
   @doc false
   def config(:fields_types, opts, mod, name, type) do
     has_default? = Keyword.has_key?(opts, :default)
@@ -2020,6 +2082,7 @@ defmodule GuardedStruct do
     end
   end
 
+  @spec config(:core_keys | :derive, keyword(), module(), atom()) :: nil | :ok
   @doc false
   def config(:derive, opts, mod, name) do
     if !is_nil(opts[:derive]),
@@ -2046,6 +2109,16 @@ defmodule GuardedStruct do
     end)
   end
 
+  @spec sub_conditional_field_module(
+          keyword(),
+          atom(),
+          atom()
+          | binary()
+          | list()
+          | number()
+          | {any(), any()}
+          | {atom() | {any(), list(), atom() | list()}, keyword(), atom() | list()}
+        ) :: %{cond?: boolean(), name: atom()}
   @doc false
   def sub_conditional_field_module(conditionals, name, env) do
     case Keyword.get(conditionals, name) do
@@ -2418,6 +2491,7 @@ defmodule GuardedStruct do
     })
   end
 
+  @spec reduce_success_data_and_error_data(list(any())) :: list(any())
   def reduce_success_data_and_error_data(conds) do
     Enum.reduce(conds, [[], []], fn
       {{:ok, key, value}, opts}, [data, error] ->
@@ -2596,6 +2670,8 @@ defmodule GuardedStruct do
     end)
   end
 
+  @spec conditional_fields_validating_pattern({any(), atom(), list(any()), map() | list(), atom(), :add | :edit, boolean()}) ::
+          list() | {any(), list(), any()}
   def conditional_fields_validating_pattern(
         {cond_data, field, list_values, full_attrs, key, type, true}
       )

@@ -1,4 +1,5 @@
 defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
+  @spec call({atom(), any()}, list(any()), String.t()) :: {any(), any()}
   def call({_field, input}, nil, _hint), do: {input, []}
 
   def call({field, input}, actions, hint) do

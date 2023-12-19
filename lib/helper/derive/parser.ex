@@ -1,4 +1,5 @@
 defmodule MishkaDeveloperTools.Helper.Derive.Parser do
+  @spec parser(list(String.t()) | String.t()) :: any()
   def parser(inputs) when is_list(inputs) do
     Enum.map(inputs, &parser(&1))
   end
@@ -22,6 +23,8 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     _e -> nil
   end
 
+  @spec convert_to_atom_map({:ok, map()} | {:error, any(), any(), any()} | map()) ::
+          {:error, any(), any(), any()} | map()
   def convert_to_atom_map({:error, _, _, _} = error), do: error
 
   def convert_to_atom_map({:ok, map}) when is_map(map), do: convert_to_atom_map(map)
@@ -42,6 +45,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   defp convert_value(value), do: value
 
+  @spec convert_parameters(atom() | String.t(), any()) :: nil | %{optional(any()) => list()}
   def convert_parameters(derive_key, parameters) do
     converted =
       parameters
@@ -89,6 +93,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     end)
   end
 
+  @spec parse_core_keys_pattern(binary()) :: list()
   def parse_core_keys_pattern(pattern) do
     pattern
     |> String.trim()
@@ -96,6 +101,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     |> Enum.map(&String.to_atom/1)
   end
 
+  @spec is_data?(%{:data => any(), :errors => any(), optional(any()) => any()}) :: boolean()
   @doc false
   def is_data?(%{data: [], errors: []}), do: true
 
@@ -105,6 +111,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   def is_data?(%{data: _data, errors: errors}) when errors != [], do: false
 
+  @spec map_keys(map(), list(atom())) :: any()
   @doc false
   def map_keys(map_data, keys) when is_map(map_data) do
     case List.first(Map.keys(map_data)) do
@@ -116,6 +123,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   def map_keys(_map, keys), do: keys
 
+  @spec field_status?(tuple(), atom()) :: boolean()
   def field_status?({{:error, _, _}, _}, status) when status === :error,
     do: true
 
@@ -130,6 +138,11 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
 
   def field_status?(_, _), do: false
 
+  @spec field_value(
+          maybe_improper_list()
+          | {{:ok, any()} | {:error, any(), any()} | {:ok, any(), any()}, any()}
+          | {{:ok, any()} | {:error, any(), any()}, any(), any()}
+        ) :: maybe_improper_list() | {any(), any()}
   def field_value({{:error, _, _}, _} = output), do: [output]
 
   def field_value({{:error, _, _}, _, _} = output), do: [output]

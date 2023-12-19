@@ -1,4 +1,5 @@
 defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
+  @spec call({atom(), any()}, list(any())) :: {any(), any()}
   def call({field, input}, nil), do: {field, input}
 
   def call({field, input}, actions) do
@@ -6,6 +7,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
     {field, converted_input}
   end
 
+  @spec sanitize(atom() | tuple(), any()) :: any()
   def sanitize(:trim, input) do
     if is_binary(input), do: String.trim(input), else: input
   end
@@ -105,6 +107,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
     end)
   end
 
+  @spec validate_pattern(module(), list(any()), any()) :: any()
   def validate_pattern(module, action, input) do
     apply(module, :sanitize, [action, input])
   rescue

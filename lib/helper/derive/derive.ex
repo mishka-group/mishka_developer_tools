@@ -1,6 +1,12 @@
 defmodule MishkaDeveloperTools.Helper.Derive do
   alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDerive, ValidationDerive}
 
+  @spec derive(
+          {:error, any(), any()}
+          | {:ok, any(), [binary()]}
+          | {:error, any(), any(), :halt}
+          | {:error, any(), :nested, list(), any(), [binary()]}
+        ) :: {:ok, map()} | {:error, any(), any()}
   def derive({:error, type, message, :halt}) do
     {:error, type, message}
   end
@@ -10,6 +16,8 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
   def derive({:error, _, _} = error), do: error
 
+  @spec derive({:ok, any(), list(String.t())}, list()) ::
+          {:ok, map()} | {:error, :bad_parameters, list()}
   def derive({:ok, data, derive_inputs}, extra_error \\ []) do
     reduced_fields =
       Enum.reduce(derive_inputs, %{}, fn map, acc ->
@@ -70,6 +78,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
     Map.put(acc, map.field, converted_validated_values)
   end
 
+  @spec error_handler(map(), list(any())) :: {:error, :bad_parameters, any()}
   def error_handler(reduced_fields, extra_error \\ []) do
     errors =
       Enum.find(extra_error, fn %{field: _, errors: {type, _}} -> type == :required_fields end)
@@ -101,6 +110,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
     end)
   end
 
+  @spec get_derives_from_success_conditional_data(list(any())) :: any()
   @doc false
   def get_derives_from_success_conditional_data(conds) do
     Enum.reduce(conds, [], fn
