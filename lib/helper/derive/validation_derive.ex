@@ -33,6 +33,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     {List.first(validated), validated_errors}
   end
 
+  @spec validate(atom() | tuple(), any(), atom()) :: any()
   def validate(:string, input, field) do
     is_type(field, is_binary(input), :string, input)
   end
@@ -173,7 +174,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
   end
 
   def validate({:max_len, len}, input, field) when is_list(input) do
-    if String.length(input) <= len,
+    if length(input) <= len,
       do: input,
       else:
         {:error, field, :max_len,
