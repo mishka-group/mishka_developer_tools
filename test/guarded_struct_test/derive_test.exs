@@ -675,7 +675,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
 
   test "validate(:custom_validate_derive, input, field) in custom validate" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomeDerive{
+     %__MODULE__.TestCustomeDerive{
        title: "Mishka",
        id: 1,
        name: "Shahryar",
@@ -719,7 +719,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
 
   test "test custom validate and sanitize list derive" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomListDerive{
+     %__MODULE__.TestCustomListDerive{
        title: "Mishka",
        id: 1,
        name: "Shahryar",
@@ -746,7 +746,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
 
   test "validate(:either, input, field)" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestEitherValidationDerive{
+     %__MODULE__.TestEitherValidationDerive{
        test: 12
      }} = assert TestEitherValidationDerive.builder(%{test: 12})
 
@@ -760,7 +760,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
      ]} = assert TestEitherValidationDerive.builder(%{test: "mishka"})
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestEitherValidationDerive{
+     %__MODULE__.TestEitherValidationDerive{
        test1: 3,
        test: nil
      }} = assert TestEitherValidationDerive.builder(%{test1: 3})
@@ -779,7 +779,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
 
   test "validate({:custom, value}, input, field)" do
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStructDeriveTest.TestCustomValidationDerive{
+     %__MODULE__.TestCustomValidationDerive{
        status: "ok"
      }} = assert TestCustomValidationDerive.builder(%{status: "ok"})
 
