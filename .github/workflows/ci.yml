@@ -63,4 +63,5 @@ jobs:
         env:
           DATABASE_DEVELOPERT_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
         run: |
+          mix dialyzer
           mix test --trace
