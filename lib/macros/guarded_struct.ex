@@ -1314,22 +1314,22 @@ defmodule GuardedStruct do
     quote do
       def builder(attrs, error \\ false)
 
+      def builder({key, attrs} = input, error)
+          when is_tuple(input) and is_map(attrs) and (is_list(key) or is_atom(key)) do
+        GuardedStruct.builder(
+          %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
+          key,
+          :add,
+          error
+        )
+      end
+
       def builder({key, attrs, type} = input, error)
           when is_tuple(input) and is_map(attrs) and (is_list(key) or is_atom(key)) do
         GuardedStruct.builder(
           %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
           key,
           type,
-          error
-        )
-      end
-
-      def builder({key, attrs} = input, error)
-          when is_tuple(input) and is_map(attrs) and is_list(key) do
-        GuardedStruct.builder(
-          %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
-          key,
-          :add,
           error
         )
       end
@@ -1375,7 +1375,7 @@ defmodule GuardedStruct do
         info = unquote(List.last(escaped_list) |> List.first())
 
         path =
-          if(info.key == :root,
+          if(Map.get(info, :key) == :root,
             do: [],
             else:
               info.module
@@ -1553,11 +1553,16 @@ defmodule GuardedStruct do
   end
 
   @spec builder(
-          %{:attrs => any(), :module => any(), :revaluation => list(), optional(any()) => any()},
-          :root | [atom()],
+          %{
+            :attrs => map(),
+            :module => module(),
+            :revaluation => list(),
+            optional(any()) => any()
+          },
+          :root | list(atom()),
           :add | :edit,
-          any()
-        ) :: {:ok, any()} | {:error, any(), any()}
+          boolean()
+        ) :: {:ok, map() | list(map())} | {:error, any(), any()}
   @doc false
   def builder(actions, key, type, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
@@ -2670,7 +2675,9 @@ defmodule GuardedStruct do
     end)
   end
 
-  @spec conditional_fields_validating_pattern({any(), atom(), list(any()), map() | list(), atom(), :add | :edit, boolean()}) ::
+  @spec conditional_fields_validating_pattern(
+          {any(), atom(), list(any()), map() | list(), atom(), :add | :edit, boolean()}
+        ) ::
           list() | {any(), list(), any()}
   def conditional_fields_validating_pattern(
         {cond_data, field, list_values, full_attrs, key, type, true}
