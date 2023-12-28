@@ -2190,7 +2190,7 @@ defmodule GuardedStruct do
     get_field =
       if is_nil(cond_list),
         do: get_in(attrs, field_path),
-        else: update_in(attrs, field_path, &(&1 = cond_list)) |> get_in(field_path)
+        else: update_in(attrs, field_path, fn _ -> cond_list end) |> get_in(field_path)
 
     if is_list(get_field) do
       builders_output =
@@ -2658,7 +2658,7 @@ defmodule GuardedStruct do
           |> combine_parent_field(if(is_list(key), do: key, else: [key]))
           |> List.delete(:root)
 
-        full_attrs = update_in(full_attrs, keys, &(&1 = value))
+        full_attrs = update_in(full_attrs, keys, fn _ -> value end)
 
         {module.builder({keys, full_attrs, type}), field, opts}
 

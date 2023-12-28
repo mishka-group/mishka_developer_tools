@@ -145,6 +145,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
       sub_field(:auth, struct(), authorized_fields: true) do
         field(:action, String.t(), derive: "validate(not_empty)")
       end
+
+      conditional_field(:id, String.t(), auto: {Ecto.UUID, :generate}) do
+        field(:id, any(), derive: "sanitize(tag=strip_tags) validate(not_empty_string, uuid)")
+        field(:id, String.t(), derive: "sanitize(tag=strip_tags) validate(url, max_len=160)")
+      end
     end
 
     def is_stuff?(data) when data == "ok", do: true
@@ -844,5 +849,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                username: "mishka",
                auth: %{action: "error"}
              })
+  end
+
+  test "call auto core key top of a conditional fields" do
+    AllowedParentCustomDomain.builder(%{
+      username: "mishka",
+      auth: %{action: "ok"}
+    })
+    |> IO.inspect()
   end
 end
