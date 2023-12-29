@@ -147,8 +147,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
       end
 
       conditional_field(:id, String.t(), auto: {Ecto.UUID, :generate}) do
-        field(:id, any(), derive: "sanitize(tag=strip_tags) validate(not_empty_string, uuid)")
-        field(:id, String.t(), derive: "sanitize(tag=strip_tags) validate(url, max_len=160)")
+        field(:id, String.t(),
+          derive: "sanitize(tag=strip_tags) validate(url, max_len=160)",
+          hint: "url_id"
+        )
+
+        field(:id, any(),
+          derive: "sanitize(tag=strip_tags) validate(not_empty_string, uuid)",
+          hint: "uuid_id"
+        )
       end
     end
 
@@ -852,10 +859,131 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
   end
 
   test "call auto core key top of a conditional fields" do
-    AllowedParentCustomDomain.builder(%{
-      username: "mishka",
-      auth: %{action: "ok"}
-    })
-    |> IO.inspect()
+    {:ok,
+     %__MODULE__.AllowedParentCustomDomain{
+       id: uuid,
+       auth: %__MODULE__.AllowedParentCustomDomain.Auth{
+         action: "ok"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentCustomDomain.builder(
+               {:root,
+                %{
+                  username: "mishka",
+                  auth: %{action: "ok"}
+                }, :edit}
+             )
+
+    {:ok,
+     %__MODULE__.AllowedParentCustomDomain{
+       id: uuid1,
+       auth: %__MODULE__.AllowedParentCustomDomain.Auth{
+         action: "ok"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentCustomDomain.builder(%{
+               username: "mishka",
+               auth: %{action: "ok"}
+             })
+
+    {:ok, _uuid} = assert Ecto.UUID.cast(uuid)
+    {:ok, _uuid} = assert Ecto.UUID.cast(uuid1)
+
+    # TODO: check the error of :edit
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain{
+       id: "https://github.com/mishka-group/mishka_developer_tools",
+       auth: %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain.Auth{
+         action: "ok"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentCustomDomain.builder(
+               {:root,
+                %{
+                  username: "mishka",
+                  auth: %{action: "ok"},
+                  id: "https://github.com/mishka-group/mishka_developer_tools"
+                }, :edit}
+             )
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain{
+       id: "9154b00d-4602-45c2-9562-46a2dcef257f",
+       auth: %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain.Auth{
+         action: "ok"
+       },
+       username: "mishka"
+     }} =
+      assert AllowedParentCustomDomain.builder(
+               {:root,
+                %{
+                  username: "mishka",
+                  auth: %{action: "ok"},
+                  id: "9154b00d-4602-45c2-9562-46a2dcef257f"
+                }, :edit}
+             )
+
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "Unexpected type error in id field",
+         field: :id,
+         action: :type,
+         __hint__: "url_id"
+       },
+       %{
+         message: "Invalid url format in the id field",
+         field: :id,
+         action: :url,
+         __hint__: "url_id"
+       },
+       %{
+         message: "Invalid UUID format in the id field",
+         field: :id,
+         action: :uuid,
+         __hint__: "uuid_id"
+       },
+       %{
+         message: "Invalid format in the id field",
+         field: :id,
+         action: :not_empty_string,
+         __hint__: "uuid_id"
+       }
+     ]} =
+      assert AllowedParentCustomDomain.builder(
+               {:root,
+                %{
+                  username: "mishka",
+                  auth: %{action: "ok"},
+                  id: :test
+                }, :edit}
+             )
+
+    {:error, :bad_parameters,
+     [
+       %{
+         message: "Is missing a url scheme (e.g. https) in the id field",
+         field: :id,
+         action: :url,
+         __hint__: "url_id"
+       },
+       %{
+         message: "Invalid UUID format in the id field",
+         field: :id,
+         action: :uuid,
+         __hint__: "uuid_id"
+       }
+     ]} =
+      assert AllowedParentCustomDomain.builder(
+               {:root,
+                %{
+                  username: "mishka",
+                  auth: %{action: "ok"},
+                  id: ":test"
+                }, :edit}
+             )
   end
 end

@@ -2413,6 +2413,7 @@ defmodule GuardedStruct do
   defp conditionals_fields_data_divider(builders) do
     Enum.reduce(builders, %{data: [], errors: []}, fn
       {field, conds, priority}, acc ->
+        # TODO: it just keeps one derive not list of them
         %{data: data, errors: errors} =
           {field, conds, acc, priority}
           |> separate_conditions_based_priority()
@@ -2451,13 +2452,21 @@ defmodule GuardedStruct do
   defp separate_conditions_based_priority({field, conds, acc, priority}, "normal") do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
 
+    derives = Enum.map(success_data, fn {_data, derive} -> derive end)
+
+    data =
+      if(length(success_data) > 0,
+        do: [{field, {List.first(success_data) |> elem(0), derives}}],
+        else: []
+      )
+
     Map.merge(acc, %{
       errors:
         if(length(error_data) > 0 and length(success_data) == 0,
           do: [{field, if(priority, do: [List.first(error_data)], else: error_data)}],
           else: []
         ),
-      data: if(length(success_data) > 0, do: [{field, List.first(success_data)}], else: [])
+      data: data
     })
   end
 

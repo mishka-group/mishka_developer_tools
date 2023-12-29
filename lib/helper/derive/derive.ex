@@ -37,6 +37,17 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
   defp update_reduced_fields(get_field, parsed_derive, hints, map, acc)
        when is_list(parsed_derive) and parsed_derive != [] do
+    # Temporary way to find it is list conditional or not
+    list_data? = is_list(get_field) and length(get_field) == length(parsed_derive)
+
+    get_field =
+      if list_data? do
+        get_field
+      else
+        stream = Stream.duplicate(get_field, length(parsed_derive))
+        Enum.to_list(stream)
+      end
+
     converted_validated_values =
       Enum.zip([parsed_derive, get_field, hints])
       |> Enum.map(fn {derive, value, hint} ->
@@ -50,17 +61,13 @@ defmodule MishkaDeveloperTools.Helper.Derive do
         if length(validated_errors) > 0, do: {:error, validated_errors}, else: all_data
       end)
 
-    errors =
-      converted_validated_values
-      |> Enum.filter(&(is_tuple(&1) and elem(&1, 0) == :error))
-      |> Enum.map(fn {:error, errors} -> errors end)
-      |> Enum.concat()
+    {errors, data} = derive_list_values_and_errors_divider(converted_validated_values)
 
-    Map.put(
-      acc,
-      map.field,
-      if(length(errors) > 0, do: {:error, errors}, else: converted_validated_values)
-    )
+    if list_data? do
+      Map.put(acc, map.field, if(length(errors) > 0, do: {:error, errors}, else: data))
+    else
+      Map.put(acc, map.field, if(length(data) > 0, do: List.first(data), else: {:error, errors}))
+    end
   end
 
   defp update_reduced_fields(get_field, parsed_derive, hint, map, acc) do
@@ -76,6 +83,16 @@ defmodule MishkaDeveloperTools.Helper.Derive do
       if length(validated_errors) > 0, do: {:error, validated_errors}, else: all_data
 
     Map.put(acc, map.field, converted_validated_values)
+  end
+
+  defp derive_list_values_and_errors_divider(data) do
+    {error, no_error} =
+      data
+      |> Enum.split_with(&(is_tuple(&1) and elem(&1, 0) == :error))
+
+    converted_error = Enum.map(error, fn {:error, errors} -> errors end) |> Enum.concat()
+
+    {converted_error, no_error}
   end
 
   @spec error_handler(map(), list(any())) :: {:error, :bad_parameters, any()}
@@ -115,10 +132,27 @@ defmodule MishkaDeveloperTools.Helper.Derive do
   def get_derives_from_success_conditional_data(conds) do
     Enum.reduce(conds, [], fn
       {field, {{:ok, _data}, opts}}, acc ->
-        get_derive = Keyword.get(opts, :derive, [])
-        get_hint = Keyword.get(opts, :hint, [])
+        case Keyword.keyword?(opts) do
+          true ->
+            get_derive = Keyword.get(opts, :derive, [])
+            get_hint = Keyword.get(opts, :hint, [])
+            acc ++ [Map.new([{:derive, get_derive}, {:field, field}, {:hint, get_hint}])]
 
-        acc ++ [Map.new([{:derive, get_derive}, {:field, field}, {:hint, get_hint}])]
+          false when is_list(opts) ->
+            %{derive: derives, hint: hints} =
+              Enum.reduce(opts, %{derive: [], hint: []}, fn item, acc ->
+                get_derive = Keyword.get(item, :derive, [])
+                get_hint = Keyword.get(item, :hint, [])
+
+                Map.merge(acc, %{derive: acc.derive ++ [get_derive], hint: acc.hint ++ [get_hint]})
+              end)
+
+            acc ++ [Map.new([{:derive, derives}, {:field, field}, {:hint, hints}])]
+
+          _ ->
+            # We do not cover this setuation
+            acc
+        end
 
       {field, values}, acc ->
         %{derive: derives, hint: hints} =
