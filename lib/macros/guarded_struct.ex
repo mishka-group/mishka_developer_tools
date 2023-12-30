@@ -1240,6 +1240,7 @@ defmodule GuardedStruct do
   ####################################################################
 
   @spec create_error_module() :: Macro.t()
+  @doc false
   defmacro create_error_module() do
     quote do
       defmodule Error do
@@ -1395,6 +1396,7 @@ defmodule GuardedStruct do
   end
 
   @spec conditional_field(atom(), any(), keyword(), [{:do, any()}]) :: Macro.t()
+  @doc false
   defmacro conditional_field(name, type, opts \\ [], do: block) do
     # type = Macro.escape(quote do: struct())
     type = Macro.escape(type)
@@ -1870,6 +1872,7 @@ defmodule GuardedStruct do
 
   @spec exceptions_handler({:ok, any()} | {:error, any(), any()}, module(), boolean()) ::
           {:ok, any()} | {:error, any(), any()}
+  @doc false
   def exceptions_handler(ouput, module, exception \\ false)
 
   def exceptions_handler({:ok, _} = successful_output, _, _), do: successful_output
@@ -2506,6 +2509,7 @@ defmodule GuardedStruct do
   end
 
   @spec reduce_success_data_and_error_data(list(any())) :: list(any())
+  @doc false
   def reduce_success_data_and_error_data(conds) do
     Enum.reduce(conds, [[], []], fn
       {{:ok, key, value}, opts}, [data, error] ->
@@ -2688,6 +2692,7 @@ defmodule GuardedStruct do
           {any(), atom(), list(any()), map() | list(), atom(), :add | :edit, boolean()}
         ) ::
           list() | {any(), list(), any()}
+  @doc false
   def conditional_fields_validating_pattern(
         {cond_data, field, list_values, full_attrs, key, type, true}
       )

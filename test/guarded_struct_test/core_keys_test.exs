@@ -893,9 +893,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
 
     # TODO: check the error of :edit
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain{
+     %__MODULE__.AllowedParentCustomDomain{
        id: "https://github.com/mishka-group/mishka_developer_tools",
-       auth: %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain.Auth{
+       auth: %__MODULE__.AllowedParentCustomDomain.Auth{
          action: "ok"
        },
        username: "mishka"
@@ -910,9 +910,9 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
              )
 
     {:ok,
-     %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain{
+     %__MODULE__.AllowedParentCustomDomain{
        id: "9154b00d-4602-45c2-9562-46a2dcef257f",
-       auth: %MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest.AllowedParentCustomDomain.Auth{
+       auth: %__MODULE__.AllowedParentCustomDomain.Auth{
          action: "ok"
        },
        username: "mishka"
