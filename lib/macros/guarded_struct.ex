@@ -1432,22 +1432,23 @@ defmodule GuardedStruct do
         ) ::
           list() | {any(), list(), any()}
   @doc false
+  def conditional_fields_validating_pattern(params, parsed \\ false)
+
   def conditional_fields_validating_pattern(
-        {cond_data, field, list_values, full_attrs, key, type, true}
+        {cond_data, field, list_values, full_attrs, key, type, true},
+        parsed
       )
       when is_list(list_values) do
     outputs =
       Enum.map(list_values, fn value ->
         {cond_data, field, value, full_attrs, key, type, false}
-        |> conditional_fields_validating_pattern()
+        |> conditional_fields_validating_pattern(parsed)
       end)
 
     outputs
   end
 
-  def conditional_fields_validating_pattern(
-        {_cond_data, field, _list_values, _full_attrs, _key, _type, true}
-      ) do
+  def conditional_fields_validating_pattern({_, field, _, _, _, _, true}, _) do
     [
       [
         {field,
@@ -1458,42 +1459,79 @@ defmodule GuardedStruct do
     ]
   end
 
-  def conditional_fields_validating_pattern({cond_data, field, value, full_attrs, key, type, _}) do
+  def conditional_fields_validating_pattern(params, parsed) do
+    {cond_data, field, value, full_attrs, key, type, _} = params
+
+    parsed_cond_data =
+      if !parsed,
+        do: Parser.conds_list(cond_data.fields, cond_data.opts[:__node_parent_tree__]),
+        else: cond_data.fields
+
     output =
-      Enum.map(cond_data.fields, fn
-        # Normail field that has custom validator function, if it does not. should pass ok
-        # The priority is with the external module
-        %{sub?: false, opts: opts, module: nil, list?: false} ->
+      parsed_cond_data
+      |> Enum.map(fn
+        # These conditions pattern do not have children
+        {_id, %{module: nil, opts: opts, children: %{}, sub?: false, list?: false}} ->
           case Keyword.get(opts, :struct) do
             nil ->
-              {get_field_validator(opts, cond_data.caller, field, value), opts}
+              condition = get_field_validator(opts, cond_data.caller, field, value)
+              %{data: condition, opts: opts, status: elem(condition, 0) == :ok}
 
             module ->
               if !Code.ensure_loaded?(module) do
-                {get_field_validator(opts, cond_data.caller, field, value), opts}
+                condition = get_field_validator(opts, cond_data.caller, field, value)
+                %{data: condition, opts: opts, status: elem(condition, 0) == :ok}
               else
                 {opts, cond_data.caller, field, value, type, module}
                 |> execute_field_validator(:external)
               end
           end
 
-        %{sub?: false, opts: opts, module: nil, list?: true} ->
+        {_id, %{module: nil, opts: opts, children: [], sub?: false, list?: true}} ->
           # It is not a sub field, but it should load external module
           # because we have no normal field which is list
           {opts, cond_data.caller, field, value, key, type, full_attrs}
           |> execute_field_validator(:list_external)
 
-        %{sub?: true, opts: opts, module: module, list?: false} ->
-          # It is a sub field and just accepts a map not list of map
+        {_id, %{module: module, opts: opts, children: [], sub?: true, list?: false}} ->
           {opts, cond_data.caller, field, value, module, key, full_attrs, type}
           |> execute_field_validator(:sub_field)
 
-        %{sub?: true, opts: opts, module: module, list?: true} ->
-          # It is a sub field and accepts a list of maps
+        {_id, %{module: module, opts: opts, children: [], sub?: true, list?: true}} ->
           {opts, module, field, value, key, type, full_attrs}
           |> execute_field_validator(:list_field)
+
+        # These conditions pattern have children
+        {_id, %{module: nil, opts: _opts, children: _children, sub?: false, list?: false}} ->
+          nil
+
+        {_id, %{module: nil, opts: opts, children: children, sub?: false, list?: true}} ->
+          if Keyword.get(opts, :structs) not in [nil, true],
+            do: raise("Oh no!, You cannot define a parent condition with external struct")
+
+          with condition <- get_field_validator(opts, cond_data.caller, field, value),
+               {true, _condition} <- {elem(condition, 0) == :ok, condition} do
+            caller = %{caller: cond_data.caller, opts: opts, fields: children}
+
+            children_output =
+              {caller, field, value, full_attrs, key, type, true}
+              |> conditional_fields_validating_pattern(true)
+
+            %{data: condition, opts: opts, children: children_output, status: true}
+          else
+            {false, condition} ->
+              %{data: condition, opts: opts, status: false}
+          end
+
+        {_id, %{module: _module, opts: _opts, children: _children, sub?: true, list?: false}} ->
+          IO.inspect("hellow2")
+          nil
+
+        {_id, %{module: _module, opts: _opts, children: _children, sub?: true, list?: true}} ->
+          IO.inspect("hellow3")
+          nil
       end)
 
-    {field, output, Keyword.get(cond_data.opts, :priority, false)}
+    %{field: field, data: output, priority: Keyword.get(cond_data.opts, :priority, false)}
   end
 end
