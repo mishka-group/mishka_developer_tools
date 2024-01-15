@@ -23,6 +23,66 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     _e -> nil
   end
 
+  def parser(blocks, :conditional, parent \\ "root") do
+    case blocks do
+      {:__block__, line, items} ->
+        {:__block__, line, elements_unification(items, parent)}
+
+      {:field, line, items} ->
+        {:field, line, add_parent_tags(items, parent)}
+
+      # TODO: It should be re-checked, if there is a conditional_field inside sub_field
+      {:sub_field, line, items} ->
+        {:sub_field, line, add_parent_tags(items, parent)}
+
+      {:conditional_field, line, items} ->
+        {:conditional_field, line,
+         elements_unification(add_parent_tags(items, parent, "conds"), parent)}
+    end
+  end
+
+  defp elements_unification(blocks, parent) do
+    Enum.map(blocks, fn
+      {:field, line, items} ->
+        {:field, line, add_parent_tags(items, parent)}
+
+      {:sub_field, line, items} ->
+        {:sub_field, line, add_parent_tags(items, parent)}
+
+      {:conditional_field, line, items} ->
+        comverted_items = add_parent_tags(items, parent, "conds")
+
+        recursive_children =
+          Enum.map(comverted_items, fn item ->
+            if Keyword.keyword?(item) and Keyword.has_key?(item, :do),
+              do: [
+                do:
+                  parser(Keyword.get(item, :do), :conditional, find_node_tags(comverted_items).id)
+              ],
+              else: item
+          end)
+
+        {:conditional_field, line, recursive_children}
+    end)
+  end
+
+  defp find_node_tags([_name, _type, opts | _reset] = _items) do
+    %{parent: opts[:__node_parent_tree__], type: opts[:__node_type__], id: opts[:__node_id__]}
+  end
+
+  defp add_parent_tags(items, parent, type \\ "normal") do
+    id = parent <> "::" <> Helper.Extra.randstring(8)
+
+    Enum.map(items, fn item ->
+      if Keyword.keyword?(item) and !Keyword.has_key?(item, :__node_type__) and
+           !Keyword.has_key?(item, :do) do
+        item ++ [__node_parent_tree__: parent, __node_type__: type, __node_id__: id]
+      else
+        item
+      end
+    end)
+  end
+
   @spec convert_to_atom_map({:ok, map()} | {:error, any(), any(), any()} | map()) ::
           {:error, any(), any(), any()} | map()
   def convert_to_atom_map({:error, _, _, _} = error), do: error
@@ -160,4 +220,29 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
       raise(
         "Oh no!, I think you have not made all the subfields of a conditional field to the same name"
       )
+
+  def conds_list(data, parent_key) do
+    items_with_parent =
+      Enum.filter(data, fn %{opts: opts} -> opts[:__node_parent_tree__] == parent_key end)
+
+    Enum.reduce(items_with_parent, %{}, fn item, acc ->
+      children = find_conds_children_recursive(data, item.opts[:__node_id__])
+      Map.put(acc, item.opts[:__node_id__], Map.merge(item, %{children: children}))
+    end)
+  end
+
+  defp find_conds_children_recursive(data, parent_tag) do
+    children =
+      Enum.filter(data, fn %{opts: opts} -> opts[:__node_parent_tree__] == parent_tag end)
+
+    # Enum.map(children, fn child ->
+    #   grand_children = find_conds_children_recursive(data, child.opts[:__node_id__])
+    #   Map.put(child, :children, grand_children)
+    # end)
+
+    Enum.reduce(children, %{}, fn item, acc ->
+      children = find_conds_children_recursive(data, item.opts[:__node_id__])
+      Map.put(acc, item.opts[:__node_id__], Map.merge(item, %{children: children}))
+    end)
+  end
 end
