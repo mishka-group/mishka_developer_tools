@@ -94,6 +94,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.NestedConditionalFieldTest do
         "https://google.com"
       ]
     })
+    |> IO.inspect()
   end
 
   test "call derive on main conditional field to check whole entries" do

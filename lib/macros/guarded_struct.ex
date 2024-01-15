@@ -349,9 +349,11 @@ defmodule GuardedStruct do
     |> domain_core_key(attrs)
     |> on_core_key(attrs)
     |> from_core_key()
+    # TODO: each fields should just retun the corect or error response
     |> conditional_fields_validating(conditionals, type, key)
     |> sub_fields_validating(fields, module, external, key, type)
     |> fields_validating(validator, module)
+    # TODO: in this part we should stop all the pipe line if we have error
     |> main_validating(found_main_validator, main_validator, module)
     |> replace_condition_fields_derives(derives)
     |> Derive.derive()
@@ -1159,24 +1161,27 @@ defmodule GuardedStruct do
 
         %{data: acc.data ++ data, errors: acc.errors ++ errors}
 
-      list, acc ->
-        grouped =
-          Enum.group_by(list, fn
-            {key, [{_, _, _} | _], _} -> key
-            [{key, _field_errors, _} | _] -> key
-            {key, _field_errors, _} -> key
-          end)
-
+      %{field: _field, data: data, priority: _priority}, acc when is_list(data) ->
+        grouped = Enum.group_by(data, & &1.field)
         field = grouped |> Map.keys() |> List.first()
+        # It can be recovered in the future
+        # priority = false
 
-        field_data = Map.get(grouped, field)
+        %{data: data, errors: errors} =
+          {field, Map.get(grouped, field), acc}
+          |> separate_conditions_based_priority("list")
 
-        priority =
-          if is_list(field_data) and is_tuple(List.first(field_data)) do
-            List.first(field_data) |> elem(2)
-          else
-            false
-          end
+        %{data: acc.data ++ data, errors: acc.errors ++ errors}
+
+      %{field: _field, data: _data, priority: _priority}, acc ->
+        IO.inspect("we are here1")
+        acc
+
+      list, acc when is_list(list) ->
+        grouped = Enum.group_by(list, & &1.field)
+        field = grouped |> Map.keys() |> List.first()
+        # It can be recovered in the future
+        priority = false
 
         %{data: data, errors: errors} =
           {field, Map.get(grouped, field), acc, priority}
@@ -1187,6 +1192,46 @@ defmodule GuardedStruct do
   end
 
   defp separate_conditions_based_priority(params, type \\ "normal")
+
+  defp separate_conditions_based_priority({field, conds, acc}, "list") do
+    [success_data, error_data] =
+      Enum.reduce(conds, [[], []], fn
+        %{output: output, field: _field, children: _children, opts: opts, status: status},
+        [data, error] ->
+          if(status) do
+            {value, opts} = Parser.field_value({output, opts})
+            [data ++ [{{:ok, Map.new([{field, value}])}, opts}], error]
+          else
+            [data, error ++ Parser.field_value({output, opts})]
+          end
+
+        %{output: output, field: _field, opts: opts, status: status}, [data, error] ->
+          if(status) do
+            {value, opts} = Parser.field_value({output, opts})
+            [data ++ [{{:ok, Map.new([{field, value}])}, opts}], error]
+          else
+            [data, error ++ Parser.field_value({output, opts})]
+          end
+
+        _item, [data, error] ->
+          [data, error]
+      end)
+
+    IO.inspect(success_data)
+    IO.inspect(error_data)
+    IO.inspect("-----------------")
+
+    Map.merge(acc, %{
+      errors:
+        if(length(error_data) > 0,
+          do: [
+            # {field, Enum.uniq(error_data)}
+          ],
+          else: []
+        ),
+      data: if(length(success_data) > 0, do: [{field, success_data}], else: [])
+    })
+  end
 
   defp separate_conditions_based_priority({field, conds, acc, priority}, "normal") do
     [success_data, error_data] = reduce_success_data_and_error_data(conds)
@@ -1365,13 +1410,19 @@ defmodule GuardedStruct do
   # We could merge these 2 function with `when` but, I think we need it in the future.
   defp execute_field_validator({opts, module, field, value, key, type, full_attrs}, :list_field) do
     structs = if Keyword.get(opts, :structs), do: module, else: Keyword.get(opts, :structs)
+    priority = Keyword.get(opts, :priority, false)
 
     case get_field_validator(opts, module, field, value) do
       {:ok, _field, value} ->
-        {list_builder(full_attrs, structs, field, key, type, value), field, opts}
+        %{
+          output: list_builder(full_attrs, structs, field, key, type, value),
+          field: field,
+          opts: opts,
+          priority: priority
+        }
 
       error ->
-        {error, opts}
+        %{field: field, output: error, opts: opts, status: false, priority: priority}
     end
   end
 
@@ -1379,23 +1430,42 @@ defmodule GuardedStruct do
          {opts, caller, field, value, key, type, full_attrs},
          :list_external
        ) do
+    priority = Keyword.get(opts, :priority, false)
+
     case get_field_validator(opts, caller, field, value) do
       {:ok, _field, value} ->
-        {list_builder(full_attrs, Keyword.get(opts, :structs), field, key, type, value), field,
-         opts}
+        status =
+          if opts[:__node_type__] == "conds", do: "conds", else: Keyword.get(opts, :structs)
+
+        %{
+          output: list_builder(full_attrs, status, field, key, type, value),
+          field: field,
+          opts: opts,
+          priority: priority
+        }
 
       error ->
-        {error, opts}
+        %{field: field, output: error, opts: opts, status: false, priority: priority}
     end
   end
 
   defp execute_field_validator({opts, caller, field, value, type, module}, :external) do
+    priority = Keyword.get(opts, :priority, false)
+
     case get_field_validator(opts, caller, field, value) do
       {:ok, _field, _value} ->
-        {module.builder({:root, value, type}), field, opts}
+        condition = module.builder({:root, value, type})
+
+        %{
+          output: condition,
+          field: field,
+          opts: opts,
+          status: elem(condition, 0) == :ok,
+          priority: priority
+        }
 
       error ->
-        {error, opts}
+        %{field: field, output: error, opts: opts, status: false, priority: priority}
     end
   end
 
@@ -1403,6 +1473,8 @@ defmodule GuardedStruct do
          {opts, caller, field, value, module, key, full_attrs, type},
          :sub_field
        ) do
+    priority = Keyword.get(opts, :priority, false)
+
     case get_field_validator(opts, caller, field, value) do
       {:ok, _field, _value} ->
         keys =
@@ -1411,11 +1483,18 @@ defmodule GuardedStruct do
           |> List.delete(:root)
 
         full_attrs = update_in(full_attrs, keys, fn _ -> value end)
+        condition = module.builder({keys, full_attrs, type})
 
-        {module.builder({keys, full_attrs, type}), field, opts}
+        %{
+          output: condition,
+          field: field,
+          opts: opts,
+          status: elem(condition, 0) == :ok,
+          priority: priority
+        }
 
       error ->
-        {error, opts}
+        %{field: field, output: error, opts: opts, status: false, priority: priority}
     end
   end
 
@@ -1472,15 +1551,31 @@ defmodule GuardedStruct do
       |> Enum.map(fn
         # These conditions pattern do not have children
         {_id, %{module: nil, opts: opts, children: %{}, sub?: false, list?: false}} ->
+          priority = Keyword.get(opts, :priority, false)
+
           case Keyword.get(opts, :struct) do
             nil ->
               condition = get_field_validator(opts, cond_data.caller, field, value)
-              %{data: condition, opts: opts, status: elem(condition, 0) == :ok}
+
+              %{
+                output: condition,
+                opts: opts,
+                status: elem(condition, 0) == :ok,
+                field: field,
+                priority: priority
+              }
 
             module ->
               if !Code.ensure_loaded?(module) do
                 condition = get_field_validator(opts, cond_data.caller, field, value)
-                %{data: condition, opts: opts, status: elem(condition, 0) == :ok}
+
+                %{
+                  output: condition,
+                  opts: opts,
+                  status: elem(condition, 0) == :ok,
+                  field: field,
+                  priority: priority
+                }
               else
                 {opts, cond_data.caller, field, value, type, module}
                 |> execute_field_validator(:external)
@@ -1509,6 +1604,8 @@ defmodule GuardedStruct do
           if Keyword.get(opts, :structs) not in [nil, true],
             do: raise("Oh no!, You cannot define a parent condition with external struct")
 
+          priority = Keyword.get(opts, :priority, false)
+
           with condition <- get_field_validator(opts, cond_data.caller, field, value),
                {true, _condition} <- {elem(condition, 0) == :ok, condition} do
             caller = %{caller: cond_data.caller, opts: opts, fields: children}
@@ -1517,18 +1614,23 @@ defmodule GuardedStruct do
               {caller, field, value, full_attrs, key, type, true}
               |> conditional_fields_validating_pattern(true)
 
-            %{data: condition, opts: opts, children: children_output, status: true}
+            %{
+              field: field,
+              output: condition,
+              opts: opts,
+              children: children_output,
+              status: true,
+              priority: priority
+            }
           else
             {false, condition} ->
-              %{data: condition, opts: opts, status: false}
+              %{field: field, output: condition, opts: opts, status: false, priority: priority}
           end
 
         {_id, %{module: _module, opts: _opts, children: _children, sub?: true, list?: false}} ->
-          IO.inspect("hellow2")
           nil
 
         {_id, %{module: _module, opts: _opts, children: _children, sub?: true, list?: true}} ->
-          IO.inspect("hellow3")
           nil
       end)
 
