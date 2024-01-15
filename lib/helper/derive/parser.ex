@@ -36,6 +36,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
         {:sub_field, line, add_parent_tags(items, parent)}
 
       {:conditional_field, line, items} ->
+        raise("""
+        \n ----------------------------------------------------------\n
+        | Unfortunately, this macro does not support the nested mode in the conditional_field macro.
+        | If you can add this feature I would be very happy to send a PR.
+        | More information: https://github.com/mishka-group/mishka_developer_tools/issues/25
+        | Parent Issue: https://github.com/mishka-group/mishka_developer_tools/issues/23
+        \n ----------------------------------------------------------\n
+        """)
+
         {:conditional_field, line,
          elements_unification(add_parent_tags(items, parent, "conds"), parent)}
     end
@@ -50,6 +59,15 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
         {:sub_field, line, add_parent_tags(items, parent)}
 
       {:conditional_field, line, items} ->
+        raise("""
+        \n ----------------------------------------------------------\n
+        | Unfortunately, this macro does not support the nested mode in the conditional_field macro.
+        | If you can add this feature I would be very happy to send a PR.
+        | More information: https://github.com/mishka-group/mishka_developer_tools/issues/25
+        | Parent Issue: https://github.com/mishka-group/mishka_developer_tools/issues/23
+        \n ----------------------------------------------------------\n
+        """)
+
         comverted_items = add_parent_tags(items, parent, "conds")
 
         recursive_children =
@@ -66,7 +84,7 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     end)
   end
 
-  defp find_node_tags([_name, _type, opts | _reset] = _items) do
+  def find_node_tags([_name, _type, opts | _reset] = _items) do
     %{parent: opts[:__node_parent_tree__], type: opts[:__node_type__], id: opts[:__node_id__]}
   end
 

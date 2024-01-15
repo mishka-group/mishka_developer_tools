@@ -1400,6 +1400,7 @@ defmodule GuardedStruct do
   defmacro conditional_field(name, type, opts \\ [], do: block) do
     # type = Macro.escape(quote do: struct())
     type = Macro.escape(type)
+    Parser.parser(block, :conditional)
 
     quote do
       GuardedStruct.__field__(unquote(name), unquote(type), unquote(opts), __ENV__, true, true)
