@@ -383,7 +383,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a map with validator" do
-    {:error, :bad_parameters, "Your input must be a map or list of maps"} =
+    {:error, %{message: "Your input must be a map or list of maps", action: :bad_parameters}} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder([
                %{
                  nickname: "Mishka",
@@ -392,15 +392,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                }
              ])
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :social,
-         action: :conditionals,
          errors: [
            {:social, "It is not map", [__hint__: "social1"]},
            {:social, "It is not string", [__hint__: "social2"]}
-         ]
+         ],
+         action: :conditionals
        }
      ]} =
       assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
@@ -411,21 +411,23 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a map with derive" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :location,
          errors: [
            {:location, "It is not map", [__hint__: "location1"]},
-           {:bad_parameters,
-            [
-              %{
-                message:
-                  "Invalid geo url format in the location field, you should send latitude and longitude",
-                field: :location,
-                action: :location
-              }
-            ], [__hint__: "location2"]}
+           {
+             [
+               %{
+                 message:
+                   "Invalid geo url format in the location field, you should send latitude and longitude",
+                 field: :location,
+                 action: :location
+               }
+             ],
+             [__hint__: "location2"]
+           }
          ],
          action: :conditionals
        }
@@ -480,14 +482,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :auth,
          errors: [
            {:auth, "It is not list", [__hint__: "auth1"]},
-           {:bad_parameters,
-            [%{message: "Your input must be a list of items", field: :auth, action: :type}],
+           {%{message: "Your input must be a list of items", field: :auth, action: :type},
             [__hint__: "auth2"]},
            {:auth, "It is not string", [__hint__: "auth3"]}
          ],
@@ -500,19 +501,21 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                auth: %{username: "Mishka", provider: "github"}
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :auth2,
          errors: [
-           {:bad_parameters,
-            [
-              %{
-                message: "The auth2 field item must not be empty",
-                field: :auth2,
-                action: :not_flatten_empty_item
-              }
-            ], [__hint__: "auth1"]},
+           {
+             [
+               %{
+                 message: "The auth2 field item must not be empty",
+                 field: :auth2,
+                 action: :not_flatten_empty_item
+               }
+             ],
+             [__hint__: "auth1"]
+           },
            {:auth2, "It is not string", [__hint__: "auth3"]}
          ],
          action: :conditionals
@@ -529,19 +532,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :auth2,
          errors: [
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:provider, :username],
-                action: :required_fields
-              }
-            ], [__hint__: "auth1"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:provider, :username],
+              action: :required_fields
+            }, [__hint__: "auth1"]},
            {:auth2, "It is not string", [__hint__: "auth3"]}
          ],
          action: :conditionals
@@ -574,19 +574,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                post_activity: %{post_id: 1, like: true}
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :post_activity,
          errors: [
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:like],
-                action: :required_fields
-              }
-            ], [__hint__: "post_activity1"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:like],
+              action: :required_fields
+            }, [__hint__: "post_activity1"]},
            {:post_activity, "It is not string", [__hint__: "post_activity2"]}
          ],
          action: :conditionals
@@ -598,16 +595,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                post_activity: %{post_id: 1, provider: true}
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :post_activity,
-         action: :conditionals,
          errors: [
-           {:bad_parameters, "Your input must be a map or list of maps",
+           {%{message: "Your input must be a map or list of maps", action: :bad_parameters},
             [__hint__: "post_activity1"]},
            {:post_activity, "It is not string", [__hint__: "post_activity2"]}
-         ]
+         ],
+         action: :conditionals
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -643,19 +640,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                post_activities: [1, 2]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :post_activities,
          errors: [
-           {:bad_parameters,
-            [
-              %{
-                message: "Your input must be a list of items",
-                field: :post_activities,
-                action: :type
-              }
-            ], [__hint__: "post_activities1"]},
+           {%{
+              message: "Your input must be a list of items",
+              field: :post_activities,
+              action: :type
+            }, [__hint__: "post_activities1"]},
            {:post_activities, "It is not list", [__hint__: "post_activities2"]}
          ],
          action: :conditionals
@@ -669,19 +663,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a map with enforce as a parent" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :author,
          errors: [
-           required_fields: [
-             %{
-               message: "Please submit required fields.",
-               fields: [:family],
-               action: :required_fields
-             }
-           ],
-           author: "It is not string"
+           {%{
+              message: "Please submit required fields.",
+              fields: [:family],
+              action: :required_fields
+            }},
+           {:author, "It is not string"}
          ],
          action: :conditionals
        }
@@ -730,19 +722,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                }
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :location,
          errors: [
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:city],
-                action: :required_fields
-              }
-            ], [__hint__: "location1"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:city],
+              action: :required_fields
+            }, [__hint__: "location1"]},
            {:location, "It is not string", [__hint__: "location2"]}
          ],
          action: :conditionals
@@ -777,11 +766,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                information: %{name: "Mishka", gender: "female"}
              })
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field information input you have to send authorized data",
          field: :information,
+         action: :domain_parameters,
          field_path: "identity.type"
        }
      ]} =
@@ -792,11 +782,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                information: %{name: "Mishka", gender: "female"}
              })
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field information input you have to send authorized data",
          field: :information,
+         action: :domain_parameters,
          field_path: "identity.type"
        }
      ]} =
@@ -830,12 +821,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                sub_identity: "@github"
              })
 
-    {:error, :dependent_keys,
+    {:error,
      [
        %{
          message:
            "The required dependency for field sub_identity has not been submitted.\nYou must have field nickname in your input\n",
-         field: :sub_identity
+         field: :sub_identity,
+         action: :dependent_keys
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -861,17 +853,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                activity3: %{action: "admin:edit", type: "normal"}
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activity3,
          errors: [
-           {:dependent_keys,
-            [
+           {[
               %{
                 message:
                   "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
-                field: :type
+                field: :type,
+                action: :dependent_keys
               }
             ], [__hint__: "activity3"]},
            {:activity3, "It is not string", [__hint__: "activity2"]}
@@ -905,11 +897,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                second_username: "mishka2"
              })
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field information input you have to send authorized data",
          field: :information,
+         action: :domain_parameters,
          field_path: "identity.type"
        }
      ]} =
@@ -920,19 +913,20 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                information: %{name: "Mishka", gender: "female"}
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :information,
          errors: [
-           domain_parameters: [
-             %{
-               message: "Based on field gender input you have to send authorized data",
-               field: :gender,
-               field_path: "identity.action"
-             }
-           ],
-           information: "It is not string"
+           {[
+              %{
+                message: "Based on field gender input you have to send authorized data",
+                field: :gender,
+                action: :domain_parameters,
+                field_path: "identity.action"
+              }
+            ]},
+           {:information, "It is not string"}
          ],
          action: :conditionals
        }
@@ -959,12 +953,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a map level/priority" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :profile,
-         action: :conditionals,
-         errors: [{:profile, "It is not string", [__hint__: "profile1"]}]
+         errors: [{:profile, "It is not string", [__hint__: "profile1"]}],
+         action: :conditionals
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -995,19 +989,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                activity: [%{post_id: 2, like: true}, %{post_id: 1, like: false}]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activity,
          errors: [
-           {:bad_parameters,
-            [
-              %{
-                message: "The post_id field must be integer",
-                field: :post_id,
-                action: :integer
-              }
-            ], [__hint__: "activity1"]},
+           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
+            [__hint__: "activity1"]},
            {:activity, "It is not string", [__hint__: "activity2"]}
          ],
          action: :conditionals
@@ -1023,20 +1011,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   ############# (▰˘◡˘▰) List ConditionalFieldTest GuardedStructTest Data (▰˘◡˘▰) ##############
 
   test "Conditional field as a list on top level" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :address,
          errors: [
            {:address, "It is not map", [__hint__: "address1"]},
-           {:bad_parameters,
-            [
-              %{
-                message: "The address field must not be empty",
-                field: :address,
-                action: :not_empty
-              }
-            ], [__hint__: "address2"]}
+           {
+             [
+               %{
+                 message: "The address field must not be empty",
+                 field: :address,
+                 action: :not_empty
+               }
+             ],
+             [__hint__: "address2"]
+           }
          ],
          action: :conditionals
        }
@@ -1065,7 +1055,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level with validator" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :address,
@@ -1084,20 +1074,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level with derive" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :address,
          errors: [
            {:address, "It is not map", [__hint__: "address1"]},
-           {:bad_parameters,
-            [
-              %{
-                message: "The address field must not be empty",
-                field: :address,
-                action: :not_empty
-              }
-            ], [__hint__: "address2"]}
+           {
+             [
+               %{
+                 message: "The address field must not be empty",
+                 field: :address,
+                 action: :not_empty
+               }
+             ],
+             [__hint__: "address2"]
+           }
          ],
          action: :conditionals
        }
@@ -1128,19 +1120,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level and subfield children validator/derive" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :extera_auth,
          errors: [
-           bad_parameters: [%{message: "It is not string", field: :username}],
-           bad_parameters: [
-             %{
-               message: "The extera_auth field must be string",
-               field: :extera_auth,
-               action: :string
-             }
-           ]
+           {[%{message: "It is not string", field: :username}]},
+           {[
+              %{
+                message: "The extera_auth field must be string",
+                field: :extera_auth,
+                action: :string
+              }
+            ]}
          ],
          action: :conditionals
        }
@@ -1154,19 +1146,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :extera_auth,
          errors: [
-           bad_parameters: [%{message: "It is not string", field: :username}],
-           bad_parameters: [
-             %{
-               message: "The extera_auth field must be string",
-               field: :extera_auth,
-               action: :string
-             }
-           ]
+           {[%{message: "It is not string", field: :username}]},
+           {[
+              %{
+                message: "The extera_auth field must be string",
+                field: :extera_auth,
+                action: :string
+              }
+            ]}
          ],
          action: :conditionals
        }
@@ -1228,19 +1220,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level and subfield children derive/validator __hint__" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :extera_auth,
          errors: [
-           bad_parameters: [%{message: "It is not string", field: :username}],
-           bad_parameters: [
-             %{
-               message: "The extera_auth field must be string",
-               field: :extera_auth,
-               action: :string
-             }
-           ]
+           {[%{message: "It is not string", field: :username}]},
+           {[
+              %{
+                message: "The extera_auth field must be string",
+                field: :extera_auth,
+                action: :string
+              }
+            ]}
          ],
          action: :conditionals
        }
@@ -1254,13 +1246,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :extera_auth2,
          errors: [
-           {:bad_parameters, [%{message: "It is not string", field: :username}],
-            [__hint__: "extera_auth1"]},
+           {[%{message: "It is not string", field: :username}], [__hint__: "extera_auth1"]},
            {:extera_auth2, "It is not string", [__hint__: "extera_auth2"]}
          ],
          action: :conditionals
@@ -1320,13 +1311,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities,
          errors: [
-           {:bad_parameters,
-            [%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
+           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
             [__hint__: "activities1"]},
            {:activities, "It is not list", [__hint__: "activities2"]},
            {:activities, "It is not string", [__hint__: "activities3"]}
@@ -1346,30 +1336,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level/external list field" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities,
          errors: [
-           {:bad_parameters,
-            [
-              %{
-                message: "The post_id field must be integer",
-                field: :post_id,
-                action: :integer
-              }
-            ], [__hint__: "activities1"]},
+           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
+            [__hint__: "activities1"]},
            {:activities, "It is not list", [__hint__: "activities2"]},
            {:activities, "It is not string", [__hint__: "activities3"]},
            {:activities, "It is not map", [__hint__: "activities1"]},
-           {:bad_parameters,
-            [
-              %{
-                message: "The post_id field must be integer",
-                field: :post_id,
-                action: :integer
-              }
-            ], [__hint__: "activities2"]}
+           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
+            [__hint__: "activities2"]}
          ],
          action: :conditionals
        }
@@ -1410,19 +1388,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities,
          errors: [
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:like],
-                action: :required_fields
-              }
-            ], [__hint__: "activities1"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:like],
+              action: :required_fields
+            }, [__hint__: "activities1"]},
            {:activities, "It is not list", [__hint__: "activities2"]},
            {:activities, "It is not string", [__hint__: "activities3"]}
          ],
@@ -1442,19 +1417,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level/external list field and sub_field as a list" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities2,
          errors: [
-           {:bad_parameters,
-            [%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
+           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
             [__hint__: "activities1"]},
            {:activities2, "It is not list", [__hint__: "activities2"]},
            {:activities2, "It is not string", [__hint__: "activities3"]},
            {:activities2, "It is not map", [__hint__: "activities1"]},
-           {:bad_parameters,
-            [
+           {[
               %{
                 message:
                   "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
@@ -1480,24 +1453,20 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities2,
          errors: [
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:like],
-                action: :required_fields
-              }
-            ], [__hint__: "activities1"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:like],
+              action: :required_fields
+            }, [__hint__: "activities1"]},
            {:activities2, "It is not list", [__hint__: "activities2"]},
            {:activities2, "It is not string", [__hint__: "activities3"]},
            {:activities2, "It is not map", [__hint__: "activities1"]},
-           {:bad_parameters,
-            [
+           {[
               %{
                 message:
                   "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
@@ -1544,20 +1513,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities2,
          errors: [
            {:activities2, "It is not map", [__hint__: "activities1"]},
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:action],
-                action: :required_fields
-              }
-            ], [__hint__: "activities2"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:action],
+              action: :required_fields
+            }, [__hint__: "activities2"]},
            {:activities2, "It is not string", [__hint__: "activities3"]}
          ],
          action: :conditionals
@@ -1574,20 +1540,22 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities2,
          errors: [
            {:activities2, "It is not map", [__hint__: "activities1"]},
-           {:bad_parameters,
-            [
-              %{
-                message: "The role field must not be empty",
-                field: :role,
-                action: :not_empty
-              }
-            ], [__hint__: "activities2"]},
+           {
+             [
+               %{
+                 message: "The role field must not be empty",
+                 field: :role,
+                 action: :not_empty
+               }
+             ],
+             [__hint__: "activities2"]
+           },
            {:activities2, "It is not string", [__hint__: "activities3"]}
          ],
          action: :conditionals
@@ -1606,19 +1574,21 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list on top level/priority" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities3,
          errors: [
-           {:bad_parameters,
-            [
-              %{
-                message: "The post_id field must be integer",
-                field: :post_id,
-                action: :integer
-              }
-            ], [__hint__: "activities1"]}
+           {
+             [
+               %{
+                 message: "The post_id field must be integer",
+                 field: :post_id,
+                 action: :integer
+               }
+             ],
+             [__hint__: "activities1"]
+           }
          ],
          action: :conditionals
        }
@@ -1636,19 +1606,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities3,
          errors: [
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:like],
-                action: :required_fields
-              }
-            ], [__hint__: "activities1"]}
+           {%{
+              message: "Please submit required fields.",
+              fields: [:like],
+              action: :required_fields
+            }, [__hint__: "activities1"]}
          ],
          action: :conditionals
        }
@@ -1687,7 +1654,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities3,
@@ -1706,7 +1673,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities3,
@@ -1725,7 +1692,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities3,
@@ -1741,7 +1708,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activities3,
@@ -1779,20 +1746,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with enforce as a parent" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :author2,
          errors: [
-           required_fields: [
-             %{
-               message: "Please submit required fields.",
-               fields: [:family],
-               action: :required_fields
-             }
-           ],
-           author2: "It is not string",
-           author2: "It is not map"
+           {%{
+              message: "Please submit required fields.",
+              fields: [:family],
+              action: :required_fields
+            }},
+           {:author2, "It is not string"},
+           {:author2, "It is not map"}
          ],
          action: :conditionals
        }
@@ -1821,19 +1786,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with enforce as a child" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :author3,
          errors: [
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:family],
-                action: :required_fields
-              }
-            ], [__hint__: "author1"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:family],
+              action: :required_fields
+            }, [__hint__: "author1"]},
            {:author3, "It is not list", [__hint__: "author2"]},
            {:author3, "It is not string", [__hint__: "author3"]},
            {:author3, "It is not map", [__hint__: "author1"]}
@@ -1863,20 +1825,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                author3: [%{name: "Mishka", family: "Group"}, "Mishka"]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :author3,
          errors: [
            {:author3, "It is not map", [__hint__: "author1"]},
-           {:required_fields,
-            [
-              %{
-                message: "Please submit required fields.",
-                fields: [:family],
-                action: :required_fields
-              }
-            ], [__hint__: "author2"]},
+           {%{
+              message: "Please submit required fields.",
+              fields: [:family],
+              action: :required_fields
+            }, [__hint__: "author2"]},
            {:author3, "It is not string", [__hint__: "author3"]}
          ],
          action: :conditionals
@@ -1918,16 +1877,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with domain core key" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :information2,
          errors: [
-           {:domain_parameters,
-            [
+           {[
               %{
                 message: "Based on field gender input you have to send authorized data",
                 field: :gender,
+                action: :domain_parameters,
                 field_path: "identity.action"
               }
             ], [__hint__: "information1"]},
@@ -1944,11 +1903,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                information2: [%{name: "Mishka", gender: "female"}]
              })
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field information2 input you have to send authorized data",
          field: :information2,
+         action: :domain_parameters,
          field_path: "identity.type"
        }
      ]} =
@@ -1982,17 +1942,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
   end
 
   test "Conditional field as a list with on core key" do
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activity4,
          errors: [
-           {:dependent_keys,
-            [
+           {[
               %{
                 message:
                   "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
-                field: :type
+                field: :type,
+                action: :dependent_keys
               }
             ], [__hint__: "activity3"]},
            {:activity4, "It is not string", [__hint__: "activity2"]}
@@ -2022,12 +1982,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                activity4: [%{action: "admin:edit", type: "normal"}]
              })
 
-    {:error, :dependent_keys,
+    {:error,
      [
        %{
          message:
            "The required dependency for field activity4 has not been submitted.\nYou must have field list_sub_field_on_header in your input\n",
-         field: :activity4
+         field: :activity4,
+         action: :dependent_keys
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -2122,12 +2083,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     uuid = auto_test != auto_test1
     assert uuid
 
-    {:error, :dependent_keys,
+    {:error,
      [
        %{
          message:
            "The required dependency for field activity4 has not been submitted.\nYou must have field list_sub_field_on_header in your input\n",
-         field: :activity4
+         field: :activity4,
+         action: :dependent_keys
        }
      ]} =
       assert ConditionalProfileFieldStructs.builder(%{
@@ -2137,19 +2099,21 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :activity3,
          errors: [
-           {:dependent_keys,
-            [
-              %{
-                message:
-                  "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
-                field: :type
-              }
-            ], [__hint__: "activity3"]},
+           {
+             [
+               %{
+                 message:
+                   "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
+                 field: :type
+               }
+             ],
+             [__hint__: "activity3"]
+           },
            {:activity3, "It is not string", [__hint__: "activity2"]}
          ],
          action: :conditionals

@@ -668,8 +668,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
   end
 
   test "validate(:not_exist, input, field) in custom validate" do
-    {:error, :bad_parameters,
-     [%{message: "Unexpected type error in id field", field: :id, action: :type}]} =
+    {:error, [%{message: "Unexpected type error in id field", field: :id, action: :type}]} =
       assert TestExistCustomValidateDerive.builder(%{id: 1, title: "Mishka"})
   end
 
@@ -690,10 +689,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
                nikname: "test"
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
-       %{message: _msg, field: :title, action: :testv1},
-       %{message: _msg1, field: :title, action: :not_empty}
+       %{message: "The title field must not be empty", field: :title, action: :testv1},
+       %{
+         message:
+           "Invalid NotEmpty format in the title field, you must pass data which is string, list or map.",
+         field: :title,
+         action: :not_empty
+       }
      ]} = assert TestCustomeDerive.builder(%{id: 1, title: 1})
   end
 
@@ -750,7 +754,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
        test: 12
      }} = assert TestEitherValidationDerive.builder(%{test: 12})
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          message: _msg,
@@ -783,14 +787,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
        status: "ok"
      }} = assert TestCustomValidationDerive.builder(%{status: "ok"})
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          message: "The condition for checking the status field is not correct",
          field: :status,
          action: :custom
        }
-     ]} = assert TestCustomValidationDerive.builder(%{status: "error"})
+     ]} =
+      assert TestCustomValidationDerive.builder(%{status: "error"})
   end
 
   test "validate(:string_float, input, field)" do

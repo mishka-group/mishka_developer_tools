@@ -190,14 +190,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
     [:username, :profile, :auth, :age, :family, :name] = assert TestNestedStruct.keys()
     [:username, :auth, :age] = assert TestNestedStruct.enforce_keys()
 
-    {:error, :required_fields,
-     [
-       %{
-         message: "Please submit required fields.",
-         fields: [:username, :auth, :age],
-         action: :required_fields
-       }
-     ]} = assert TestNestedStruct.builder(%{})
+    {:error,
+     %{
+       message: "Please submit required fields.",
+       fields: [:username, :auth, :age],
+       action: :required_fields
+     }} = assert TestNestedStruct.builder(%{})
 
     {:ok,
      %__MODULE__.TestNestedStruct{
@@ -241,27 +239,28 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
                }
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
-       %{
-         field: :profile,
-         errors: {:bad_parameters, [%{message: "Invalid nickname", field: :nickname}]}
-       },
+       %{field: :profile, errors: [%{message: "Invalid nickname", field: :nickname}]},
        %{
          field: :auth,
-         errors:
-           {:bad_parameters,
-            [
-              %{message: _msg, field: :last_activity, action: :datetime},
-              %{
-                field: :role,
-                errors:
-                  {:bad_parameters,
-                   [
-                     %{message: _msg1, field: :action, action: :string_boolean}
-                   ]}
-              }
-            ]}
+         errors: [
+           %{
+             message: "Invalid DateTime format in the last_activity field",
+             field: :last_activity,
+             action: :datetime
+           },
+           %{
+             field: :role,
+             errors: [
+               %{
+                 message: "Invalid boolean format in the action field",
+                 field: :action,
+                 action: :string_boolean
+               }
+             ]
+           }
+         ]
        }
      ]} =
       assert TestNestedStruct.builder(%{
@@ -353,10 +352,25 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
       end
     end
 
-    {:error, :authorized_fields, [:test]} =
+    {:error,
+     %{
+       message: "Unauthorized keys are present in the sent data.",
+       fields: [:test],
+       action: :authorized_fields
+     }} =
       assert TestAuthorizeKeys.builder(%{name: "Shahryar", test: "test"})
 
-    {:error, :bad_parameters, [%{field: :auth, errors: {:authorized_fields, [:test]}}]} =
+    {:error,
+     [
+       %{
+         field: :auth,
+         errors: %{
+           message: "Unauthorized keys are present in the sent data.",
+           fields: [:test],
+           action: :authorized_fields
+         }
+       }
+     ]} =
       assert TestAuthorizeKeys.builder(%{name: "Shahryar", auth: %{action: "admin", test: "test"}})
   end
 
@@ -437,26 +451,23 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
     assert !is_nil(id1)
     assert !is_nil(id1)
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :profile,
-         errors:
-           {:bad_parameters,
-            [
-              %{
-                field: :identity,
-                errors:
-                  {:dependent_keys,
-                   [
-                     %{
-                       message:
-                         "The required dependency for field provider has not been submitted.\nYou must have field github in your input\n",
-                       field: :provider
-                     }
-                   ]}
-              }
-            ]}
+         errors: [
+           %{
+             field: :identity,
+             errors: [
+               %{
+                 message:
+                   "The required dependency for field provider has not been submitted.\nYou must have field github in your input\n",
+                 field: :provider,
+                 action: :dependent_keys
+               }
+             ]
+           }
+         ]
        }
      ]} =
       assert TestOnValueStruct.builder(%{

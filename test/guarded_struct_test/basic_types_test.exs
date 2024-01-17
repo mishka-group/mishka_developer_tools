@@ -197,8 +197,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.BasicTypesTest do
       end
     end
 
-    {:error, :required_fields,
-     [%{message: "Please submit required fields.", fields: [:name], action: :required_fields}]} =
+    {:error,
+     %{message: "Please submit required fields.", fields: [:name], action: :required_fields}} =
       assert TestStructBuilder.builder(%{title: "user"})
 
     {:ok, data} = assert TestStructBuilder.builder(%{name: "shahryar", title: "user"})

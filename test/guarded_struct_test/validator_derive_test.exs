@@ -75,7 +75,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
     {:ok, _data} =
       assert TestStructInsideValidatorBuilder.builder(%{name: "shahryar", title: "user"})
 
-    {:error, :bad_parameters, [%{message: _msg, field: :name}]} =
+    {:error, [%{message: _msg, field: :name}]} =
       assert TestStructInsideValidatorBuilder.builder(%{name: 1, title: "user"})
   end
 
@@ -130,7 +130,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
     {:ok, _data} =
       assert TestStructAnotherValidatorBuilder.builder(%{name: "mishka", title: "org"})
 
-    {:error, :bad_parameters, [%{message: _msg, field: :name}]} =
+    {:error, [%{message: _msg, field: :name}]} =
       assert TestStructAnotherValidatorBuilder.builder(%{name: 1, title: "user"})
   end
 
@@ -180,7 +180,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
       end
     end
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{message: _msg1, field: :name, action: :not_empty},
        %{message: _msg2, field: :title, action: :type},
@@ -219,7 +219,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
 
     "MISHKA" = assert data.name
 
-    {:error, :bad_parameters, [%{field: :title, action: :not_empty, message: _msg}]} =
+    {:error, [%{message: "The title field must not be empty", field: :title, action: :not_empty}]} =
       assert TestStructWithValidationAndValidationDerive.builder(%{name: " mishka ", title: ""})
   end
 
@@ -254,7 +254,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
     "MISHKA" = assert data.name
     "Org" = assert data.title
 
-    {:error, :bad_parameters, [%{message: "No, never", field: :name}]} =
+    {:error, [%{message: "No, never", field: :name}]} =
       assert TestStructBuilderWithValidationDeriveAndFieldValidator.builder(%{
                name: 1,
                title: "  org"
@@ -325,7 +325,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
     "MISHKA" = assert data.name
     "Group" = assert data.title
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{message: _msg1, field: :nickname, action: :type},
        %{message: _msg2, field: :nickname, action: :not_empty}
@@ -346,7 +346,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
                ]
              })
 
-    {:error, :bad_parameters, _nested_error} =
+    {:error,
+     [
+       %{
+         field: :auth_path,
+         errors: [%{field: :path, errors: [%{message: "No, never", field: :role}]}]
+       }
+     ]} =
       assert TestUserAuthStruct.builder(%{
                name: "mishka",
                auth_path: [
@@ -355,7 +361,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
                ]
              })
 
-    {:error, :bad_parameters, _nested_error1} =
+    {:error,
+     [
+       %{
+         field: :auth_path,
+         errors: [%{field: :path, errors: [%{message: "No, never", field: :role}]}]
+       }
+     ]} =
       assert TestUserAuthStruct.builder(%{
                name: "mishka",
                auth_path: [
@@ -366,7 +378,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
   end
 
   test "Call sub_field struct with list attrs and validator, derive and main_validator" do
-    {:error, :bad_parameters, _nested_error2} =
+    {:error,
+     [
+       %{
+         field: :profile,
+         errors: %{
+           message: "Please submit required fields.",
+           fields: [:github],
+           action: :required_fields
+         }
+       }
+     ]} =
       assert TestUserAuthStruct.builder(%{
                name: "mishka",
                auth_path: [

@@ -38,10 +38,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
       {:conditional_field, line, items} ->
         raise("""
         \n ----------------------------------------------------------\n
-        | Unfortunately, this macro does not support the nested mode in the conditional_field macro.
-        | If you can add this feature I would be very happy to send a PR.
-        | More information: https://github.com/mishka-group/mishka_developer_tools/issues/25
-        | Parent Issue: https://github.com/mishka-group/mishka_developer_tools/issues/23
+        Unfortunately, this macro does not support the nested mode in the conditional_field macro.
+        If you can add this feature I would be very happy to send a PR.
+        More information: https://github.com/mishka-group/mishka_developer_tools/issues/25
+        Parent Issue: https://github.com/mishka-group/mishka_developer_tools/issues/23
         \n ----------------------------------------------------------\n
         """)
 
@@ -61,10 +61,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
       {:conditional_field, line, items} ->
         raise("""
         \n ----------------------------------------------------------\n
-        | Unfortunately, this macro does not support the nested mode in the conditional_field macro.
-        | If you can add this feature I would be very happy to send a PR.
-        | More information: https://github.com/mishka-group/mishka_developer_tools/issues/25
-        | Parent Issue: https://github.com/mishka-group/mishka_developer_tools/issues/23
+        Unfortunately, this macro does not support the nested mode in the conditional_field macro.
+        If you can add this feature I would be very happy to send a PR.
+        More information: https://github.com/mishka-group/mishka_developer_tools/issues/25
+        Parent Issue: https://github.com/mishka-group/mishka_developer_tools/issues/23
         \n ----------------------------------------------------------\n
         """)
 
@@ -101,9 +101,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
     end)
   end
 
-  @spec convert_to_atom_map({:ok, map()} | {:error, any(), any(), any()} | map()) ::
-          {:error, any(), any(), any()} | map()
-  def convert_to_atom_map({:error, _, _, _} = error), do: error
+  @spec convert_to_atom_map({:ok, map()} | {:error, any(), any()} | map()) ::
+          {:error, any(), any()} | map()
+
+  def convert_to_atom_map({:error, _, _} = error), do: error
 
   def convert_to_atom_map({:ok, map}) when is_map(map), do: convert_to_atom_map(map)
 

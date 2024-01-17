@@ -169,12 +169,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
     {:ok, %__MODULE__.CoreKeysStructs{provider_path: "https://mishka.life", provider: "mishka"}} =
       assert CoreKeysStructs.builder(%{provider: "mishka", provider_path: "https://mishka.life"})
 
-    {:error, :dependent_keys,
+    {:error,
      [
        %{
          message:
            "The required dependency for field provider_path has not been submitted.\nYou must have field provider in your input\n",
-         field: :provider_path
+         field: :provider_path,
+         action: :dependent_keys
        }
      ]} =
       assert CoreKeysStructs.builder(%{provider_path: "https://mishka.life"})
@@ -207,17 +208,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                ]
              })
 
-    {:error, :dependent_keys,
+    {:error,
      [
        %{
          message:
            "The required dependency for field projects has not been submitted.\nYou must have field provider in your input\n",
-         field: :projects
+         field: :projects,
+         action: :dependent_keys
        },
        %{
          message:
            "The required dependency for field provider_path has not been submitted.\nYou must have field provider in your input\n",
-         field: :provider_path
+         field: :provider_path,
+         action: :dependent_keys
        }
      ]} =
       assert CoreKeysStructs.builder(%{
@@ -230,19 +233,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                ]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :projects,
-         errors:
-           {:dependent_keys,
-            [
-              %{
-                message:
-                  "The required dependency for field type has not been submitted.\nYou must have field provider_path in your input\n",
-                field: :type
-              }
-            ]}
+         errors: [
+           %{
+             message:
+               "The required dependency for field type has not been submitted.\nYou must have field provider_path in your input\n",
+             field: :type,
+             action: :dependent_keys
+           }
+         ]
        }
      ]} =
       assert CoreKeysStructs.builder(%{
@@ -297,12 +299,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                }
              })
 
-    {:error, :dependent_keys,
+    {:error,
      [
        %{
          message:
            "The required dependency for field different_code_bases has not been submitted.\nYou must have field type in your input\n",
-         field: :different_code_bases
+         field: :different_code_bases,
+         action: :dependent_keys
        }
      ]} =
       assert CoreKeysStructs.builder(%{
@@ -315,17 +318,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                }
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :different_code_bases,
          errors: [
-           {:dependent_keys,
-            [
+           {[
               %{
                 message:
                   "The required dependency for field on_provider has not been submitted.\nYou must have field provider in your input\n",
-                field: :on_provider
+                field: :on_provider,
+                action: :dependent_keys
               }
             ], [__hint__: "different_code_bases1"]},
            {:different_code_bases, "It is not string", [__hint__: "different_code_bases2"]}
@@ -371,17 +374,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                }
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :different_code_bases,
          errors: [
-           {:dependent_keys,
-            [
+           {[
               %{
                 message:
                   "The required dependency for field on_nothing has not been submitted.\nYou must have field test in your input\n",
-                field: :on_nothing
+                field: :on_nothing,
+                action: :dependent_keys
               }
             ], [__hint__: "different_code_bases1"]},
            {:different_code_bases, "It is not string", [__hint__: "different_code_bases2"]}
@@ -433,17 +436,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                different_projects: [%{action: "installer", type: "normal"}]
              })
 
-    {:error, :dependent_keys,
+    {:error,
      [
        %{
          message:
            "The required dependency for field project has not been submitted.\nYou must have field provider in your input\n",
-         field: :project
+         field: :project,
+         action: :dependent_keys
        },
        %{
          message:
            "The required dependency for field provider_path has not been submitted.\nYou must have field provider in your input\n",
-         field: :provider_path
+         field: :provider_path,
+         action: :dependent_keys
        }
      ]} =
       assert CoreKeysStructs.builder(%{
@@ -455,19 +460,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                different_projects: [%{action: "installer", type: "normal"}]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :project,
-         errors:
-           {:dependent_keys,
-            [
-              %{
-                message:
-                  "The required dependency for field type has not been submitted.\nYou must have field provider_path in your input\n",
-                field: :type
-              }
-            ]}
+         errors: [
+           %{
+             message:
+               "The required dependency for field type has not been submitted.\nYou must have field provider_path in your input\n",
+             field: :type,
+             action: :dependent_keys
+           }
+         ]
        }
      ]} =
       assert CoreKeysStructs.builder(%{
@@ -507,17 +511,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                different_projects: [%{action: "installer"}]
              })
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :different_projects,
          errors: [
-           {:dependent_keys,
-            [
+           {[
               %{
                 message:
                   "The required dependency for field type has not been submitted.\nYou must have field provider2 in your input\n",
-                field: :type
+                field: :type,
+                action: :dependent_keys
               }
             ], [__hint__: "different_projects1"]},
            {:different_projects, "It is not list", [__hint__: "different_projects2"]},
@@ -694,28 +698,38 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
   end
 
   test "domain parent and parameters domain core key" do
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field username input you have to send authorized data",
          field: :username,
+         action: :domain_parameters,
          field_path: "auth.action"
        }
      ]} =
       assert AllowedParentDomain.builder(%{username: "mishka", auth: %{action: "admin1"}})
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message:
            "Based on field username input you have to send authorized data and required key",
          field: :username,
+         action: :domain_parameters,
          field_path: "auth.action"
        }
      ]} =
       assert AllowedParentDomain.builder(%{username: "mishka", auth: %{action1: "admin"}})
 
-    {:error, :domain_parameters, _} =
+    {:error,
+     [
+       %{
+         message: "Based on field username input you have to send authorized data",
+         field: :username,
+         action: :domain_parameters,
+         field_path: "auth.social"
+       }
+     ]} =
       assert AllowedParentDomain.builder(%{
                username: "mishka",
                auth: %{action: "admin", social: "test"}
@@ -749,11 +763,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                auth: %{action: "admin", social: :banned, type: %{name: "mishka"}}
              })
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field type_social input you have to send authorized data",
          field: :type_social,
+         action: :domain_parameters,
          field_path: "auth.type"
        }
      ]} =
@@ -798,11 +813,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                auth: %{action: "admin", social: :banned, either: "test"}
              })
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field social_either input you have to send authorized data",
          field: :social_either,
+         action: :domain_parameters,
          field_path: "auth.either"
        }
      ]} =
@@ -844,11 +860,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                auth: %{action: "ok"}
              })
 
-    {:error, :domain_parameters,
+    {:error,
      [
        %{
          message: "Based on field username input you have to send authorized data",
          field: :username,
+         action: :domain_parameters,
          field_path: "auth.action"
        }
      ]} =
@@ -926,18 +943,16 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                 }, :edit}
              )
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :id,
          errors: [
-           {:bad_parameters,
-            [
+           {[
               %{message: "Unexpected type error in id field", field: :id, action: :type},
               %{message: "Invalid url format in the id field", field: :id, action: :url}
             ], [__hint__: "url_id"]},
-           {:bad_parameters,
-            [
+           {[
               %{message: "Invalid UUID format in the id field", field: :id, action: :uuid},
               %{message: "Invalid format in the id field", field: :id, action: :not_empty_string}
             ], [__hint__: "uuid_id"]}
@@ -954,21 +969,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                 }, :edit}
              )
 
-    {:error, :bad_parameters,
+    {:error,
      [
        %{
          field: :id,
          errors: [
-           {:bad_parameters,
-            [
+           {[
               %{
                 message: "Is missing a url scheme (e.g. https) in the id field",
                 field: :id,
                 action: :url
               }
             ], [__hint__: "url_id"]},
-           {:bad_parameters,
-            [%{message: "Invalid UUID format in the id field", field: :id, action: :uuid}],
+           {[%{message: "Invalid UUID format in the id field", field: :id, action: :uuid}],
             [__hint__: "uuid_id"]}
          ],
          action: :conditionals

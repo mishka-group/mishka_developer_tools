@@ -579,7 +579,7 @@ defmodule GuardedStruct do
 
   ```elixir
   # Error
-  {:error, :bad_parameters,
+  {:error,
     [
       %{
         field: :profile,
@@ -698,7 +698,7 @@ defmodule GuardedStruct do
   # Ouput: `{:error, :authorized_fields, [:test]}`
 
   TestAuthorizeKeys.builder(%{name: "Shahryar", auth: %{action: "admin", test: "test"}})
-  # Ouput: `{:error, :bad_parameters, [%{field: :auth, errors: {:authorized_fields, [:test]}}]}`
+  # Ouput: `{:error, [%{field: :auth, errors: {:authorized_fields, [:test]}}]}`
   ```
 
   12. #### `authorized_fields` option to limit user input
@@ -1345,7 +1345,9 @@ defmodule GuardedStruct do
       end
 
       def builder(_attrs, _error) do
-        {:error, :bad_parameters, "Your input must be a map or list of maps"}
+        err = %{message: "Your input must be a map or list of maps", action: :bad_parameters}
+
+        {:error, err}
       end
 
       def enforce_keys() do
@@ -1565,7 +1567,7 @@ defmodule GuardedStruct do
           :root | list(atom()),
           :add | :edit,
           boolean()
-        ) :: {:ok, map() | list(map())} | {:error, any(), any()}
+        ) :: {:ok, map() | list(map())} | {:error, any()}
   @doc false
   def builder(actions, key, type, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
@@ -1607,17 +1609,26 @@ defmodule GuardedStruct do
   end
 
   @spec authorized_fields(map() | list(), list(atom()), list()) ::
-          {:ok, any()} | {:error, :authorized_fields, list(), :halt}
+          {:ok, any()} | {:error, list(), :halt}
   @doc false
   def authorized_fields(attrs, fields, authorized) do
     case check_authorized_fields(attrs, fields, authorized) do
-      {_, true, _} -> {:ok, attrs}
-      {_, false, filtered} -> {:error, :authorized_fields, filtered, :halt}
+      {_, true, _} ->
+        {:ok, attrs}
+
+      {_, false, filtered} ->
+        err = %{
+          message: "Unauthorized keys are present in the sent data.",
+          fields: filtered,
+          action: :authorized_fields
+        }
+
+        {:error, err, :halt}
     end
   end
 
-  @spec required_fields({:ok, map()} | {:error, any(), any(), :halt}, any()) ::
-          {:ok, map()} | {:error, any(), any(), :halt}
+  @spec required_fields({:ok, map()} | {:error, any(), :halt}, any()) ::
+          {:ok, map()} | {:error, any(), :halt}
   @doc false
   def required_fields({:ok, attrs}, enforces) do
     with missing_keys <- Enum.reject(Parser.map_keys(attrs, enforces), &Map.has_key?(attrs, &1)),
@@ -1632,13 +1643,13 @@ defmodule GuardedStruct do
           action: :required_fields
         }
 
-        {:error, :required_fields, [err], :halt}
+        {:error, err, :halt}
     end
   end
 
-  def required_fields({:error, _, _, :halt} = error, _), do: error
+  def required_fields({:error, _, :halt} = error, _), do: error
 
-  defp auto_core_key({:error, _, _, :halt} = error, _, _), do: error
+  defp auto_core_key({:error, _, :halt} = error, _, _), do: error
 
   defp auto_core_key(attrs, core_keys, type) do
     reduce_attrs =
@@ -1666,7 +1677,7 @@ defmodule GuardedStruct do
     {reduce_attrs, core_keys}
   end
 
-  defp domain_core_key({:error, _, _, :halt} = error, _), do: error
+  defp domain_core_key({:error, _, :halt} = error, _), do: error
 
   defp domain_core_key({attrs, core_keys}, full_attars) do
     # It is important to think about the fact that the `domain` core key does not
@@ -1687,12 +1698,14 @@ defmodule GuardedStruct do
       |> Enum.reject(&is_nil(&1))
       |> List.flatten()
 
-    if length(domain_parameters_errors) == 0,
-      do: {:ok, attrs, core_keys},
-      else: {:error, :domain_parameters, domain_parameters_errors, :halt}
+    if length(domain_parameters_errors) == 0 do
+      {:ok, attrs, core_keys}
+    else
+      {:error, domain_parameters_errors, :halt}
+    end
   end
 
-  defp on_core_key({:error, _, _, :halt} = error, _), do: error
+  defp on_core_key({:error, _, :halt} = error, _), do: error
 
   defp on_core_key({:ok, attrs, core_keys}, full_attrs) do
     full_attrs = Parser.convert_to_atom_map(full_attrs)
@@ -1700,10 +1713,10 @@ defmodule GuardedStruct do
 
     if length(dependent_keys_errors) == 0,
       do: {:ok, attrs, core_keys, full_attrs},
-      else: {:error, :dependent_keys, dependent_keys_errors, :halt}
+      else: {:error, dependent_keys_errors, :halt}
   end
 
-  defp from_core_key({:error, _, _, :halt} = error), do: error
+  defp from_core_key({:error, _, :halt} = error), do: error
 
   defp from_core_key({:ok, attrs, core_keys, full_attrs}) do
     reduce_attrs =
@@ -1722,7 +1735,7 @@ defmodule GuardedStruct do
     {:ok, reduce_attrs, full_attrs}
   end
 
-  defp conditional_fields_validating({:error, _, _, :halt} = error, _, _, _), do: error
+  defp conditional_fields_validating({:error, _, :halt} = error, _, _, _), do: error
 
   defp conditional_fields_validating({:ok, attrs, full_attrs}, conditionals, type, key) do
     {cond_fields, uncond_fields} = conditionals_fields_parameters_divider(attrs, conditionals)
@@ -1741,15 +1754,15 @@ defmodule GuardedStruct do
   end
 
   @spec sub_fields_validating(
-          {:error, any(), any(), :halt} | {:ok, map(), list(), map() | list()},
+          {:error, any(), :halt} | {:ok, map(), list(), map() | list()},
           list(atom()),
           module(),
           keyword(),
           atom(),
           :add | :edit
-        ) :: {:error, any(), any(), :halt} | {map(), list(), list(), list(), any()}
+        ) :: {:error, any(), :halt} | {map(), list(), list(), list(), any()}
   @doc false
-  def sub_fields_validating({:error, _, _, :halt} = error, _, _, _, _, _), do: error
+  def sub_fields_validating({:error, _, :halt} = error, _, _, _, _, _), do: error
 
   def sub_fields_validating({:ok, attrs, conds, full_attrs}, fields, module, external, key, type) do
     allowed_fields = Map.take(attrs, fields) |> Map.keys()
@@ -1780,12 +1793,12 @@ defmodule GuardedStruct do
   end
 
   @spec fields_validating(
-          {:error, any(), any(), :halt} | {map(), map() | list(map()), list(), list(), keyword()},
+          {:error, any(), :halt} | {map(), map() | list(map()), list(), list(), keyword()},
           any(),
           any()
-        ) :: {:error, any(), any(), :halt} | {list(), any(), any(), any(), any()}
+        ) :: {:error, any(), :halt} | {list(), any(), any(), any(), any()}
   @doc false
-  def fields_validating({:error, _, _, :halt} = error, _, _), do: error
+  def fields_validating({:error, _, :halt} = error, _, _), do: error
 
   def fields_validating({attrs, sub_data, sub_errors, unsub, conds}, validator, module) do
     # Just keep the normal fields of attrs
@@ -1812,22 +1825,22 @@ defmodule GuardedStruct do
   end
 
   @spec main_validating(
-          {:error, any(), any()}
-          | {:error, any(), any(), :halt}
+          {:error, any()}
+          | {:error, any(), :halt}
           | {list(), any(), any(), list(),
              %{:data => any(), :errors => any(), optional(any()) => any()}},
           nil | tuple(),
           list(boolean()),
           module()
         ) ::
-          {:error, any(), any()}
+          {:error, any()}
           | {:ok, map(), any()}
-          | {:error, any(), any(), :halt}
-          | {:error, :bad_parameters, :nested, list(), struct(), any()}
+          | {:error, any(), :halt}
+          | {:error, :nested, list(), struct(), any()}
   @doc false
-  def main_validating({:error, _, _, :halt} = error, _, _, _), do: error
+  def main_validating({:error, _, :halt} = error, _, _, _), do: error
 
-  def main_validating({:error, _, _} = error, _, _, _), do: error
+  def main_validating({:error, _} = error, _, _, _), do: error
 
   def main_validating(validating_input, main_validator, gs_main_validator, module) do
     {validated_errors, validated_allowed_data, sub_data, sub_errors, conds} =
@@ -1862,33 +1875,32 @@ defmodule GuardedStruct do
     {:ok, data, new_derives}
   end
 
-  def replace_condition_fields_derives(
-        {:error, :bad_parameters, :nested, _, _, conds} = error,
-        derives
-      ) do
+  def replace_condition_fields_derives({:error, :nested, _, _, conds} = error, derives) do
     new_derives =
       Enum.reject(derives, &(&1.field in Enum.uniq(Keyword.keys(conds)))) ++
         Derive.get_derives_from_success_conditional_data(conds)
 
     error
-    |> Tuple.delete_at(5)
-    |> Tuple.insert_at(5, new_derives)
+    |> Tuple.delete_at(4)
+    |> Tuple.insert_at(4, new_derives)
   end
 
   def replace_condition_fields_derives(error, _derives), do: error
 
-  @spec exceptions_handler({:ok, any()} | {:error, any(), any()}, module(), boolean()) ::
-          {:ok, any()} | {:error, any(), any()}
+  @spec exceptions_handler({:ok, any()} | {:error, any()}, module(), boolean()) ::
+          {:ok, any()} | {:error, any()}
   @doc false
   def exceptions_handler(ouput, module, exception \\ false)
 
   def exceptions_handler({:ok, _} = successful_output, _, _), do: successful_output
 
-  def exceptions_handler({:error, _, _} = error_output, _module, false), do: error_output
+  def exceptions_handler({:error, error, :halt}, _module, false), do: {:error, error}
 
-  def exceptions_handler({:error, term, error_list}, module, true) do
+  def exceptions_handler({:error, _} = error_output, _module, false), do: error_output
+
+  def exceptions_handler({:error, error_list}, module, true) do
     concated = Module.safe_concat([module, Error])
-    raise(concated, term: term, errors: error_list)
+    raise(concated, errors: error_list)
   end
 
   ####################################################################
@@ -2160,9 +2172,15 @@ defmodule GuardedStruct do
 
   defp list_builder(attrs, module, field, key, type, cond_list \\ nil)
 
-  defp list_builder(_attrs, nil, _field, _key, _type, _cond_list) do
-    {:error, :bad_parameters,
-     "Unfortunately, the appropriate settings have not been applied to the desired field."}
+  defp list_builder(_attrs, nil, field, _key, _type, _cond_list) do
+    err = %{
+      message:
+        "Unfortunately, the appropriate settings have not been applied to the desired field.",
+      field: field,
+      action: :bad_parameters
+    }
+
+    {:error, err}
   end
 
   defp list_builder(_attrs, true, _field, _key, _type, _cond_list) do
@@ -2224,7 +2242,7 @@ defmodule GuardedStruct do
          end)}
     else
       error = %{message: "Your input must be a list of items", field: field, action: :type}
-      {:error, :bad_parameters, [error]}
+      {:error, error}
     end
   end
 
@@ -2260,7 +2278,7 @@ defmodule GuardedStruct do
     sub_modules_builders
     |> Enum.filter(fn {_field, output} -> elem(output, 0) == :error end)
     |> Enum.map(fn {field, error} ->
-      %{field: field, errors: {elem(error, 1), elem(error, 2)}}
+      %{field: field, errors: elem(error, 1)}
     end)
   end
 
@@ -2280,7 +2298,8 @@ defmodule GuardedStruct do
             The required dependency for field #{Atom.to_string(key)} has not been submitted.
             You must have field #{List.last(splited_pattern) |> Atom.to_string()} in your input
             """,
-            field: key
+            field: key,
+            action: :dependent_keys
           }
         else
           {:get_key_value, true} -> nil
@@ -2320,7 +2339,8 @@ defmodule GuardedStruct do
           %{
             message: "Based on field #{key} input you have to send authorized data",
             field_path: field,
-            field: key
+            field: key,
+            action: :domain_parameters
           }
 
         _ ->
@@ -2333,7 +2353,8 @@ defmodule GuardedStruct do
           message:
             "Based on field #{key} input you have to send authorized data and required key",
           field_path: field,
-          field: key
+          field: key,
+          action: :domain_parameters
         }
     end
   end
@@ -2526,10 +2547,14 @@ defmodule GuardedStruct do
       {{:ok, success}, key, opts}, [data, error] ->
         [data ++ [{{:ok, Map.new([{key, success}])}, opts}], error]
 
+      # TODO: After normalizing delete old structure of error tuple
       {{:error, _key, _value}, _opts} = output, [data, error] ->
         [data, error ++ [output]]
 
       {{:error, _type, _error}, _key, _opts} = output, [data, error] ->
+        [data, error ++ [output]]
+
+      {{:error, _error}, _key, _opts} = output, [data, error] ->
         [data, error ++ [output]]
     end)
   end
@@ -2552,25 +2577,23 @@ defmodule GuardedStruct do
         {:ok, merged_struct, conds.data}
 
       {:ok, 0, sub_errors, true} when sub_errors != [] ->
-        {:error, :bad_parameters, :nested, sub_builders_errors,
-         struct(module, main_error_or_data), conds.data}
+        {:error, :nested, sub_builders_errors, struct(module, main_error_or_data), conds.data}
 
       {:ok, _, _, false} ->
         errors = cond_errors_converter(conds)
 
-        {:error, :bad_parameters, validated_errors ++ sub_builders_errors ++ errors}
+        {:error, validated_errors ++ sub_builders_errors ++ errors}
 
       {:error, _, _, false} ->
         errors = cond_errors_converter(conds)
 
-        {:error, :bad_parameters,
-         validated_errors ++ sub_builders_errors ++ [main_error_or_data] ++ errors}
+        {:error, validated_errors ++ sub_builders_errors ++ [main_error_or_data] ++ errors}
 
       {:ok, _, _, true} ->
-        {:error, :bad_parameters, validated_errors ++ sub_builders_errors}
+        {:error, validated_errors ++ sub_builders_errors}
 
       {:error, _, _, true} ->
-        {:error, :bad_parameters, validated_errors ++ sub_builders_errors ++ [main_error_or_data]}
+        {:error, validated_errors ++ sub_builders_errors ++ [main_error_or_data]}
     end
   end
 
@@ -2717,14 +2740,8 @@ defmodule GuardedStruct do
   def conditional_fields_validating_pattern(
         {_cond_data, field, _list_values, _full_attrs, _key, _type, true}
       ) do
-    [
-      [
-        {field,
-         [
-           {{:error, :bad_parameters, "Your input must be a list of maps"}, field, []}
-         ], false}
-      ]
-    ]
+    err = %{message: "Your input must be a list of maps", field: field, action: :bad_parameters}
+    [[{field, [{{:error, err}, field, []}], false}]]
   end
 
   def conditional_fields_validating_pattern({cond_data, field, value, full_attrs, key, type, _}) do

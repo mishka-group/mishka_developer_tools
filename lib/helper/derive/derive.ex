@@ -4,20 +4,26 @@ defmodule MishkaDeveloperTools.Helper.Derive do
   @spec derive(
           {:error, any(), any()}
           | {:ok, any(), list(String.t() | map())}
-          | {:error, any(), any(), :halt}
-          | {:error, any(), :nested, list(), any(), [binary()]}
-        ) :: {:ok, map()} | {:error, any(), any()}
+          | {:error, any(), :halt}
+          | {:error, :nested, list(), any(), [binary()]}
+        ) :: {:ok, map()} | {:error, any()}
   def derive({:error, type, message, :halt}) do
     {:error, type, message}
   end
 
+  # TODO: We have removed the old structure, this section will be corrected after full testing
   def derive({:error, _, :nested, builders_errors, data, derive_inputs}),
+    do: derive({:ok, data, derive_inputs}, builders_errors)
+
+  def derive({:error, :nested, builders_errors, data, derive_inputs}),
     do: derive({:ok, data, derive_inputs}, builders_errors)
 
   def derive({:error, _, _} = error), do: error
 
+  def derive({:error, _} = error), do: error
+
   @spec derive({:ok, any(), list(String.t() | map())}, list()) ::
-          {:ok, map()} | {:error, :bad_parameters, list()}
+          {:ok, map()} | {:error, list()}
   def derive({:ok, data, derive_inputs}, extra_error \\ []) do
     reduced_fields =
       Enum.reduce(derive_inputs, %{}, fn map, acc ->
@@ -28,7 +34,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
         update_reduced_fields(field, derives, hint, map, acc)
       end)
 
-    {:error, :bad_parameters, get_error} = error = error_handler(reduced_fields, extra_error)
+    {:error, get_error} = error = error_handler(reduced_fields, extra_error)
 
     if length(get_error) == 0, do: {:ok, Map.merge(data, reduced_fields)}, else: error
   end
@@ -95,10 +101,12 @@ defmodule MishkaDeveloperTools.Helper.Derive do
     {converted_error, no_error}
   end
 
-  @spec error_handler(map(), list(any())) :: {:error, :bad_parameters, any()}
+  @spec error_handler(map(), list(any())) :: {:error, any()}
   def error_handler(reduced_fields, extra_error \\ []) do
     errors =
-      Enum.find(extra_error, fn %{field: _, errors: {type, _}} -> type == :required_fields end)
+      Enum.find(extra_error, fn %{field: _, errors: errorMap} ->
+        !is_list(errorMap) and errorMap.action == :required_fields
+      end)
       |> case do
         nil ->
           get_error =
@@ -115,7 +123,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
           extra_error
       end
 
-    {:error, :bad_parameters, errors}
+    {:error, errors}
   end
 
   defp halt_errors(errors_list) do
@@ -175,9 +183,14 @@ defmodule MishkaDeveloperTools.Helper.Derive do
     run_pre_derives_check(data, opts[:derive], result, field, opts)
   end
 
+  # TODO: After normalizing delete old structure of error tuple
   def pre_derives_check({{:error, _, _}, _, _} = result, _opts, _field), do: result
 
   def pre_derives_check({{:error, _, _}, _} = result, _opts, _field), do: result
+
+  def pre_derives_check({{:error, _}, _, _} = result, _opts, _field), do: result
+
+  def pre_derives_check({{:error, _}, _} = result, _opts, _field), do: result
 
   defp run_pre_derives_check(_, nil, validator_result, _field, _opts), do: validator_result
 
@@ -186,7 +199,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
     |> derive()
     |> case do
       {:ok, data} -> {{:ok, field, Map.get(data, field)}, opts}
-      {:error, :bad_parameters, _} = error -> {error, field, opts}
+      {:error, _} = error -> {error, field, opts}
     end
   end
 end
