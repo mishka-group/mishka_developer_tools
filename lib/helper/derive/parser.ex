@@ -31,7 +31,6 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
       {:field, line, items} ->
         {:field, line, add_parent_tags(items, parent)}
 
-      # TODO: It should be re-checked, if there is a conditional_field inside sub_field
       {:sub_field, line, items} ->
         {:sub_field, line, add_parent_tags(items, parent)}
 

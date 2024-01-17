@@ -11,10 +11,6 @@ defmodule MishkaDeveloperTools.Helper.Derive do
     {:error, type, message}
   end
 
-  # TODO: We have removed the old structure, this section will be corrected after full testing
-  def derive({:error, _, :nested, builders_errors, data, derive_inputs}),
-    do: derive({:ok, data, derive_inputs}, builders_errors)
-
   def derive({:error, :nested, builders_errors, data, derive_inputs}),
     do: derive({:ok, data, derive_inputs}, builders_errors)
 
@@ -182,9 +178,6 @@ defmodule MishkaDeveloperTools.Helper.Derive do
   def pre_derives_check({{:ok, data}, _, _} = result, opts, field) do
     run_pre_derives_check(data, opts[:derive], result, field, opts)
   end
-
-  # TODO: After normalizing delete old structure of error tuple
-  def pre_derives_check({{:error, _, _}, _, _} = result, _opts, _field), do: result
 
   def pre_derives_check({{:error, _, _}, _} = result, _opts, _field), do: result
 

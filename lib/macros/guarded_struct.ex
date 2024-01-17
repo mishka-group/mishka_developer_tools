@@ -2547,11 +2547,7 @@ defmodule GuardedStruct do
       {{:ok, success}, key, opts}, [data, error] ->
         [data ++ [{{:ok, Map.new([{key, success}])}, opts}], error]
 
-      # TODO: After normalizing delete old structure of error tuple
       {{:error, _key, _value}, _opts} = output, [data, error] ->
-        [data, error ++ [output]]
-
-      {{:error, _type, _error}, _key, _opts} = output, [data, error] ->
         [data, error ++ [output]]
 
       {{:error, _error}, _key, _opts} = output, [data, error] ->
