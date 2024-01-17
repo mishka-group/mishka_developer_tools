@@ -189,7 +189,15 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
   test "nested macro field" do
     [:username, :profile, :auth, :age, :family, :name] = assert TestNestedStruct.keys()
     [:username, :auth, :age] = assert TestNestedStruct.enforce_keys()
-    {:error, :required_fields, [:username, :auth, :age]} = assert TestNestedStruct.builder(%{})
+
+    {:error, :required_fields,
+     [
+       %{
+         message: "Please submit required fields.",
+         fields: [:username, :auth, :age],
+         action: :required_fields
+       }
+     ]} = assert TestNestedStruct.builder(%{})
 
     {:ok,
      %__MODULE__.TestNestedStruct{

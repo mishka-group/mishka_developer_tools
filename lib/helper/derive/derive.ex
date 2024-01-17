@@ -3,7 +3,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
   @spec derive(
           {:error, any(), any()}
-          | {:ok, any(), [binary()]}
+          | {:ok, any(), list(String.t() | map())}
           | {:error, any(), any(), :halt}
           | {:error, any(), :nested, list(), any(), [binary()]}
         ) :: {:ok, map()} | {:error, any(), any()}
@@ -16,7 +16,7 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
   def derive({:error, _, _} = error), do: error
 
-  @spec derive({:ok, any(), list(String.t())}, list()) ::
+  @spec derive({:ok, any(), list(String.t() | map())}, list()) ::
           {:ok, map()} | {:error, :bad_parameters, list()}
   def derive({:ok, data, derive_inputs}, extra_error \\ []) do
     reduced_fields =
@@ -165,5 +165,28 @@ defmodule MishkaDeveloperTools.Helper.Derive do
 
         acc ++ [Map.new([{:derive, derives}, {:field, field}, {:hint, hints}])]
     end)
+  end
+
+  def pre_derives_check({{:ok, _, data}, _} = result, opts, field) do
+    run_pre_derives_check(data, opts[:derive], result, field, opts)
+  end
+
+  def pre_derives_check({{:ok, data}, _, _} = result, opts, field) do
+    run_pre_derives_check(data, opts[:derive], result, field, opts)
+  end
+
+  def pre_derives_check({{:error, _, _}, _, _} = result, _opts, _field), do: result
+
+  def pre_derives_check({{:error, _, _}, _} = result, _opts, _field), do: result
+
+  defp run_pre_derives_check(_, nil, validator_result, _field, _opts), do: validator_result
+
+  defp run_pre_derives_check(value, derive, _, field, opts) do
+    {:ok, Map.new([{field, value}]), [%{derive: derive, field: field}]}
+    |> derive()
+    |> case do
+      {:ok, data} -> {{:ok, field, Map.get(data, field)}, opts}
+      {:error, :bad_parameters, _} = error -> {error, field, opts}
+    end
   end
 end

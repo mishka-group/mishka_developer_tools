@@ -1626,7 +1626,13 @@ defmodule GuardedStruct do
       {:ok, attrs}
     else
       {:missing_keys, false, missing_keys} ->
-        {:error, :required_fields, missing_keys, :halt}
+        err = %{
+          message: "Please submit required fields.",
+          fields: missing_keys,
+          action: :required_fields
+        }
+
+        {:error, :required_fields, [err], :halt}
     end
   end
 
@@ -2217,7 +2223,8 @@ defmodule GuardedStruct do
            item -> elem(item, 1)
          end)}
     else
-      {:error, :bad_parameters, "Your input must be a list of items"}
+      error = %{message: "Your input must be a list of items", field: field, action: :type}
+      {:error, :bad_parameters, [error]}
     end
   end
 
@@ -2729,13 +2736,16 @@ defmodule GuardedStruct do
           case Keyword.get(opts, :struct) do
             nil ->
               {get_field_validator(opts, cond_data.caller, field, value), opts}
+              |> Derive.pre_derives_check(opts, field)
 
             module ->
               if !Code.ensure_loaded?(module) do
                 {get_field_validator(opts, cond_data.caller, field, value), opts}
+                |> Derive.pre_derives_check(opts, field)
               else
                 {opts, cond_data.caller, field, value, type, module}
                 |> execute_field_validator(:external)
+                |> Derive.pre_derives_check(opts, field)
               end
           end
 
@@ -2744,16 +2754,19 @@ defmodule GuardedStruct do
           # because we have no normal field which is list
           {opts, cond_data.caller, field, value, key, type, full_attrs}
           |> execute_field_validator(:list_external)
+          |> Derive.pre_derives_check(opts, field)
 
         %{sub?: true, opts: opts, module: module, list?: false} ->
           # It is a sub field and just accepts a map not list of map
           {opts, cond_data.caller, field, value, module, key, full_attrs, type}
           |> execute_field_validator(:sub_field)
+          |> Derive.pre_derives_check(opts, field)
 
         %{sub?: true, opts: opts, module: module, list?: true} ->
           # It is a sub field and accepts a list of maps
           {opts, module, field, value, key, type, full_attrs}
           |> execute_field_validator(:list_field)
+          |> Derive.pre_derives_check(opts, field)
       end)
 
     {field, output, Keyword.get(cond_data.opts, :priority, false)}

@@ -929,28 +929,20 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
     {:error, :bad_parameters,
      [
        %{
-         message: "Unexpected type error in id field",
          field: :id,
-         action: :type,
-         __hint__: "url_id"
-       },
-       %{
-         message: "Invalid url format in the id field",
-         field: :id,
-         action: :url,
-         __hint__: "url_id"
-       },
-       %{
-         message: "Invalid UUID format in the id field",
-         field: :id,
-         action: :uuid,
-         __hint__: "uuid_id"
-       },
-       %{
-         message: "Invalid format in the id field",
-         field: :id,
-         action: :not_empty_string,
-         __hint__: "uuid_id"
+         errors: [
+           {:bad_parameters,
+            [
+              %{message: "Unexpected type error in id field", field: :id, action: :type},
+              %{message: "Invalid url format in the id field", field: :id, action: :url}
+            ], [__hint__: "url_id"]},
+           {:bad_parameters,
+            [
+              %{message: "Invalid UUID format in the id field", field: :id, action: :uuid},
+              %{message: "Invalid format in the id field", field: :id, action: :not_empty_string}
+            ], [__hint__: "uuid_id"]}
+         ],
+         action: :conditionals
        }
      ]} =
       assert AllowedParentCustomDomain.builder(
@@ -965,16 +957,21 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
     {:error, :bad_parameters,
      [
        %{
-         message: "Is missing a url scheme (e.g. https) in the id field",
          field: :id,
-         action: :url,
-         __hint__: "url_id"
-       },
-       %{
-         message: "Invalid UUID format in the id field",
-         field: :id,
-         action: :uuid,
-         __hint__: "uuid_id"
+         errors: [
+           {:bad_parameters,
+            [
+              %{
+                message: "Is missing a url scheme (e.g. https) in the id field",
+                field: :id,
+                action: :url
+              }
+            ], [__hint__: "url_id"]},
+           {:bad_parameters,
+            [%{message: "Invalid UUID format in the id field", field: :id, action: :uuid}],
+            [__hint__: "uuid_id"]}
+         ],
+         action: :conditionals
        }
      ]} =
       assert AllowedParentCustomDomain.builder(
