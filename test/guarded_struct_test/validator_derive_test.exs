@@ -16,6 +16,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
           field(:social, String.t(), derive: "validate(not_empty)")
         end
       end
+
+      field(:changed, String.t(),
+        derive: "validate(not_empty)",
+        validator: {__MODULE__, :test_validator}
+      )
+    end
+
+    def test_validator(:changed, value) do
+      if is_binary(value),
+        do: {:ok, :changed, value <> "::Changed"},
+        else: {:error, :changed, "No, never"}
     end
 
     def validator(:role, value) do
@@ -407,5 +418,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
                ],
                profile: [%{github: "https://github.com/mishka-group"}]
              })
+  end
+
+  test "custom change data in true state" do
+    {:error, [%{message: "No, never", field: :changed, action: :validator}]} =
+      TestAuthStruct.builder(%{changed: 1})
+
+    {:ok,
+     %MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest.TestAuthStruct{
+       changed: "https://github.com/mishka-group::Changed",
+       path: nil,
+       action: nil
+     }} =
+      TestAuthStruct.builder(%{changed: "https://github.com/mishka-group"})
   end
 end

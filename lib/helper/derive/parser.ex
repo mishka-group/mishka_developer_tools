@@ -202,6 +202,10 @@ defmodule MishkaDeveloperTools.Helper.Derive.Parser do
   def map_keys(_map, keys), do: keys
 
   @spec field_status?(tuple(), atom()) :: boolean()
+
+  def field_status?({{:error, _data}, _opts}, status) when status === :error,
+    do: true
+
   def field_status?({{:error, _, _}, _}, status) when status === :error,
     do: true
 

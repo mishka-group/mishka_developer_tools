@@ -331,7 +331,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                 action: :dependent_keys
               }
             ], [__hint__: "different_code_bases1"]},
-           {:different_code_bases, "It is not string", [__hint__: "different_code_bases2"]}
+           {%{message: "It is not string", field: :different_code_bases, action: :validator},
+            [__hint__: "different_code_bases2"]}
          ],
          action: :conditionals
        }
@@ -387,7 +388,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                 action: :dependent_keys
               }
             ], [__hint__: "different_code_bases1"]},
-           {:different_code_bases, "It is not string", [__hint__: "different_code_bases2"]}
+           {%{message: "It is not string", field: :different_code_bases, action: :validator},
+            [__hint__: "different_code_bases2"]}
          ],
          action: :conditionals
        }
@@ -524,8 +526,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                 action: :dependent_keys
               }
             ], [__hint__: "different_projects1"]},
-           {:different_projects, "It is not list", [__hint__: "different_projects2"]},
-           {:different_projects, "It is not string", [__hint__: "different_projects3"]}
+           {%{message: "It is not list", field: :different_projects, action: :validator},
+            [__hint__: "different_projects2"]},
+           {%{message: "It is not string", field: :different_projects, action: :validator},
+            [__hint__: "different_projects3"]}
          ],
          action: :conditionals
        }

@@ -1813,7 +1813,7 @@ defmodule GuardedStruct do
     validated_errors =
       Enum.filter(validated, fn {status, _field, _error_or_data} -> status == :error end)
       |> Enum.map(fn {_status, field, error_or_data} ->
-        %{field: field, message: error_or_data}
+        %{field: field, message: error_or_data, action: :validator}
       end)
 
     validated_allowed_data =
@@ -1896,7 +1896,7 @@ defmodule GuardedStruct do
 
   def exceptions_handler({:error, error, :halt}, _module, false), do: {:error, error}
 
-  def exceptions_handler({:error, _} = error_output, _module, false), do: error_output
+  def exceptions_handler({:error, _errors} = error_output, _module, false), do: error_output
 
   def exceptions_handler({:error, error_list}, module, true) do
     concated = Module.safe_concat([module, Error])
@@ -2550,6 +2550,9 @@ defmodule GuardedStruct do
       {{:error, _key, _value}, _opts} = output, [data, error] ->
         [data, error ++ [output]]
 
+      {{:error, _error}, _opts} = output, [data, error] ->
+        [data, error ++ [output]]
+
       {{:error, _error}, _key, _opts} = output, [data, error] ->
         [data, error ++ [output]]
     end)
@@ -2634,20 +2637,26 @@ defmodule GuardedStruct do
   end
 
   defp get_field_validator(opts, caller, field, value) do
-    case Keyword.get(opts, :validator) do
-      nil ->
-        # In this place we checke local validator function of caller
-        if Code.ensure_loaded?(caller) and
-             function_exported?(caller, :validator, 2),
-           do: apply(caller, :validator, [field, value]),
-           else: {:ok, field, value}
+    {status, field, value} =
+      outout =
+      case Keyword.get(opts, :validator) do
+        nil ->
+          # In this place we checke local validator function of caller
+          if Code.ensure_loaded?(caller) and
+               function_exported?(caller, :validator, 2),
+             do: apply(caller, :validator, [field, value]),
+             else: {:ok, field, value}
 
-      {module, func} ->
-        apply(module, func, [field, value])
+        {module, func} ->
+          apply(module, func, [field, value])
 
-      _ ->
-        {:ok, field, value}
-    end
+        _ ->
+          {:ok, field, value}
+      end
+
+    if status == :ok,
+      do: outout,
+      else: {:error, %{field: field, message: value, action: :validator}}
   end
 
   # We could merge these 2 function with `when` but, I think we need it in the future.
