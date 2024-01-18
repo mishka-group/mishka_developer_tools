@@ -2616,24 +2616,29 @@ defmodule GuardedStruct do
       # This section only applies to fields with conditions.
       # It should be noted that the hint must be documented as a custom contract in the user's document.
       transformed_errors =
-        Enum.map(entries, fn
-          {error, opts} ->
-            if(elem(error, 0) == :error, do: Tuple.delete_at(error, 0), else: error)
-            |> add_hint(Keyword.get(opts, :hint))
+        Enum.reduce(entries, [], fn
+          {{:error, data}, opts}, acc when is_list(data) ->
+            acc ++ Enum.map(data, &add_hint(&1, opts))
 
-          {error, _field, opts} ->
-            if(elem(error, 0) == :error, do: Tuple.delete_at(error, 0), else: error)
-            |> add_hint(Keyword.get(opts, :hint))
+          {{:error, data}, opts}, acc ->
+            acc ++ [add_hint(data, opts)]
+
+          {{:error, data}, _field, opts}, acc when is_list(data) ->
+            acc ++ Enum.map(data, &add_hint(&1, opts))
+
+          {{:error, data}, _field, opts}, acc ->
+            acc ++ [add_hint(data, opts)]
         end)
 
       acc ++ [%{field: field, action: :conditionals, errors: transformed_errors}]
     end)
   end
 
-  defp add_hint(error, nil) when is_tuple(error), do: error
-
-  defp add_hint(error, hint) when is_tuple(error) do
-    Tuple.insert_at(error, tuple_size(error), __hint__: hint)
+  defp add_hint(error, opts) do
+    case Keyword.get(opts, :hint) do
+      nil -> error
+      hint -> Map.merge(error, %{__hint__: hint})
+    end
   end
 
   defp get_field_validator(opts, caller, field, value) do

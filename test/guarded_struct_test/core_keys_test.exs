@@ -323,16 +323,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
        %{
          field: :different_code_bases,
          errors: [
-           {[
-              %{
-                message:
-                  "The required dependency for field on_provider has not been submitted.\nYou must have field provider in your input\n",
-                field: :on_provider,
-                action: :dependent_keys
-              }
-            ], [__hint__: "different_code_bases1"]},
-           {%{message: "It is not string", field: :different_code_bases, action: :validator},
-            [__hint__: "different_code_bases2"]}
+           %{
+             message:
+               "The required dependency for field on_provider has not been submitted.\nYou must have field provider in your input\n",
+             field: :on_provider,
+             action: :dependent_keys,
+             __hint__: "different_code_bases1"
+           },
+           %{
+             message: "It is not string",
+             field: :different_code_bases,
+             action: :validator,
+             __hint__: "different_code_bases2"
+           }
          ],
          action: :conditionals
        }
@@ -380,16 +383,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
        %{
          field: :different_code_bases,
          errors: [
-           {[
-              %{
-                message:
-                  "The required dependency for field on_nothing has not been submitted.\nYou must have field test in your input\n",
-                field: :on_nothing,
-                action: :dependent_keys
-              }
-            ], [__hint__: "different_code_bases1"]},
-           {%{message: "It is not string", field: :different_code_bases, action: :validator},
-            [__hint__: "different_code_bases2"]}
+           %{
+             message:
+               "The required dependency for field on_nothing has not been submitted.\nYou must have field test in your input\n",
+             field: :on_nothing,
+             action: :dependent_keys,
+             __hint__: "different_code_bases1"
+           },
+           %{
+             message: "It is not string",
+             field: :different_code_bases,
+             action: :validator,
+             __hint__: "different_code_bases2"
+           }
          ],
          action: :conditionals
        }
@@ -518,18 +524,25 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
        %{
          field: :different_projects,
          errors: [
-           {[
-              %{
-                message:
-                  "The required dependency for field type has not been submitted.\nYou must have field provider2 in your input\n",
-                field: :type,
-                action: :dependent_keys
-              }
-            ], [__hint__: "different_projects1"]},
-           {%{message: "It is not list", field: :different_projects, action: :validator},
-            [__hint__: "different_projects2"]},
-           {%{message: "It is not string", field: :different_projects, action: :validator},
-            [__hint__: "different_projects3"]}
+           %{
+             message:
+               "The required dependency for field type has not been submitted.\nYou must have field provider2 in your input\n",
+             field: :type,
+             action: :dependent_keys,
+             __hint__: "different_projects1"
+           },
+           %{
+             message: "It is not list",
+             field: :different_projects,
+             action: :validator,
+             __hint__: "different_projects2"
+           },
+           %{
+             message: "It is not string",
+             field: :different_projects,
+             action: :validator,
+             __hint__: "different_projects3"
+           }
          ],
          action: :conditionals
        }
@@ -952,14 +965,30 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
        %{
          field: :id,
          errors: [
-           {[
-              %{message: "Unexpected type error in id field", field: :id, action: :type},
-              %{message: "Invalid url format in the id field", field: :id, action: :url}
-            ], [__hint__: "url_id"]},
-           {[
-              %{message: "Invalid UUID format in the id field", field: :id, action: :uuid},
-              %{message: "Invalid format in the id field", field: :id, action: :not_empty_string}
-            ], [__hint__: "uuid_id"]}
+           %{
+             message: "Unexpected type error in id field",
+             field: :id,
+             action: :type,
+             __hint__: "url_id"
+           },
+           %{
+             message: "Invalid url format in the id field",
+             field: :id,
+             action: :url,
+             __hint__: "url_id"
+           },
+           %{
+             message: "Invalid UUID format in the id field",
+             field: :id,
+             action: :uuid,
+             __hint__: "uuid_id"
+           },
+           %{
+             message: "Invalid format in the id field",
+             field: :id,
+             action: :not_empty_string,
+             __hint__: "uuid_id"
+           }
          ],
          action: :conditionals
        }
@@ -978,15 +1007,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
        %{
          field: :id,
          errors: [
-           {[
-              %{
-                message: "Is missing a url scheme (e.g. https) in the id field",
-                field: :id,
-                action: :url
-              }
-            ], [__hint__: "url_id"]},
-           {[%{message: "Invalid UUID format in the id field", field: :id, action: :uuid}],
-            [__hint__: "uuid_id"]}
+           %{
+             message: "Is missing a url scheme (e.g. https) in the id field",
+             field: :id,
+             action: :url,
+             __hint__: "url_id"
+           },
+           %{
+             message: "Invalid UUID format in the id field",
+             field: :id,
+             action: :uuid,
+             __hint__: "uuid_id"
+           }
          ],
          action: :conditionals
        }

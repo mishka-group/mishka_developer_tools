@@ -397,10 +397,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :social,
          errors: [
-           {%{message: "It is not map", field: :social, action: :validator},
-            [__hint__: "social1"]},
-           {%{message: "It is not string", field: :social, action: :validator},
-            [__hint__: "social2"]}
+           %{message: "It is not map", field: :social, action: :validator, __hint__: "social1"},
+           %{message: "It is not string", field: :social, action: :validator, __hint__: "social2"}
          ],
          action: :conditionals
        }
@@ -418,16 +416,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :location,
          errors: [
-           {%{message: "It is not map", field: :location, action: :validator},
-            [__hint__: "location1"]},
-           {[
-              %{
-                message:
-                  "Invalid geo url format in the location field, you should send latitude and longitude",
-                field: :location,
-                action: :location
-              }
-            ], [__hint__: "location2"]}
+           %{
+             message: "It is not map",
+             field: :location,
+             action: :validator,
+             __hint__: "location1"
+           },
+           %{
+             message:
+               "Invalid geo url format in the location field, you should send latitude and longitude",
+             field: :location,
+             action: :location,
+             __hint__: "location2"
+           }
          ],
          action: :conditionals
        }
@@ -487,10 +488,14 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :auth,
          errors: [
-           {%{message: "It is not list", field: :auth, action: :validator}, [__hint__: "auth1"]},
-           {%{message: "Your input must be a list of items", field: :auth, action: :type},
-            [__hint__: "auth2"]},
-           {%{message: "It is not string", field: :auth, action: :validator}, [__hint__: "auth3"]}
+           %{message: "It is not list", field: :auth, action: :validator, __hint__: "auth1"},
+           %{
+             message: "Your input must be a list of items",
+             field: :auth,
+             action: :type,
+             __hint__: "auth2"
+           },
+           %{message: "It is not string", field: :auth, action: :validator, __hint__: "auth3"}
          ],
          action: :conditionals
        }
@@ -506,15 +511,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :auth2,
          errors: [
-           {[
-              %{
-                message: "The auth2 field item must not be empty",
-                field: :auth2,
-                action: :not_flatten_empty_item
-              }
-            ], [__hint__: "auth1"]},
-           {%{message: "It is not string", field: :auth2, action: :validator},
-            [__hint__: "auth3"]}
+           %{
+             message: "The auth2 field item must not be empty",
+             field: :auth2,
+             action: :not_flatten_empty_item,
+             __hint__: "auth1"
+           },
+           %{message: "It is not string", field: :auth2, action: :validator, __hint__: "auth3"}
          ],
          action: :conditionals
        }
@@ -535,13 +538,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :auth2,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:provider, :username],
-              action: :required_fields
-            }, [__hint__: "auth1"]},
-           {%{message: "It is not string", field: :auth2, action: :validator},
-            [__hint__: "auth3"]}
+           %{
+             message: "Please submit required fields.",
+             fields: [:provider, :username],
+             action: :required_fields,
+             __hint__: "auth1"
+           },
+           %{message: "It is not string", field: :auth2, action: :validator, __hint__: "auth3"}
          ],
          action: :conditionals
        }
@@ -578,13 +581,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :post_activity,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:like],
-              action: :required_fields
-            }, [__hint__: "post_activity1"]},
-           {%{message: "It is not string", field: :post_activity, action: :validator},
-            [__hint__: "post_activity2"]}
+           %{
+             message: "Please submit required fields.",
+             fields: [:like],
+             action: :required_fields,
+             __hint__: "post_activity1"
+           },
+           %{
+             message: "It is not string",
+             field: :post_activity,
+             action: :validator,
+             __hint__: "post_activity2"
+           }
          ],
          action: :conditionals
        }
@@ -600,10 +608,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :post_activity,
          errors: [
-           {%{message: "Your input must be a map or list of maps", action: :bad_parameters},
-            [__hint__: "post_activity1"]},
-           {%{message: "It is not string", field: :post_activity, action: :validator},
-            [__hint__: "post_activity2"]}
+           %{
+             message: "Your input must be a map or list of maps",
+             action: :bad_parameters,
+             __hint__: "post_activity1"
+           },
+           %{
+             message: "It is not string",
+             field: :post_activity,
+             action: :validator,
+             __hint__: "post_activity2"
+           }
          ],
          action: :conditionals
        }
@@ -646,13 +661,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :post_activities,
          errors: [
-           {%{
-              message: "Your input must be a list of items",
-              field: :post_activities,
-              action: :type
-            }, [__hint__: "post_activities1"]},
-           {%{message: "It is not list", field: :post_activities, action: :validator},
-            [__hint__: "post_activities2"]}
+           %{
+             message: "Your input must be a list of items",
+             field: :post_activities,
+             action: :type,
+             __hint__: "post_activities1"
+           },
+           %{
+             message: "It is not list",
+             field: :post_activities,
+             action: :validator,
+             __hint__: "post_activities2"
+           }
          ],
          action: :conditionals
        }
@@ -670,12 +690,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :author,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:family],
-              action: :required_fields
-            }},
-           {%{message: "It is not string", field: :author, action: :validator}}
+           %{
+             message: "Please submit required fields.",
+             fields: [:family],
+             action: :required_fields
+           },
+           %{message: "It is not string", field: :author, action: :validator}
          ],
          action: :conditionals
        }
@@ -729,13 +749,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :location,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:city],
-              action: :required_fields
-            }, [__hint__: "location1"]},
-           {%{message: "It is not string", field: :location, action: :validator},
-            [__hint__: "location2"]}
+           %{
+             message: "Please submit required fields.",
+             fields: [:city],
+             action: :required_fields,
+             __hint__: "location1"
+           },
+           %{
+             message: "It is not string",
+             field: :location,
+             action: :validator,
+             __hint__: "location2"
+           }
          ],
          action: :conditionals
        }
@@ -861,16 +886,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activity3,
          errors: [
-           {[
-              %{
-                message:
-                  "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
-                field: :type,
-                action: :dependent_keys
-              }
-            ], [__hint__: "activity3"]},
-           {%{message: "It is not string", field: :activity3, action: :validator},
-            [__hint__: "activity2"]}
+           %{
+             message:
+               "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
+             field: :type,
+             action: :dependent_keys,
+             __hint__: "activity3"
+           },
+           %{
+             message: "It is not string",
+             field: :activity3,
+             action: :validator,
+             __hint__: "activity2"
+           }
          ],
          action: :conditionals
        }
@@ -922,15 +950,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :information,
          errors: [
-           {[
-              %{
-                message: "Based on field gender input you have to send authorized data",
-                field: :gender,
-                action: :domain_parameters,
-                field_path: "identity.action"
-              }
-            ]},
-           {%{message: "It is not string", field: :information, action: :validator}}
+           %{
+             message: "Based on field gender input you have to send authorized data",
+             field: :gender,
+             action: :domain_parameters,
+             field_path: "identity.action"
+           },
+           %{message: "It is not string", field: :information, action: :validator}
          ],
          action: :conditionals
        }
@@ -962,8 +988,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :profile,
          errors: [
-           {%{message: "It is not string", field: :profile, action: :validator},
-            [__hint__: "profile1"]}
+           %{
+             message: "It is not string",
+             field: :profile,
+             action: :validator,
+             __hint__: "profile1"
+           }
          ],
          action: :conditionals
        }
@@ -1001,10 +1031,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activity,
          errors: [
-           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
-            [__hint__: "activity1"]},
-           {%{message: "It is not string", field: :activity, action: :validator},
-            [__hint__: "activity2"]}
+           %{
+             message: "The post_id field must be integer",
+             field: :post_id,
+             action: :integer,
+             __hint__: "activity1"
+           },
+           %{
+             message: "It is not string",
+             field: :activity,
+             action: :validator,
+             __hint__: "activity2"
+           }
          ],
          action: :conditionals
        }
@@ -1024,15 +1062,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :address,
          errors: [
-           {%{message: "It is not map", field: :address, action: :validator},
-            [__hint__: "address1"]},
-           {[
-              %{
-                message: "The address field must not be empty",
-                field: :address,
-                action: :not_empty
-              }
-            ], [__hint__: "address2"]}
+           %{message: "It is not map", field: :address, action: :validator, __hint__: "address1"},
+           %{
+             message: "The address field must not be empty",
+             field: :address,
+             action: :not_empty,
+             __hint__: "address2"
+           }
          ],
          action: :conditionals
        }
@@ -1066,10 +1102,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :address,
          errors: [
-           {%{message: "It is not map", field: :address, action: :validator},
-            [__hint__: "address1"]},
-           {%{message: "It is not string", field: :address, action: :validator},
-            [__hint__: "address2"]}
+           %{message: "It is not map", field: :address, action: :validator, __hint__: "address1"},
+           %{
+             message: "It is not string",
+             field: :address,
+             action: :validator,
+             __hint__: "address2"
+           }
          ],
          action: :conditionals
        }
@@ -1087,15 +1126,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :address,
          errors: [
-           {%{message: "It is not map", field: :address, action: :validator},
-            [__hint__: "address1"]},
-           {[
-              %{
-                message: "The address field must not be empty",
-                field: :address,
-                action: :not_empty
-              }
-            ], [__hint__: "address2"]}
+           %{message: "It is not map", field: :address, action: :validator, __hint__: "address1"},
+           %{
+             message: "The address field must not be empty",
+             field: :address,
+             action: :not_empty,
+             __hint__: "address2"
+           }
          ],
          action: :conditionals
        }
@@ -1131,14 +1168,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :extera_auth,
          errors: [
-           {[%{message: "It is not string", field: :username}]},
-           {[
-              %{
-                message: "The extera_auth field must be string",
-                field: :extera_auth,
-                action: :string
-              }
-            ]}
+           %{message: "It is not string", field: :username, action: :validator},
+           %{
+             message: "The extera_auth field must be string",
+             field: :extera_auth,
+             action: :string
+           }
          ],
          action: :conditionals
        }
@@ -1157,14 +1192,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :extera_auth,
          errors: [
-           {[%{message: "It is not string", field: :username}]},
-           {[
-              %{
-                message: "The extera_auth field must be string",
-                field: :extera_auth,
-                action: :string
-              }
-            ]}
+           %{message: "It is not string", field: :username, action: :validator},
+           %{
+             message: "The extera_auth field must be string",
+             field: :extera_auth,
+             action: :string
+           }
          ],
          action: :conditionals
        }
@@ -1231,14 +1264,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :extera_auth,
          errors: [
-           {[%{message: "It is not string", field: :username}]},
-           {[
-              %{
-                message: "The extera_auth field must be string",
-                field: :extera_auth,
-                action: :string
-              }
-            ]}
+           %{message: "It is not string", field: :username, action: :validator},
+           %{
+             message: "The extera_auth field must be string",
+             field: :extera_auth,
+             action: :string
+           }
          ],
          action: :conditionals
        }
@@ -1257,10 +1288,18 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :extera_auth2,
          errors: [
-           {[%{message: "It is not string", field: :username, action: :validator}],
-            [__hint__: "extera_auth1"]},
-           {%{message: "It is not string", field: :extera_auth2, action: :validator},
-            [__hint__: "extera_auth2"]}
+           %{
+             message: "It is not string",
+             field: :username,
+             action: :validator,
+             __hint__: "extera_auth1"
+           },
+           %{
+             message: "It is not string",
+             field: :extera_auth2,
+             action: :validator,
+             __hint__: "extera_auth2"
+           }
          ],
          action: :conditionals
        }
@@ -1324,12 +1363,24 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities,
          errors: [
-           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
-            [__hint__: "activities1"]},
-           {%{message: "It is not list", field: :activities, action: :validator},
-            [__hint__: "activities2"]},
-           {%{message: "It is not string", field: :activities, action: :validator},
-            [__hint__: "activities3"]}
+           %{
+             message: "The post_id field must be integer",
+             field: :post_id,
+             action: :integer,
+             __hint__: "activities1"
+           },
+           %{
+             message: "It is not list",
+             field: :activities,
+             action: :validator,
+             __hint__: "activities2"
+           },
+           %{
+             message: "It is not string",
+             field: :activities,
+             action: :validator,
+             __hint__: "activities3"
+           }
          ],
          action: :conditionals
        }
@@ -1351,16 +1402,36 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities,
          errors: [
-           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
-            [__hint__: "activities1"]},
-           {%{message: "It is not list", field: :activities, action: :validator},
-            [__hint__: "activities2"]},
-           {%{message: "It is not string", field: :activities, action: :validator},
-            [__hint__: "activities3"]},
-           {%{message: "It is not map", field: :activities, action: :validator},
-            [__hint__: "activities1"]},
-           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
-            [__hint__: "activities2"]}
+           %{
+             message: "The post_id field must be integer",
+             field: :post_id,
+             action: :integer,
+             __hint__: "activities1"
+           },
+           %{
+             message: "It is not list",
+             field: :activities,
+             action: :validator,
+             __hint__: "activities2"
+           },
+           %{
+             message: "It is not string",
+             field: :activities,
+             action: :validator,
+             __hint__: "activities3"
+           },
+           %{
+             message: "It is not map",
+             field: :activities,
+             action: :validator,
+             __hint__: "activities1"
+           },
+           %{
+             message: "The post_id field must be integer",
+             field: :post_id,
+             action: :integer,
+             __hint__: "activities2"
+           }
          ],
          action: :conditionals
        }
@@ -1406,15 +1477,24 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:like],
-              action: :required_fields
-            }, [__hint__: "activities1"]},
-           {%{message: "It is not list", field: :activities, action: :validator},
-            [__hint__: "activities2"]},
-           {%{message: "It is not string", field: :activities, action: :validator},
-            [__hint__: "activities3"]}
+           %{
+             message: "Please submit required fields.",
+             fields: [:like],
+             action: :required_fields,
+             __hint__: "activities1"
+           },
+           %{
+             message: "It is not list",
+             field: :activities,
+             action: :validator,
+             __hint__: "activities2"
+           },
+           %{
+             message: "It is not string",
+             field: :activities,
+             action: :validator,
+             __hint__: "activities3"
+           }
          ],
          action: :conditionals
        }
@@ -1437,23 +1517,43 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities2,
          errors: [
-           {[%{message: "The post_id field must be integer", field: :post_id, action: :integer}],
-            [__hint__: "activities1"]},
-           {%{message: "It is not list", field: :activities2, action: :validator},
-            [__hint__: "activities2"]},
-           {%{message: "It is not string", field: :activities2, action: :validator},
-            [__hint__: "activities3"]},
-           {%{message: "It is not map", field: :activities2, action: :validator},
-            [__hint__: "activities1"]},
-           {[
-              %{
-                message:
-                  "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
-                field: :role,
-                action: :not_empty
-              },
-              %{message: "The role field must be string", field: :role, action: :string}
-            ], [__hint__: "activities2"]}
+           %{
+             message: "The post_id field must be integer",
+             field: :post_id,
+             action: :integer,
+             __hint__: "activities1"
+           },
+           %{
+             message: "It is not list",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities2"
+           },
+           %{
+             message: "It is not string",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities3"
+           },
+           %{
+             message: "It is not map",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities1"
+           },
+           %{
+             message:
+               "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
+             field: :role,
+             action: :not_empty,
+             __hint__: "activities2"
+           },
+           %{
+             message: "The role field must be string",
+             field: :role,
+             action: :string,
+             __hint__: "activities2"
+           }
          ],
          action: :conditionals
        }
@@ -1476,26 +1576,43 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities2,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:like],
-              action: :required_fields
-            }, [__hint__: "activities1"]},
-           {%{message: "It is not list", field: :activities2, action: :validator},
-            [__hint__: "activities2"]},
-           {%{message: "It is not string", field: :activities2, action: :validator},
-            [__hint__: "activities3"]},
-           {%{message: "It is not map", field: :activities2, action: :validator},
-            [__hint__: "activities1"]},
-           {[
-              %{
-                message:
-                  "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
-                field: :role,
-                action: :not_empty
-              },
-              %{message: "The role field must be string", field: :role, action: :string}
-            ], [__hint__: "activities2"]}
+           %{
+             message: "Please submit required fields.",
+             fields: [:like],
+             action: :required_fields,
+             __hint__: "activities1"
+           },
+           %{
+             message: "It is not list",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities2"
+           },
+           %{
+             message: "It is not string",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities3"
+           },
+           %{
+             message: "It is not map",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities1"
+           },
+           %{
+             message:
+               "Invalid NotEmpty format in the role field, you must pass data which is string, list or map.",
+             field: :role,
+             action: :not_empty,
+             __hint__: "activities2"
+           },
+           %{
+             message: "The role field must be string",
+             field: :role,
+             action: :string,
+             __hint__: "activities2"
+           }
          ],
          action: :conditionals
        }
@@ -1539,15 +1656,24 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities2,
          errors: [
-           {%{message: "It is not map", field: :activities2, action: :validator},
-            [__hint__: "activities1"]},
-           {%{
-              message: "Please submit required fields.",
-              fields: [:action],
-              action: :required_fields
-            }, [__hint__: "activities2"]},
-           {%{message: "It is not string", field: :activities2, action: :validator},
-            [__hint__: "activities3"]}
+           %{
+             message: "It is not map",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities1"
+           },
+           %{
+             message: "Please submit required fields.",
+             fields: [:action],
+             action: :required_fields,
+             __hint__: "activities2"
+           },
+           %{
+             message: "It is not string",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities3"
+           }
          ],
          action: :conditionals
        }
@@ -1568,12 +1694,24 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities2,
          errors: [
-           {%{message: "It is not map", field: :activities2, action: :validator},
-            [__hint__: "activities1"]},
-           {[%{message: "The role field must not be empty", field: :role, action: :not_empty}],
-            [__hint__: "activities2"]},
-           {%{message: "It is not string", field: :activities2, action: :validator},
-            [__hint__: "activities3"]}
+           %{
+             message: "It is not map",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities1"
+           },
+           %{
+             message: "The role field must not be empty",
+             field: :role,
+             action: :not_empty,
+             __hint__: "activities2"
+           },
+           %{
+             message: "It is not string",
+             field: :activities2,
+             action: :validator,
+             __hint__: "activities3"
+           }
          ],
          action: :conditionals
        }
@@ -1596,15 +1734,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities3,
          errors: [
-           {
-             [
-               %{
-                 message: "The post_id field must be integer",
-                 field: :post_id,
-                 action: :integer
-               }
-             ],
-             [__hint__: "activities1"]
+           %{
+             message: "The post_id field must be integer",
+             field: :post_id,
+             action: :integer,
+             __hint__: "activities1"
            }
          ],
          action: :conditionals
@@ -1628,11 +1762,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities3,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:like],
-              action: :required_fields
-            }, [__hint__: "activities1"]}
+           %{
+             message: "Please submit required fields.",
+             fields: [:like],
+             action: :required_fields,
+             __hint__: "activities1"
+           }
          ],
          action: :conditionals
        }
@@ -1676,8 +1811,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities3,
          errors: [
-           {%{message: "It is not map", field: :activities3, action: :validator},
-            [__hint__: "activities1"]}
+           %{
+             message: "It is not map",
+             field: :activities3,
+             action: :validator,
+             __hint__: "activities1"
+           }
          ],
          action: :conditionals
        }
@@ -1698,8 +1837,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities3,
          errors: [
-           {%{message: "It is not map", field: :activities3, action: :validator},
-            [__hint__: "activities1"]}
+           %{
+             message: "It is not map",
+             field: :activities3,
+             action: :validator,
+             __hint__: "activities1"
+           }
          ],
          action: :conditionals
        }
@@ -1720,8 +1863,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities3,
          errors: [
-           {%{message: "It is not map", field: :activities3, action: :validator},
-            [__hint__: "activities1"]}
+           %{
+             message: "It is not map",
+             field: :activities3,
+             action: :validator,
+             __hint__: "activities1"
+           }
          ],
          action: :conditionals
        }
@@ -1739,8 +1886,12 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activities3,
          errors: [
-           {%{message: "It is not map", field: :activities3, action: :validator},
-            [__hint__: "activities1"]}
+           %{
+             message: "It is not map",
+             field: :activities3,
+             action: :validator,
+             __hint__: "activities1"
+           }
          ],
          action: :conditionals
        }
@@ -1780,13 +1931,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :author2,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:family],
-              action: :required_fields
-            }},
-           {%{message: "It is not string", field: :author2, action: :validator}},
-           {%{message: "It is not map", field: :author2, action: :validator}}
+           %{
+             message: "Please submit required fields.",
+             fields: [:family],
+             action: :required_fields
+           },
+           %{message: "It is not string", field: :author2, action: :validator},
+           %{message: "It is not map", field: :author2, action: :validator}
          ],
          action: :conditionals
        }
@@ -1820,17 +1971,20 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :author3,
          errors: [
-           {%{
-              message: "Please submit required fields.",
-              fields: [:family],
-              action: :required_fields
-            }, [__hint__: "author1"]},
-           {%{message: "It is not list", field: :author3, action: :validator},
-            [__hint__: "author2"]},
-           {%{message: "It is not string", field: :author3, action: :validator},
-            [__hint__: "author3"]},
-           {%{message: "It is not map", field: :author3, action: :validator},
-            [__hint__: "author1"]}
+           %{
+             message: "Please submit required fields.",
+             fields: [:family],
+             action: :required_fields,
+             __hint__: "author1"
+           },
+           %{message: "It is not list", field: :author3, action: :validator, __hint__: "author2"},
+           %{
+             message: "It is not string",
+             field: :author3,
+             action: :validator,
+             __hint__: "author3"
+           },
+           %{message: "It is not map", field: :author3, action: :validator, __hint__: "author1"}
          ],
          action: :conditionals
        }
@@ -1862,15 +2016,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :author3,
          errors: [
-           {%{message: "It is not map", field: :author3, action: :validator},
-            [__hint__: "author1"]},
-           {%{
-              message: "Please submit required fields.",
-              fields: [:family],
-              action: :required_fields
-            }, [__hint__: "author2"]},
-           {%{message: "It is not string", field: :author3, action: :validator},
-            [__hint__: "author3"]}
+           %{message: "It is not map", field: :author3, action: :validator, __hint__: "author1"},
+           %{
+             message: "Please submit required fields.",
+             fields: [:family],
+             action: :required_fields,
+             __hint__: "author2"
+           },
+           %{
+             message: "It is not string",
+             field: :author3,
+             action: :validator,
+             __hint__: "author3"
+           }
          ],
          action: :conditionals
        }
@@ -1916,18 +2074,25 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :information2,
          errors: [
-           {[
-              %{
-                message: "Based on field gender input you have to send authorized data",
-                field: :gender,
-                action: :domain_parameters,
-                field_path: "identity.action"
-              }
-            ], [__hint__: "information1"]},
-           {%{message: "It is not list", field: :information2, action: :validator},
-            [__hint__: "information2"]},
-           {%{message: "It is not string", field: :information2, action: :validator},
-            [__hint__: "information3"]}
+           %{
+             message: "Based on field gender input you have to send authorized data",
+             field: :gender,
+             action: :domain_parameters,
+             __hint__: "information1",
+             field_path: "identity.action"
+           },
+           %{
+             message: "It is not list",
+             field: :information2,
+             action: :validator,
+             __hint__: "information2"
+           },
+           %{
+             message: "It is not string",
+             field: :information2,
+             action: :validator,
+             __hint__: "information3"
+           }
          ],
          action: :conditionals
        }
@@ -1983,16 +2148,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activity4,
          errors: [
-           {[
-              %{
-                message:
-                  "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
-                field: :type,
-                action: :dependent_keys
-              }
-            ], [__hint__: "activity3"]},
-           {%{message: "It is not string", field: :activity4, action: :validator},
-            [__hint__: "activity2"]}
+           %{
+             message:
+               "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
+             field: :type,
+             action: :dependent_keys,
+             __hint__: "activity3"
+           },
+           %{
+             message: "It is not string",
+             field: :activity4,
+             action: :validator,
+             __hint__: "activity2"
+           }
          ],
          action: :conditionals
        }
@@ -2141,16 +2309,19 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
        %{
          field: :activity3,
          errors: [
-           {[
-              %{
-                message:
-                  "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
-                field: :type,
-                action: :dependent_keys
-              }
-            ], [__hint__: "activity3"]},
-           {%{message: "It is not string", field: :activity3, action: :validator},
-            [__hint__: "activity2"]}
+           %{
+             message:
+               "The required dependency for field type has not been submitted.\nYou must have field sub_field_on_header in your input\n",
+             field: :type,
+             action: :dependent_keys,
+             __hint__: "activity3"
+           },
+           %{
+             message: "It is not string",
+             field: :activity3,
+             action: :validator,
+             __hint__: "activity2"
+           }
          ],
          action: :conditionals
        }
