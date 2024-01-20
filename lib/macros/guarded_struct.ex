@@ -1885,6 +1885,25 @@ defmodule GuardedStruct do
     |> Tuple.insert_at(4, new_derives)
   end
 
+  def replace_condition_fields_derives({:error, _, data} = error, _) when data == :halt, do: error
+
+  def replace_condition_fields_derives({:error, error, data}, derives)
+      when data == %{} or derives == [],
+      do: {:error, error}
+
+  def replace_condition_fields_derives({:error, error, data}, derives) do
+    derive_inputs = Enum.filter(derives, &(&1.field in Enum.uniq(Map.keys(data))))
+
+    derives_error =
+      Derive.derive({:ok, data, derive_inputs})
+      |> case do
+        {:ok, _} -> []
+        {:error, error} -> error
+      end
+
+    {:error, derives_error ++ error}
+  end
+
   def replace_condition_fields_derives(error, _derives), do: error
 
   @spec exceptions_handler({:ok, any()} | {:error, any()}, module(), boolean()) ::
@@ -2580,8 +2599,7 @@ defmodule GuardedStruct do
 
       {:ok, _, _, false} ->
         errors = cond_errors_converter(conds)
-
-        {:error, validated_errors ++ sub_builders_errors ++ errors}
+        {:error, validated_errors ++ sub_builders_errors ++ errors, main_error_or_data}
 
       {:error, _, _, false} ->
         errors = cond_errors_converter(conds)

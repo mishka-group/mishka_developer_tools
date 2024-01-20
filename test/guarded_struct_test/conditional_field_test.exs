@@ -17,7 +17,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
     alias ConditionalFieldValidatorTestValidators, as: VAL
 
     guardedstruct do
-      field(:nickname, String.t())
+      field(:nickname, String.t(), derive: "validate(string, not_empty)")
 
       # For domain
       sub_field(:identity, struct()) do
@@ -2329,6 +2329,111 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
       assert ConditionalProfileFieldStructs.builder(%{
                nickname: "Mishka",
                activity3: %{action: "admin:edit", type: "normal"}
+             })
+  end
+
+  test "mix 2 conditional/normal errors per-rows" do
+    {:error,
+     [
+       %{
+         message:
+           "Invalid NotEmpty format in the nickname field, you must pass data which is string, list or map.",
+         field: :nickname,
+         action: :not_empty
+       },
+       %{
+         message: "The nickname field must be string",
+         field: :nickname,
+         action: :string
+       },
+       %{
+         field: :location,
+         errors: [
+           %{
+             message: "It is not map",
+             field: :location,
+             action: :validator,
+             __hint__: "location1"
+           },
+           %{
+             message:
+               "Invalid geo url format in the location field, you should send latitude and longitude",
+             field: :location,
+             action: :location,
+             __hint__: "location2"
+           }
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: :mishka,
+               list_sub_field_on_header: "Mishka",
+               location: "bad_location"
+             })
+
+    {:error,
+     [
+       %{
+         message:
+           "Invalid NotEmpty format in the nickname field, you must pass data which is string, list or map.",
+         field: :nickname,
+         action: :not_empty
+       },
+       %{
+         message: "The nickname field must be string",
+         field: :nickname,
+         action: :string
+       },
+       %{
+         field: :auth,
+         errors: [
+           %{
+             message: "It is not list",
+             field: :auth,
+             action: :validator,
+             __hint__: "auth1"
+           },
+           %{
+             message: "Your input must be a list of items",
+             field: :auth,
+             action: :type,
+             __hint__: "auth2"
+           },
+           %{
+             message: "It is not string",
+             field: :auth,
+             action: :validator,
+             __hint__: "auth3"
+           }
+         ],
+         action: :conditionals
+       },
+       %{
+         field: :location,
+         errors: [
+           %{
+             message: "It is not map",
+             field: :location,
+             action: :validator,
+             __hint__: "location1"
+           },
+           %{
+             message:
+               "Invalid geo url format in the location field, you should send latitude and longitude",
+             field: :location,
+             action: :location,
+             __hint__: "location2"
+           }
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: :mishka,
+               list_sub_field_on_header: "Mishka",
+               auth: :bad_auth,
+               location: "bad_location"
              })
   end
 end
