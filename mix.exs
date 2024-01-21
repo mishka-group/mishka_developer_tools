@@ -37,15 +37,15 @@ defmodule MishkaDeveloperTools.MixProject do
   defp deps do
     [
       # Optional dependencies
-      {:ecto_sql, "~> 3.10", optional: true},
+      {:ecto_sql, "~> 3.11", optional: true},
       {:postgrex, "~> 0.17.2", optional: true},
       {:ecto_enum, "~> 1.4", optional: true},
       {:html_sanitize_ex, "~> 1.4.3", optional: true},
       {:email_checker, "~> 0.2.4", optional: true},
       {:ex_url, "~> 2.0", optional: true},
-      {:ex_phone_number, "~> 0.4.2", optional: true},
+      {:ex_phone_number, "~> 0.4.3", optional: true},
       # Dev dependencies
-      {:ex_doc, "~> 0.30.7", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.31.1", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
