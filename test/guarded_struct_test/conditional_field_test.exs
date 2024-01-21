@@ -352,6 +352,32 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
           hint: "activity2"
         )
       end
+
+      conditional_field(:activity5, any(),
+        structs: true,
+        derive: "validate(not_flatten_empty_item)"
+      ) do
+        field(:activity5, String.t(),
+          validator: {VAL, :is_string_data},
+          hint: "activity1"
+        )
+      end
+
+      conditional_field(:activity6, any(), derive: "validate(map)") do
+        field(:activity6, String.t(),
+          validator: {VAL, :is_string_data},
+          hint: "activity1"
+        )
+      end
+
+      conditional_field(:activity7, any(),
+        derive: "sanitize(tag=strip_tags) validate(not_empty_string)"
+      ) do
+        field(:activity7, String.t(),
+          validator: {VAL, :is_string_data},
+          hint: "activity1"
+        )
+      end
     end
   end
 
@@ -2434,6 +2460,72 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
                list_sub_field_on_header: "Mishka",
                auth: :bad_auth,
                location: "bad_location"
+             })
+  end
+
+  test "main derive and validator on parent conditional field macro/before fields" do
+    {:error,
+     [
+       %{
+         field: :activity5,
+         errors: [
+           %{
+             message: "It is not string",
+             field: :activity5,
+             action: :validator,
+             __hint__: "activity1"
+           }
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "mishka",
+               activity5: [1]
+             })
+
+    {:error,
+     [
+       %{
+         field: :activity5,
+         errors: [
+           %{
+             message: "The activity5 field item must not be empty",
+             field: :activity5,
+             action: :not_flatten_empty_item
+           }
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "mishka",
+               activity5: [[]]
+             })
+
+    {:error,
+     [
+       %{
+         field: :activity6,
+         errors: [
+           %{
+             message: "The activity6 field must be map",
+             field: :activity6,
+             action: :map
+           }
+         ],
+         action: :conditionals
+       }
+     ]} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "mishka",
+               activity6: 1
+             })
+
+    {:ok, %__MODULE__.ConditionalProfileFieldStructs{activity7: "https://google.com"}} =
+      assert __MODULE__.ConditionalProfileFieldStructs.builder(%{
+               nickname: "mishka",
+               activity7: "<script>https://google.com"
              })
   end
 end

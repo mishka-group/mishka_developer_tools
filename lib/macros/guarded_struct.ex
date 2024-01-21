@@ -1902,6 +1902,8 @@ defmodule GuardedStruct do
       end
 
     {:error, derives_error ++ error}
+  rescue
+    _ -> {:error, error}
   end
 
   def replace_condition_fields_derives(error, _derives), do: error
@@ -2521,6 +2523,10 @@ defmodule GuardedStruct do
     })
   end
 
+  defp separate_conditions_based_priority({field, conds, acc, _priority}, "list")
+       when is_nil(field) or is_nil(conds),
+       do: acc
+
   defp separate_conditions_based_priority({field, conds, acc, priority}, "list") do
     [success_data, error_data] =
       Enum.map(conds, fn
@@ -2757,10 +2763,19 @@ defmodule GuardedStruct do
       )
       when is_list(list_values) do
     outputs =
-      Enum.map(list_values, fn value ->
-        {cond_data, field, value, full_attrs, key, type, false}
-        |> conditional_fields_validating_pattern()
-      end)
+      {get_field_validator(cond_data.opts, cond_data.caller, field, list_values), cond_data.opts}
+      |> Derive.pre_derives_check(cond_data.opts, field)
+      |> case do
+        {{:ok, _, sanitized_value}, _} ->
+          Enum.map(sanitized_value, fn value ->
+            {Map.merge(cond_data, %{opts: Keyword.drop(cond_data.opts, [:derive, :validator])}),
+             field, value, full_attrs, key, type, false}
+            |> conditional_fields_validating_pattern()
+          end)
+
+        error ->
+          {field, [error], Keyword.get(cond_data.opts, :priority, false)}
+      end
 
     outputs
   end
@@ -2773,47 +2788,55 @@ defmodule GuardedStruct do
   end
 
   def conditional_fields_validating_pattern({cond_data, field, value, full_attrs, key, type, _}) do
-    output =
-      Enum.map(cond_data.fields, fn
-        # Normail field that has custom validator function, if it does not. should pass ok
-        # The priority is with the external module
-        %{sub?: false, opts: opts, module: nil, list?: false} ->
-          case Keyword.get(opts, :struct) do
-            nil ->
-              {get_field_validator(opts, cond_data.caller, field, value), opts}
+    {get_field_validator(cond_data.opts, cond_data.caller, field, value), cond_data.opts}
+    |> Derive.pre_derives_check(cond_data.opts, field)
+    |> case do
+      {{:ok, _, sanitized_value}, _} ->
+        output =
+          Enum.map(cond_data.fields, fn
+            # Normail field that has custom validator function, if it does not. should pass ok
+            # The priority is with the external module
+            %{sub?: false, opts: opts, module: nil, list?: false} ->
+              case Keyword.get(opts, :struct) do
+                nil ->
+                  {get_field_validator(opts, cond_data.caller, field, sanitized_value), opts}
+                  |> Derive.pre_derives_check(opts, field)
+
+                module ->
+                  if !Code.ensure_loaded?(module) do
+                    {get_field_validator(opts, cond_data.caller, field, sanitized_value), opts}
+                    |> Derive.pre_derives_check(opts, field)
+                  else
+                    {opts, cond_data.caller, field, sanitized_value, type, module}
+                    |> execute_field_validator(:external)
+                    |> Derive.pre_derives_check(opts, field)
+                  end
+              end
+
+            %{sub?: false, opts: opts, module: nil, list?: true} ->
+              # It is not a sub field, but it should load external module
+              # because we have no normal field which is list
+              {opts, cond_data.caller, field, sanitized_value, key, type, full_attrs}
+              |> execute_field_validator(:list_external)
               |> Derive.pre_derives_check(opts, field)
 
-            module ->
-              if !Code.ensure_loaded?(module) do
-                {get_field_validator(opts, cond_data.caller, field, value), opts}
-                |> Derive.pre_derives_check(opts, field)
-              else
-                {opts, cond_data.caller, field, value, type, module}
-                |> execute_field_validator(:external)
-                |> Derive.pre_derives_check(opts, field)
-              end
-          end
+            %{sub?: true, opts: opts, module: module, list?: false} ->
+              # It is a sub field and just accepts a map not list of map
+              {opts, cond_data.caller, field, sanitized_value, module, key, full_attrs, type}
+              |> execute_field_validator(:sub_field)
+              |> Derive.pre_derives_check(opts, field)
 
-        %{sub?: false, opts: opts, module: nil, list?: true} ->
-          # It is not a sub field, but it should load external module
-          # because we have no normal field which is list
-          {opts, cond_data.caller, field, value, key, type, full_attrs}
-          |> execute_field_validator(:list_external)
-          |> Derive.pre_derives_check(opts, field)
+            %{sub?: true, opts: opts, module: module, list?: true} ->
+              # It is a sub field and accepts a list of maps
+              {opts, module, field, sanitized_value, key, type, full_attrs}
+              |> execute_field_validator(:list_field)
+              |> Derive.pre_derives_check(opts, field)
+          end)
 
-        %{sub?: true, opts: opts, module: module, list?: false} ->
-          # It is a sub field and just accepts a map not list of map
-          {opts, cond_data.caller, field, value, module, key, full_attrs, type}
-          |> execute_field_validator(:sub_field)
-          |> Derive.pre_derives_check(opts, field)
+        {field, output, Keyword.get(cond_data.opts, :priority, false)}
 
-        %{sub?: true, opts: opts, module: module, list?: true} ->
-          # It is a sub field and accepts a list of maps
-          {opts, module, field, value, key, type, full_attrs}
-          |> execute_field_validator(:list_field)
-          |> Derive.pre_derives_check(opts, field)
-      end)
-
-    {field, output, Keyword.get(cond_data.opts, :priority, false)}
+      error ->
+        {field, [error], Keyword.get(cond_data.opts, :priority, false)}
+    end
   end
 end
