@@ -1,3 +1,55 @@
+# Changelog for MishkaDeveloperTools 0.1.4
+
+### Features:
+
+- [x] Support `derive` and `validator` on `conditional_field` macro as entries
+- [ ] Add `condition_field` fields inside `__information__` function
+- [ ] DECORATORS `@something` top of `field`, `sub_field`, `conditional_field` and the main macro `guardedstruct`
+- [ ] accept `JSON`
+- [ ] `JSON` output
+ checker
+- [ ] Get some global keys from `__using__` instead of the `GuardedStruct` macro to make code clear (should be optional)
+- [ ] How can get whole macro as list, not just a field
+- [ ] Extend from another macro code and add some new fields, can we?
+- [ ] Runtime required fields as the builder function entry, it should support nested `map`
+
+#### URL
+- [ ] This url exist in our list as __using__
+
+#### List
+- [ ] Validation of each value of the list, if it is not nested
+- [ ] Sorte list
+- [ ] List of string values
+- [ ] Sanitize of each value of the list
+- [ ] List pattern Validation, for example we have a list with 2 items [a, b], first one should a string the other should be a Tuple
+
+---
+
+### Fixed bugs:
+
+- [x] Fix showing different errors when they accompany a conditional errors
+- [x] Fix short anonymous function warning in elixir 1.16
+- [x] Support pre-check derives inside conditional fields
+- [x] Normalize conditional fields errors
+- [x] Normalize validator errors
+- [x] Normalize  errors `hint`
+- [x] Normalize `derives` errors
+- [x] Fix `dialyzer` warning
+- [x] Support derive in normal conditional field without validator
+```elixir
+conditional_field(:id, String.t()) do
+  field(:id, String.t(), derive: "sanitize(tag=strip_tags) validate(url, max_len=160)")
+  field(:id, any(), derive: "sanitize(tag=strip_tags) validate(not_empty_string, uuid)")
+end
+```
+
+---
+
+### Docs
+
+- [ ] We need some tools to create docs of each macro inside developer module
+
+
 # Changelog for MishkaDeveloperTools 0.1.3
 
 **Features**:
