@@ -1771,16 +1771,39 @@ defmodule GuardedStruct do
     sub_modules_builders =
       sub_modules
       |> Enum.map(fn
-        %{field: field, module: module, type: :list} ->
-          {field, list_builder(full_attrs, module, field, key, type)}
+        %{field: field, module: module, type: :list, opts: opts} ->
+          {get_field_validator(opts, module, field, Map.get(full_attrs, field)), opts}
+          |> Derive.pre_derives_check(opts, field)
+          |> case do
+            {{:ok, _, sanitized_value}, _} ->
+              {field,
+               list_builder(Map.put(full_attrs, field, sanitized_value), module, field, key, type)}
 
-        %{field: field, module: module, type: :struct} ->
+            {{:error, error}, _opts} ->
+              {field, {:error, error}}
+
+            {{:error, error}, _field, _opts} ->
+              {field, {:error, error}}
+          end
+
+        %{field: field, module: module, type: :struct, opts: opts} ->
           keys =
             reverse_module_keys(Module.split(module), field)
             |> combine_parent_field(if(is_list(key), do: key, else: [key]))
             |> List.delete(:root)
 
-          {field, module.builder({keys, full_attrs, type})}
+          {get_field_validator(opts, module, field, Map.get(full_attrs, field)), opts}
+          |> Derive.pre_derives_check(opts, field)
+          |> case do
+            {{:ok, _, sanitized_value}, _} ->
+              {field, module.builder({keys, Map.put(full_attrs, field, sanitized_value), type})}
+
+            {{:error, error}, _opts} ->
+              {field, {:error, error}}
+
+            {{:error, error}, _field, _opts} ->
+              {field, {:error, error}}
+          end
       end)
 
     {
@@ -1987,10 +2010,18 @@ defmodule GuardedStruct do
       {!is_nil(extra_field), Code.ensure_loaded(Module.concat(find_module))}
       |> case do
         {true, {:module, module}} ->
-          if !list, do: %{field: field, module: module, type: extra_field.type}, else: field
+          opts = if(!is_nil(extra_field), do: Map.get(extra_field, :opts), else: [])
+
+          if !list,
+            do: %{field: field, module: module, type: extra_field.type, opts: opts},
+            else: field
 
         {false, {:module, module}} ->
-          if !list, do: %{field: field, module: module, type: :struct}, else: field
+          opts = if(!is_nil(extra_field), do: Map.get(extra_field, :opts), else: [])
+
+          if !list,
+            do: %{field: field, module: module, type: :struct, opts: opts},
+            else: field
 
         _ ->
           nil
@@ -2112,7 +2143,8 @@ defmodule GuardedStruct do
         {name,
          %{
            module: opts[:struct] || opts[:structs],
-           type: if(struct?, do: :struct, else: :list)
+           type: if(struct?, do: :struct, else: :list),
+           opts: opts
          }}
       )
     end
@@ -2124,7 +2156,7 @@ defmodule GuardedStruct do
         Module.put_attribute(
           mod,
           :gs_external,
-          {name, %{module: converted_name, type: :list}}
+          {name, %{module: converted_name, type: :list, opts: opts}}
         )
       end
     end

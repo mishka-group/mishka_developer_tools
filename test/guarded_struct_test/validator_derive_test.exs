@@ -57,10 +57,37 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
         field(:github, String.t(), enforce: true, derive: "validate(url)")
         field(:nickname, String.t(), derive: "validate(not_empty)")
       end
+
+      field(:auth_path1, struct(), struct: TestAuthStruct, derive: "validate(map, not_empty)")
+      field(:auth_path2, struct(), structs: TestAuthStruct, derive: "validate(list, not_empty)")
+
+      field(:auth_path3, struct(),
+        structs: TestAuthStruct,
+        derive: "validate(list, not_empty)",
+        validator: {__MODULE__, :test_validator}
+      )
+
+      sub_field(:profile1, list(struct()), structs: true, derive: "validate(list, not_empty)") do
+        field(:github, String.t(), enforce: true, derive: "validate(url)")
+        field(:nickname, String.t(), derive: "validate(not_empty)")
+      end
+    end
+
+    def test_validator(field, value) do
+      if is_map(value) and value != %{},
+        do: {:ok, field, value},
+        else: {:error, field, "No, it is not map"}
     end
 
     def validator(:name, value) do
       if is_binary(value), do: {:ok, :name, value}, else: {:error, :name, "No, never"}
+    end
+
+    # it does not work, because it is sub_field as external module
+    def validator(:auth_path2, value) do
+      if is_map(value) and value != %{},
+        do: {:ok, :auth_path2, value},
+        else: {:error, :auth_path2, "No, it is not map"}
     end
 
     def validator(field, value) do
@@ -441,5 +468,73 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
        %{message: "No, never", field: :changed, action: :validator},
        %{message: "there is an Error", field: :global, action: :main_validator}
      ]} = assert TestAuthStruct.builder(%{changed: 555_555})
+  end
+
+  test "key entries inside derive when derives used" do
+    {:error,
+     [
+       %{
+         field: :auth_path1,
+         errors: [
+           %{
+             message: "The auth_path1 field must not be empty",
+             field: :auth_path1,
+             action: :not_empty
+           }
+         ]
+       },
+       %{
+         field: :auth_path2,
+         errors: [
+           %{
+             message: "The auth_path2 field must not be empty",
+             field: :auth_path2,
+             action: :not_empty
+           }
+         ]
+       }
+     ]} =
+      assert TestUserAuthStruct.builder(%{auth_path1: %{}, auth_path2: []})
+
+    {:error,
+     [
+       %{
+         field: :auth_path3,
+         errors: %{
+           message: "No, it is not map",
+           field: :auth_path3,
+           action: :validator
+         }
+       }
+     ]} =
+      assert TestUserAuthStruct.builder(%{auth_path3: 1})
+
+    {:ok, _} =
+      assert TestUserAuthStruct.builder(%{
+               auth_path1: %{action: "admin"},
+               auth_path2: [%{action: "admin"}]
+             })
+
+    {:error,
+     [
+       %{
+         field: :profile1,
+         errors: [
+           %{
+             message: "The profile1 field must not be empty",
+             field: :profile1,
+             action: :not_empty
+           },
+           %{
+             message: "The profile1 field must be list",
+             field: :profile1,
+             action: :list
+           }
+         ]
+       }
+     ]} =
+      assert TestUserAuthStruct.builder(%{
+               profile1: %{}
+             })
   end
 end
