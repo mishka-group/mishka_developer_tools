@@ -701,7 +701,7 @@ defmodule GuardedStruct do
   # Ouput: `{:error, [%{field: :auth, errors: {:authorized_fields, [:test]}}]}`
   ```
 
-  12. #### `authorized_fields` option to limit user input
+  12. #### Call external struct/structs module
 
   This option can be helpful for you if you wish to construct your own modules in various files
   and then make those modules reusable in the future. Simply implement the macro in another module,
