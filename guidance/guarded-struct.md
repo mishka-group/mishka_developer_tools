@@ -20,6 +20,8 @@ The initial version of this macro can be found in the `typed_struct` library. It
 
 Before explaining the copyright, I must point out that the primary library, which is `typed_struct`, is no longer supported for a long time, so please pay attention to the following copyright.
 
+[![Run in Livebook](https://livebook.dev/badge/v1/pink.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fmishka-group%2Fmishka_developer_tools%2Fblob%2Fmaster%2Fguidance%2Fguarded-struct.livemd)
+
 ## Copyright
 
 The code in this module is based on the `typed_struct` library (https://github.com/ejpcmac/typed_struct),
