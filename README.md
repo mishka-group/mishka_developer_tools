@@ -8,6 +8,8 @@ We tried to deliver a series of our client's [**CMS**](https://github.com/mishka
 
 - #### [GuardedStruct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md)
 
+[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fmishka-group%2Fmishka_developer_tools%2Fblob%2Fmaster%2Fguidance%2Fguarded-struct.livemd)
+
 - #### [Basic CRUD](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/crud.md)
 
 - #### [PermissionAccess](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/permission-access.md)
@@ -43,7 +45,7 @@ If the project was useful for you, the only way you can donate to me is the foll
 
 <details>
   <summary>Donate addresses</summary>
-  
+
   **BTC**:‌
   ```
   bc1q24pmrpn8v9dddgpg3vw9nld6hl9n5dkw5zkf2c
@@ -59,10 +61,8 @@ If the project was useful for you, the only way you can donate to me is the foll
   DGGT5PfoQsbz3H77sdJ1msfqzfV63Q3nyH
   ```
 
-  **TRX**: 
+  **TRX**:
   ```
   TBamHas3wAxSEvtBcWKuT3zphckZo88puz
   ```
 </details>
-
-
