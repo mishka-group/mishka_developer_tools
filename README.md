@@ -8,8 +8,6 @@ We tried to deliver a series of our client's [**CMS**](https://github.com/mishka
 
 - #### [GuardedStruct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md)
 
-[![Run in Livebook](https://livebook.dev/badge/v1/blue.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fmishka-group%2Fmishka_developer_tools%2Fblob%2Fmaster%2Fguidance%2Fguarded-struct.livemd)
-
 - #### [Basic CRUD](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/crud.md)
 
 - #### [PermissionAccess](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/permission-access.md)
@@ -33,6 +31,7 @@ end
 
 The docs can be found at [https://hexdocs.pm/mishka_developer_tools](https://hexdocs.pm/mishka_developer_tools).
 
+[![Run in Livebook](https://livebook.dev/badge/v1/pink.svg)](https://livebook.dev/run?url=https%3A%2F%2Fgithub.com%2Fmishka-group%2Fmishka_developer_tools%2Fblob%2Fmaster%2Fguidance%2Fguarded-struct.livemd)
 
 ---
 # Donate
