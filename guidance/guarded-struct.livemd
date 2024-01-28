@@ -52,31 +52,31 @@ Adding new Copyright (c) [2023] [Shahryar Tavakkoli at [Mishka Group](https://gi
 
 ## Table of Contents
 
-* Defines a guarded struct
-* Defining a struct layer without additional options
-* Define a struct with settings related to essential keys or opaque type
-* Defining the struct by calling the validation module or calling from the module that contains the struct
-* Define the struct by calling the main_validator for full access on the output
-* Define struct with derive
-* Extending derive section
-* Struct definition with validator and derive simultaneously
-* Define a nested and complex struct
-* Error and data output sample
-* Set config to show error inside defexception
-* Error defexception modules
-* authorized_fields option to limit user input
-* Call external struct/structs module
-* List of structs
-* Struct information function
-* Transmitting whole output of builder function to its children
-* Auto core key
-* On core key
-* From core key
-* Domain core key
-* Domain core key with equal and either support
-* Domain core key with Custom function support
-* Conditional fields
-* List Conditional fields
+* [Defines a guarded struct](#defines-a-guarded-struct)
+* [Defining a struct layer without additional options](#defining-a-struct-layer-without-additional-options)
+* [Define a struct with settings related to essential keys or opaque type](#define-a-struct-with-settings-related-to-essential-keys-or-%60opaque%60-type)
+* [Defining the struct by calling the validation module or calling from the module that contains the struct](#defining-the-struct-by-calling-the-validation-module-or-calling-from-the-module-that-contains-the-struct)
+* [Define the struct by calling the main_validator for full access on the output](#define-the-struct-by-calling-the-%60main_validator%60-for-full-access-on-the-output)
+* [Define struct with derive](#define-struct-with-%60derive%60)
+* [Extending derive section](#extending-%60derive%60-section)
+* [Struct definition with validator and derive simultaneously](#struct-definition-with-%60validator%60-and-%60derive%60-simultaneously)
+* [Define a nested and complex struct](#define-a-nested-and-complex-struct)
+* [Error and data output sample](#data-and-error-output-sample)
+* [Set config to show error inside defexception](#set-config-to-show-error-inside-%60defexception%60)
+* [Error defexception modules](#%60authorized_fields%60-option-to-limit-user-input)
+* [authorized_fields option to limit user input](#%60authorized_fields%60-option-to-limit-user-input)
+* [Call external struct/structs module](#call-external-struct/structs-module)
+* [List of structs](#list-of-structs)
+* [Struct information function](#struct-information-function)
+* [Transmitting whole output of builder function to its children](#transmitting-whole-output-of-builder-function-to-its-children)
+* [Auto core key](#auto-core-key)
+* [On core key](#on-core-key)
+* [From core key](#from-core-key)
+* [Domain core key](#domain-core-key)
+* [Domain core key with equal and either support](#domain-core-key-with-%60equal%60-and-%60either%60-support)
+* [Domain core key with Custom function support](#domain-core-key-with-custom-function-support)
+* [Conditional fields](#conditional-fields)
+* [List Conditional fields](#list-conditional-fields)
 
 ## Defines a guarded struct
 
