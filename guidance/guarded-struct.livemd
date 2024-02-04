@@ -17,10 +17,10 @@ Mix.install([
 
 The creation of this macro will allow you to build `Structs` that provide you with a number of important options, including the following:
 
-1. Validation
-2. Sanitizing
-3. Constructor
-4. It provides the capacity to operate in a nested style simultaneously.
+1. **Validation**
+2. **Sanitizing**
+3. **Constructor**
+4. **It provides the capacity to operate in a nested style simultaneously.**
 
 Suppose you are going to collect a number of pieces of information from the user, and before doing anything else, you are going to sanitize them.
 After that, you are going to validate each piece of data, and if there are no issues, you will either display it in a proper output or save it somewhere else.
@@ -54,17 +54,17 @@ Adding new Copyright (c) [2023] [Shahryar Tavakkoli at [Mishka Group](https://gi
 
 * [Defines a guarded struct](#defines-a-guarded-struct)
 * [Defining a struct layer without additional options](#defining-a-struct-layer-without-additional-options)
-* [Define a struct with settings related to essential keys or opaque type](#define-a-struct-with-settings-related-to-essential-keys-or-%60opaque%60-type)
+* [Define a struct with settings related to essential keys or opaque type](#define-a-struct-with-settings-related-to-essential-keys-or-opaque-type)
 * [Defining the struct by calling the validation module or calling from the module that contains the struct](#defining-the-struct-by-calling-the-validation-module-or-calling-from-the-module-that-contains-the-struct)
-* [Define the struct by calling the main_validator for full access on the output](#define-the-struct-by-calling-the-%60main_validator%60-for-full-access-on-the-output)
-* [Define struct with derive](#define-struct-with-%60derive%60)
-* [Extending derive section](#extending-%60derive%60-section)
-* [Struct definition with validator and derive simultaneously](#struct-definition-with-%60validator%60-and-%60derive%60-simultaneously)
+* [Define the struct by calling the main_validator for full access on the output](#define-the-struct-by-calling-the-main_validator-for-full-access-on-the-output)
+* [Define struct with derive](#define-struct-with-derive)
+* [Extending derive section](#extending-derive-section)
+* [Struct definition with validator and derive simultaneously](#struct-definition-with-validator-and-derive-simultaneously)
 * [Define a nested and complex struct](#define-a-nested-and-complex-struct)
 * [Error and data output sample](#data-and-error-output-sample)
-* [Set config to show error inside defexception](#set-config-to-show-error-inside-%60defexception%60)
-* [Error defexception modules](#%60authorized_fields%60-option-to-limit-user-input)
-* [authorized_fields option to limit user input](#%60authorized_fields%60-option-to-limit-user-input)
+* [Set config to show error inside defexception](#set-config-to-show-error-inside-defexception)
+* [Error defexception modules](#authorized_fields-option-to-limit-user-input)
+* [authorized_fields option to limit user input](#authorized_fields-option-to-limit-user-input)
 * [Call external struct/structs module](#call-external-struct/structs-module)
 * [List of structs](#list-of-structs)
 * [Struct information function](#struct-information-function)
@@ -73,7 +73,7 @@ Adding new Copyright (c) [2023] [Shahryar Tavakkoli at [Mishka Group](https://gi
 * [On core key](#on-core-key)
 * [From core key](#from-core-key)
 * [Domain core key](#domain-core-key)
-* [Domain core key with equal and either support](#domain-core-key-with-%60equal%60-and-%60either%60-support)
+* [Domain core key with equal and either support](#domain-core-key-with-equal-and-either-support)
 * [Domain core key with Custom function support](#domain-core-key-with-custom-function-support)
 * [Conditional fields](#conditional-fields)
 * [List Conditional fields](#list-conditional-fields)
@@ -146,7 +146,11 @@ defmodule NoramalStruct do
 end
 ```
 
-## Define a struct with settings related to essential keys or `opaque` type
+```elixir
+NoramalStruct.builder(%{field_one: "Mishka", field_two: 1, field_three: true})
+```
+
+## Define a struct with settings related to essential keys or opaque type
 
 ##### Options
 
@@ -244,7 +248,7 @@ end
 * Output without error: `{:ok, :field_name, value}`
 * Output with error: `{:error, :field_name, ERROR MESSAGE}`
 
-## Define the struct by calling the `main_validator` for full access on the output
+## Define the struct by calling the main_validator for full access on the output
 
 ##### Options
 
@@ -273,7 +277,7 @@ end
 * Output without error: `{:ok, value}`
 * Output with error: `{:error, :general_reason, errors_list}`
 
-## Define struct with `derive`
+## Define struct with derive
 
 > derive is divided into two parts: `validate` and `sanitize`, which is priority with `sanitize`
 
@@ -364,7 +368,7 @@ defmodule NormalDeriveStruct do
 end
 ```
 
-## Extending `derive` section
+## Extending derive section
 
 ##### Options
 
@@ -424,7 +428,7 @@ defmodule NormalExtendedListModuleDeriveStruct do
 end
 ```
 
-## Struct definition with `validator` and `derive` simultaneously
+## Struct definition with validator and derive simultaneously
 
 ```elixir
 # In this code, name field has not custom validator module and function
@@ -607,7 +611,7 @@ end
  ]}
 ```
 
-## Set config to show error inside `defexception`
+## Set config to show error inside defexception
 
 You may want to display the received errors in Elixir's `defexception`. you just need to enable the `error: true` for `guardedstruct` macro or `sub_field`.
 
@@ -649,7 +653,7 @@ And you should call it like this, the second entry should be `true` or `false` t
 TestCallNestedStructWithError.builder(%{name: 1}, true)
 ```
 
-## `authorized_fields` option to limit user input
+## authorized_fields option to limit user input
 
 If this option is not used, the program will automatically drop fields that are not defined; however, if this option is set, it will return an error to the user if they transmit a field that is not in the list of specified fields. If this option is not used, the program will automatically drop fields that are not defined.
 
@@ -972,7 +976,7 @@ domain: "!auth.action=String[admin, user]::?auth.social=Atom[banned]"
 It is important to think about the fact that the `domain` core key does not consider any update of  the `auto` core key and instead examines the data that was initially entered in the `builder`.
 The information that was entered is not altered in any way by this function; it is merely validating it.
 
-## Domain core key with `equal` and `either` support
+## Domain core key with equal and either support
 
 This component supplies all of the facilities that are necessary to be able to utilize the two keys labeled `equal` and `either`, but because of a little interference, its style is different from the original style of each of these keys, and you are required to adhere to these guidelines. Play can be found in this section.
 
