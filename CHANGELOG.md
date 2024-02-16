@@ -2,10 +2,12 @@
 
 ### Features:
 
-- [x] #26
+- [x] Support whole entries check derives for struct or structs (external module)
+> **More information**: https://github.com/mishka-group/mishka_developer_tools/issues/26
+
 - [x] Support `derive` and `validator` on `conditional_field` macro as entries checker
 - [x] <del>Support nested conditional fields</del>
-> **More information**: >https://github.com/mishka-group/mishka_developer_tools/issues/25
+> **More information**: https://github.com/mishka-group/mishka_developer_tools/issues/25
 
 ```elixir
   guardedstruct do
