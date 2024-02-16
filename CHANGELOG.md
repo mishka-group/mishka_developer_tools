@@ -2,28 +2,29 @@
 
 ### Features:
 
-- [x] Support `derive` and `validator` on `conditional_field` macro as entries
-- [ ] Add `condition_field` fields inside `__information__` function
-- [ ] DECORATORS `@something` top of `field`, `sub_field`, `conditional_field` and the main macro `guardedstruct`
-- [ ] accept `JSON`
-- [ ] `JSON` output
- checker
-- [ ] Get some global keys from `__using__` instead of the `GuardedStruct` macro to make code clear (should be optional)
-- [ ] How can get whole macro as list, not just a field
-- [ ] Extend from another macro code and add some new fields, can we?
-- [ ] Runtime required fields as the builder function entry, it should support nested `map`
+- [x] #26
+- [x] Support `derive` and `validator` on `conditional_field` macro as entries checker
+- [x] <del>Support nested conditional fields</del>
+> **More information**: >https://github.com/mishka-group/mishka_developer_tools/issues/25
 
-#### URL
-- [ ] This url exist in our list as __using__
+```elixir
+  guardedstruct do
+    conditional_field(:actor, any()) do
+      field(:actor, struct(), struct: Actor, derive: "validate(map, not_empty)")
 
-#### List
-- [ ] Validation of each value of the list, if it is not nested
-- [ ] Sorte list
-- [ ] List of string values
-- [ ] Sanitize of each value of the list
-- [ ] List pattern Validation, for example we have a list with 2 items [a, b], first one should a string the other should be a Tuple
+      conditional_field(:actor, any(),
+        structs: true,
+        derive: "validate(list, not_empty, not_flatten_empty_item)"
+      ) do
+        field(:actor, struct(), struct: Actor, derive: "validate(map, not_empty)")
 
----
+        field(:actor, String.t(), derive: "sanitize(tag=strip_tags) validate(url, max_len=160)")
+      end
+
+      field(:actor, String.t(), derive: "sanitize(tag=strip_tags) validate(url, max_len=160)")
+    end
+  end
+```
 
 ### Fixed bugs:
 
@@ -43,11 +44,9 @@ conditional_field(:id, String.t()) do
 end
 ```
 
----
-
 ### Docs
 
-- [ ] We need some tools to create docs of each macro inside developer module
+- [x] Add LiveBook
 
 
 # Changelog for MishkaDeveloperTools 0.1.3
