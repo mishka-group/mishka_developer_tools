@@ -175,12 +175,22 @@ end
 ```
 
 ```elixir
+# Status ok
+EnforceStruct.builder(%{enforced_by_default: "test"})
+```
+
+```elixir
+# Status error
+EnforceStruct.builder(%{})
+```
+
+```elixir
 # OR opaque
 defmodule OpaqueStruct do
   use GuardedStruct
 
   guardedstruct opaque: true do
-    field(:enforced_by_default, term())
+    field(:opaque_by_default, term())
     field(:not_enforced, term(), enforce: false)
     field(:with_default, integer(), default: 1)
     field(:with_false_default, boolean(), default: false)
@@ -190,17 +200,28 @@ end
 ```
 
 ```elixir
+OpaqueStruct.builder(%{})
+```
+
+```elixir
 defmodule NormalEnforceAndDefaultStruct do
   use GuardedStruct
 
   guardedstruct do
-    field(:enforced_by_default, term())
-    field(:not_enforced, term(), enforce: true)
+    field(:enforced, term(), enforce: true)
     field(:with_default, integer(), default: 1)
     field(:with_false_default, boolean(), default: false)
     field(:with_nil_default, term(), default: nil)
   end
 end
+```
+
+```elixir
+NormalEnforceAndDefaultStruct.builder(%{})
+```
+
+```elixir
+NormalEnforceAndDefaultStruct.builder(%{enforced: true})
 ```
 
 ```elixir
@@ -213,6 +234,10 @@ defmodule NormalSubModuleAsGuardedEstructMacroStruct do
     field(:field, term())
   end
 end
+```
+
+```elixir
+NormalSubModuleAsGuardedEstructMacroStruct.Struct.builder(%{field: "name"})
 ```
 
 ## Defining the struct by calling the validation module or calling from the module that contains the struct
