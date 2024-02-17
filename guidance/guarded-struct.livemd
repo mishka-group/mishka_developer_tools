@@ -842,6 +842,14 @@ defmodule ExternalAuthCallModuleStruct do
 end
 ```
 
+```elixir
+ExternalAuthCallModuleStruct.builder(%{
+  name: "Mishka",
+  auth_path: %{action: "add"},
+  auth_path1: [%{action: "add"}]
+})
+```
+
 ## List of structs
 
 As was discussed in the earlier available choices. In the `field` macro that is used to call **another module**, as well as in the `sub_field` macro, you have the ability to retrieve a list of structs rather than a single struct.
@@ -959,8 +967,18 @@ end
 > **Note**: When changing a record in the database, for example, you might need to make sure that a particular piece of data does not get overwritten by an automatic piece of data if one already exists. To find a solution to this issue, you will need to invoke the `builder` function in the following manner.
 
 ```elixir
+AutoCoreKeyStruct.builder(%{username: "mishka", user_id: "test_not_to_be_replaced"})
+```
+
+```elixir
 AutoCoreKeyStruct.builder(
-  {:root, %{username: "mishka", user_id: "test_not_to_be_replaced"}, :edit}
+  {:root, %{username: "mishka", user_id: "test_not_to_be_replaced"}, :add}
+)
+```
+
+```elixir
+AutoCoreKeyStruct.builder(
+  {:root, %{username: "mishka", user_id: "test_should_be_replaced"}, :edit}
 )
 ```
 
@@ -1011,6 +1029,30 @@ defmodule OnCoreKeyStruct do
 end
 ```
 
+```elixir
+OnCoreKeyStruct.builder(%{
+  name: "mishka",
+  profile: %{
+    nickname: "Mishka",
+    github: "test",
+    identity: %{
+      provider: "git",
+      sub_identity: %{id: "test", auth_path: %{action: "admin/edit"}}
+    }
+  }
+})
+```
+
+```elixir
+OnCoreKeyStruct.builder(%{
+  name: "mishka",
+  profile: %{
+    nickname: "Mishka",
+    identity: %{provider: "git"}
+  }
+})
+```
+
 ## From core key
 
 You can select this alternative if you require any data that was delivered in another key to be incorporated into the key that you are looking for. If the key is present, the data associated with it will be copied; however, if the key is not there, the data in and of itself will be retained.
@@ -1057,6 +1099,14 @@ defmodule FromCoreKeyStruct do
 end
 ```
 
+```elixir
+FromCoreKeyStruct.builder(%{
+  username: "mishka",
+  user_id: "test_to_be_replaced",
+  profile: %{nickname: "Mishka", social: %{skype: "mishka_skype", username: "none_to_test"}}
+})
+```
+
 ## Domain core key
 
 When dealing with a structure that is heavily nested, it is occasionally necessary to establish the permitted range of values for a set of parameters based on the input provided by a parent.
@@ -1084,6 +1134,17 @@ defmodule AllowedParentDomain do
     end
   end
 end
+```
+
+```elixir
+AllowedParentDomain.builder(%{username: "mishka", auth: %{action: "admin1"}})
+```
+
+```elixir
+AllowedParentDomain.builder(%{
+  username: "mishka",
+  auth: %{action: "admin", social: :banned}
+})
 ```
 
 **Please see the `domain` core key, for example:**
@@ -1162,6 +1223,20 @@ defmodule AllowedParentCustomDomain do
 end
 ```
 
+```elixir
+AllowedParentCustomDomain.builder(%{
+  username: "mishka",
+  auth: %{action: "ok"}
+})
+```
+
+```elixir
+AllowedParentCustomDomain.builder(%{
+  username: "mishka",
+  auth: %{action: "error"}
+})
+```
+
 **Note**: if you want to use `custom` inside `derive` validation, you should do like this:
 
 ```elixir
@@ -1178,6 +1253,14 @@ end
 ```
 
 **Note**: You can see when you use it inside a derive, the GuardedStruct calculates the you module `alias`.
+
+```elixir
+CustomValidationDerive.builder(%{status: "ok"})
+```
+
+```elixir
+CustomValidationDerive.builder(%{status: "error"})
+```
 
 ## Conditional fields
 
