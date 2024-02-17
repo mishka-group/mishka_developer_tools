@@ -414,6 +414,14 @@ defmodule NormalDeriveStruct do
 end
 ```
 
+```elixir
+NormalDeriveStruct.builder(%{title: "mishka"})
+```
+
+```elixir
+NormalDeriveStruct.builder(%{title: :mishka})
+```
+
 ## Extending derive section
 
 ##### Options
@@ -438,40 +446,51 @@ defmodule TestValidateModule2 do
   end
 end
 
-defmodule TestSanitizeModule do
+defmodule TestSanitizeModuleOne do
   def sanitize(:capitalize_v1, input) do
-    if is_binary(input), do: String.capitalize(input), else: input
+    if is_binary(input), do: String.capitalize(input) <> "::_v1", else: input
   end
 end
 
-defmodule TestSanitizeModule2 do
+defmodule TestSanitizeModuleTwo do
   def sanitize(:capitalize_v2, input) do
-    if is_binary(input), do: String.capitalize(input), else: input
+    if is_binary(input), do: String.capitalize(input) <> "::_v2", else: input
   end
 end
+```
 
+```elixir
 defmodule NormalExtendedModuleDeriveStruct do
   use GuardedStruct
 
-  guardedstruct validate_derive: TestValidateModule, sanitize_derive: TestSanitizeModule do
+  guardedstruct validate_derive: TestValidateModule, sanitize_derive: TestSanitizeModuleOne do
     field(:id, integer(), derive: "sanitize(trim) validate(not_exist)")
     field(:title, String.t(), derive: "sanitize(trim) validate(string)")
-    field(:name, String.t(), derive: "sanitize(capitalize_v2) validate(string)")
+    field(:name, String.t(), derive: "sanitize(capitalize_v1) validate(string)")
   end
 end
+```
 
+```elixir
+NormalExtendedModuleDeriveStruct.builder(%{name: "Mishka"})
+```
+
+```elixir
 # OR you can extend with list of modules
-
 defmodule NormalExtendedListModuleDeriveStruct do
   use GuardedStruct
 
-  guardedstruct validate_derive: [TestValidateModule, TestValidate2Module],
-                sanitize_derive: [TestSanitizeModule, TestSanitizeModule2] do
+  guardedstruct validate_derive: [TestValidateModule, TestValidateModule2],
+                sanitize_derive: [TestSanitizeModuleTwo, TestSanitizeModuleOne] do
     field(:id, integer(), derive: "validate(ineteger)")
-    field(:title, String.t(), derive: "sanitize(trim) validate(string)")
     field(:name, String.t(), derive: "sanitize(capitalize_v2) validate(string)")
+    field(:title, String.t(), derive: "sanitize(trim) validate(string)")
   end
 end
+```
+
+```elixir
+NormalExtendedListModuleDeriveStruct.builder(%{name: "Mishka"})
 ```
 
 ## Struct definition with validator and derive simultaneously
@@ -502,6 +521,10 @@ end
 ```
 
 ```elixir
+NormalSimultaneouslyDeriveAndValidatorStruct.builder(%{name: "Mishka", title: "mishka"})
+```
+
+```elixir
 # OR with custom validator
 
 defmodule GuardedStructTest.AnotherModule do
@@ -529,6 +552,14 @@ defmodule NormalSimultaneouslyDeriveWithCustomValidatorStruct do
     {:ok, name, value}
   end
 end
+```
+
+```elixir
+NormalSimultaneouslyDeriveWithCustomValidatorStruct.builder(%{name: "mishka"})
+```
+
+```elixir
+NormalSimultaneouslyDeriveWithCustomValidatorStruct.builder(%{name: :mishka})
 ```
 
 ## Define a nested and complex struct
@@ -594,6 +625,60 @@ defmodule NestedStruct do
     {:ok, field, value}
   end
 end
+```
+
+```elixir
+NestedStruct.builder(%{
+  username: " <p>Mishka   </p>",
+  auth: %{
+    server: "users@mishka.group",
+    identity_provider: "google",
+    role: %{
+      name: :user,
+      action: "true",
+      status: %{status: 2}
+    },
+    last_activity: "2023-08-20 16:54:07.841434Z"
+  },
+  age: 18,
+  family: "group",
+  name: "mishka",
+  profile: %{
+    site: "https://elixir-lang.org",
+    nickname: "mishka"
+  }
+})
+```
+
+```elixir
+NestedStruct.builder(%{
+  username: "mishka",
+  auth: %{
+    server: "users@mishka.group",
+    identity_provider: "google",
+    role: %{
+      name: :admin,
+      action: "test",
+      status: %{status: 2}
+    },
+    last_activity: "20213-08-20 16:54:07.841434Z"
+  },
+  age: 18,
+  family: "group",
+  name: "mishka",
+  profile: %{
+    site: "https://elixir-lang.org",
+    nickname: :test
+  }
+})
+```
+
+```elixir
+NestedStruct.keys() |> IO.inspect()
+NestedStruct.keys(:profile) |> IO.inspect()
+NestedStruct.__information__() |> IO.inspect()
+NestedStruct.enforce_keys() |> IO.inspect()
+NestedStruct.enforce_keys(:profile) |> IO.inspect()
 ```
 
 ## Data and Error output sample
@@ -704,6 +789,8 @@ TestCallNestedStructWithError.builder(%{name: 1}, true)
 If this option is not used, the program will automatically drop fields that are not defined; however, if this option is set, it will return an error to the user if they transmit a field that is not in the list of specified fields. If this option is not used, the program will automatically drop fields that are not defined.
 
 **Please take note** that the `required_fields` and this section are not the same thing, and that the validation of the mandatory fields will take place after this section.
+
+**Security note**: The assumption of the correctness of this function is that you must enter the name of each field correctly (as a map key), for example, Phoenix should consider a layer of care for the names of the fields, otherwise, a security problem may arise.
 
 ```elixir
 defmodule TestAuthorizeKeys do
