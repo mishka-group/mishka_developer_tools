@@ -251,16 +251,17 @@ NormalSubModuleAsGuardedEstructMacroStruct.Struct.builder(%{field: "name"})
 # First, it looks at whether a validator has been set for each field,
 # otherwise it looks inside the module.
 defmodule NormalValidatorStruct do
-  alias MyModule.AnotherModule
   use GuardedStruct
-
+  # You can call `validator` from another module
+  # You can use field(:name, String.t(), validator: {__MODULE__, :validator})
+  # Even you can not call validator, because you put the reserved name inside module
   guardedstruct do
-    field(:name, String.t(), validator: {AnotherModule, :validator})
+    field(:name, String.t(), validator: {NormalValidatorStruct, :validator})
     field(:title, String.t())
   end
 
-  def validator(:title, value) do
-    {:ok, :title, value}
+  def validator(:name, value) do
+    if is_binary(value), do: {:ok, :name, value}, else: {:error, :name, "Not right!"}
   end
 
   # You can not use it, but it is mentioned here for test clarity
@@ -270,37 +271,57 @@ defmodule NormalValidatorStruct do
 end
 ```
 
-* Output without error: `{:ok, :field_name, value}`
-* Output with error: `{:error, :field_name, ERROR MESSAGE}`
+```elixir
+NormalValidatorStruct.builder(%{name: "Mishka"})
+```
+
+```elixir
+NormalValidatorStruct.builder(%{name: :mishka})
+```
+
+> **Note**: There are other ways to call the `validator` function. Using a Tuple is the first method. It is shown in the code excerpt above. The module address appears in the first entry, and the function name in Atomic form appears in the second. 
+> Note that you can use `__MODULE__` if you define it in this module.
+> But there's a simpler method. The module itself has a reserved word for `validator`. It only has to be valued as a field; the macro will verify that the input is accurate.
 
 ## Define the struct by calling the main_validator for full access on the output
 
 ##### Options
 
-* `main_validator` - if set as tuple like this {ModuleName, :function_name},
+* `main_validator` - if set as tuple like this `{ModuleName, :function_name}`,
   for guardedstruct, in fact you have a global validation.
 
 ```elixir
 # First, it looks at whether a main_validator has been set for each field,
 # otherwise it looks inside the module.
 defmodule NormalMainValidatorStruct do
-  alias MyModule.AnotherModule
   use GuardedStruct
-
-  guardedstruct main_validator: {AnotherModule, :main_validator} do
+  # You can call `main_validator` from another module
+  # Even you can not call validator, because you put the reserved name inside module
+  guardedstruct main_validator: {__MODULE__, :main_validator} do
     field(:name, String.t())
     field(:title, String.t())
   end
 
   # if `guardedstruct` has no `main_validator` which is configed
   def main_validator(value) do
-    {:ok, value}
+    if Map.get(value, :title) == "mishka" do
+      {:ok, value}
+    else
+      {:error, [%{message: "Not right!", field: :title, action: :validator}]}
+    end
   end
 end
 ```
 
-* Output without error: `{:ok, value}`
-* Output with error: `{:error, :general_reason, errors_list}`
+```elixir
+NormalMainValidatorStruct.builder(%{title: "mishka"})
+```
+
+```elixir
+NormalMainValidatorStruct.builder(%{title: :mishka})
+```
+
+As the code sample above illustrates. `main_validator` is a bit rudimentary in terms of error and data presentation, and it can only be used once. since it gives you the ability to generate a unique code. Similar to `validator`, this option can be called by a macro within the same module or from another module.
 
 ## Define struct with derive
 
