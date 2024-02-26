@@ -311,16 +311,18 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
     _ -> {:error, field, :email, "Invalid email format in the #{field} field"}
   end
 
-  def validate(:location, input, field) when is_binary(input) do
-    converted =
-      input
-      |> String.split(" ")
-      |> Enum.reject(&(&1 == ""))
-      |> Enum.join()
+  if Code.ensure_loaded?(URL) do
+    def validate(:location, input, field) when is_binary(input) do
+      converted =
+        input
+        |> String.split(" ")
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.join()
 
-    location("geo:#{converted}", field, :location)
-  rescue
-    _ -> {:error, field, :email, "Invalid location format in the #{field} field"}
+      location("geo:#{converted}", field, :location)
+    rescue
+      _ -> {:error, field, :email, "Invalid location format in the #{field} field"}
+    end
   end
 
   def validate(:string_boolean, input, field) do
