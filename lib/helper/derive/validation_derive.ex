@@ -586,20 +586,22 @@ defmodule MishkaDeveloperTools.Helper.Derive.ValidationDerive do
       {:error, field, :type, "Unexpected type error in #{field} field"}
   end
 
-  defp location(geo_link, field, action) do
-    case URL.new(geo_link) do
-      {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{lat: lat, lng: lng}}}
-      when not is_nil(lat) and not is_nil(lng) ->
-        geo_link
+  if Code.ensure_loaded?(URL) do
+    defp location(geo_link, field, action) do
+      case URL.new(geo_link) do
+        {:ok, %URL{scheme: "geo", parsed_path: %URL.Geo{lat: lat, lng: lng}}}
+        when not is_nil(lat) and not is_nil(lng) ->
+          geo_link
 
+        _ ->
+          {:error, field, action,
+           "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
+      end
+    rescue
       _ ->
         {:error, field, action,
          "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
     end
-  rescue
-    _ ->
-      {:error, field, action,
-       "Invalid geo url format in the #{field} field, you should send latitude and longitude"}
   end
 
   defp is_type(field, status, type, input) do
