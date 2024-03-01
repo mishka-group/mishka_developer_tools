@@ -1,5 +1,9 @@
-defmodule MishkaDeveloperTools.Helper.Derive do
-  alias MishkaDeveloperTools.Helper.Derive.{Parser, SanitizerDerive, ValidationDerive}
+defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive do
+  alias MishkaDeveloperTools.Macros.GuardedStruct.Derive.{
+    Parser,
+    SanitizerDerive,
+    ValidationDerive
+  }
 
   @spec derive(
           {:error, any(), any()}

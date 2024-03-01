@@ -1,6 +1,6 @@
 defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
   use ExUnit.Case, async: true
-  alias MishkaDeveloperTools.Helper.Derive.{SanitizerDerive, ValidationDerive}
+  alias MishkaDeveloperTools.Macros.GuardedStruct.Derive.{SanitizerDerive, ValidationDerive}
 
   ############## (▰˘◡˘▰) Sanitizer Derive (▰˘◡˘▰) ##############
   test "sanitize(:trim, input)" do

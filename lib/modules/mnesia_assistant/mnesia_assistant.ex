@@ -1,0 +1,2 @@
+defmodule MnesiaAssistant do
+end

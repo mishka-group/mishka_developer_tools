@@ -47,7 +47,7 @@ defmodule GuardedStruct do
   ################ (▰˘◡˘▰) initializing (▰˘◡˘▰) ################
   ####################################################################
 
-  alias MishkaDeveloperTools.Helper.{Derive, Derive.Parser, Derive.ValidationDerive}
+  alias MishkaDeveloperTools.Macros.GuardedStruct.{Derive, Derive.Parser, Derive.ValidationDerive}
   defexception [:term]
 
   @temporary_revaluation [

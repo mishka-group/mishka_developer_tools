@@ -1,4 +1,4 @@
-defmodule MishkaDeveloperTools.Helper.Derive.Parser do
+defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.Parser do
   @spec parser(list(String.t()) | String.t()) :: any()
   def parser(inputs) when is_list(inputs) do
     Enum.map(inputs, &parser(&1))

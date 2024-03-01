@@ -5,7 +5,7 @@
 # test validate({:tell, country_code}, input, field) -> country_code - 49.4ms
 defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
   use ExUnit.Case, async: true
-  alias MishkaDeveloperTools.Helper.Derive.ValidationDerive
+  alias MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive
 
   ############# (▰˘◡˘▰) GlobalTest GuardedStructTest Data (▰˘◡˘▰) ##############
   defmodule TestUserAuthStruct do

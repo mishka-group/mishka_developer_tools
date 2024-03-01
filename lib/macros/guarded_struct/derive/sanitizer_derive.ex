@@ -1,4 +1,4 @@
-defmodule MishkaDeveloperTools.Helper.Derive.SanitizerDerive do
+defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.SanitizerDerive do
   @spec call({atom(), any()}, list(any())) :: {any(), any()}
   def call({field, input}, nil), do: {field, input}
 
