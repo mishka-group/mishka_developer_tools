@@ -63,7 +63,7 @@ Adding new Copyright (c) [2023] [Shahryar Tavakkoli at [Mishka Group](https://gi
 * [Define a nested and complex struct](#define-a-nested-and-complex-struct)
 * [Error and data output sample](#data-and-error-output-sample)
 * [Set config to show error inside defexception](#set-config-to-show-error-inside-defexception)
-* [Error defexception modules](#authorized_fields-option-to-limit-user-input)
+* [Error defexception modules](#set-config-to-show-error-inside-defexception)
 * [authorized_fields option to limit user input](#authorized_fields-option-to-limit-user-input)
 * [Call external struct/structs module](#call-external-struct/structs-module)
 * [List of structs](#list-of-structs)
