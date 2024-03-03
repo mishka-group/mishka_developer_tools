@@ -50,4 +50,6 @@ defmodule MnesiaAssistant.Information do
 
   def set_debug_level(level) when level in @debug_level_types,
     do: Mnesia.set_debug_level(level)
+
+  def report_event(event), do: Mnesia.report_event(event)
 end

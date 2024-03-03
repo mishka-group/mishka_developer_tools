@@ -18,4 +18,14 @@ defmodule MnesiaAssistant.Schema do
       :ok = File.mkdir_p!(path)
     end
   end
+
+  # {name, Name}
+  # | {max, [table()]}
+  # | {min, [table()]}
+  # | {allow_remote, boolean()}
+  # | {ram_overrides_dump, boolean()}
+  def activate_checkpoint(args) when is_list(args), do: Mnesia.activate_checkpoint(args)
+
+  # deactivate_checkpoint(Name :: term()) -> result()
+  def deactivate_checkpoint(name), do: Mnesia.deactivate_checkpoint(name)
 end

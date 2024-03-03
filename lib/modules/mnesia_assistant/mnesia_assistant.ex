@@ -1,5 +1,6 @@
 defmodule MnesiaAssistant do
   alias MnesiaAssistant.{Information, Schema}
+  alias :mnesia, as: Mnesia
 
   def initial() do
     # TODO: add __using__ to create and start Mnesia
@@ -32,4 +33,21 @@ defmodule MnesiaAssistant do
   defdelegate set_debug_level(level), to: Information
 
   defdelegate schema(), to: Schema
+
+  ############### Global functions Public Apis ###############
+  # Ref: https://www.erlang.org/doc/apps/mnesia/mnesia_chap5#mnesia-event-handling
+  # system | activity | {table, table(), simple | detailed}
+  def subscribe({:table, table}), do: Mnesia.subscribe({:table, table})
+
+  def subscribe({:table, table, simple_detailed}),
+    do: Mnesia.subscribe({:table, table, simple_detailed})
+
+  def subscribe(what), do: Mnesia.subscribe(what)
+
+  def unsubscribe({:table, table}), do: Mnesia.unsubscribe({:table, table})
+
+  def unsubscribe({:table, table, simple_detailed}),
+    do: Mnesia.unsubscribe({:table, table, simple_detailed})
+
+  def unsubscribe(what), do: Mnesia.unsubscribe(what)
 end
