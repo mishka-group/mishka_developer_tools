@@ -52,4 +52,6 @@ defmodule MnesiaAssistant.Information do
     do: Mnesia.set_debug_level(level)
 
   def report_event(event), do: Mnesia.report_event(event)
+
+  def sync_log(), do: Mnesia.sync_log()
 end

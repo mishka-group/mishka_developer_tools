@@ -36,4 +36,8 @@ defmodule MnesiaAssistant.BackupAndRestore do
   # {scope, Scope}. For semantics, see mnesia:install_fallback/2.
   # {mnesia_dir, AlternateDir}. For semantics, see mnesia:install_fallback/2.
   def uninstall_fallback(args) when is_list(args), do: Mnesia.uninstall_fallback(args)
+
+  def dump_log(), do: Mnesia.dump_log()
+
+  def dump_tables(tables) when is_list(tables), do: Mnesia.dump_tables(tables)
 end

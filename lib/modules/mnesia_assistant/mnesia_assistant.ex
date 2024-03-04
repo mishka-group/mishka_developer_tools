@@ -17,11 +17,15 @@ defmodule MnesiaAssistant do
   ################################################################
 
   ################# Global functions Public Apis #################
-  def start(), do: Application.start(:mnesia)
+  def start(), do: Mnesia.start()
+
+  def start(:app), do: Application.start(:mnesia)
 
   def set_dir(dir), do: Application.put_env(:mnesia, :dir, dir)
 
-  def stop(), do: Application.stop(:mnesia)
+  def stop(), do: Mnesia.stop()
+
+  def stop(:app), do: Application.stop(:mnesia)
 
   def started?(), do: Helper.Extra.app_started?(:mnesia)
 
@@ -33,6 +37,8 @@ defmodule MnesiaAssistant do
   defdelegate set_debug_level(level), to: Information
 
   defdelegate schema(), to: Schema
+
+  defdelegate schema(table), to: Schema
 
   ############### Global functions Public Apis ###############
   # Ref: https://www.erlang.org/doc/apps/mnesia/mnesia_chap5#mnesia-event-handling
@@ -50,4 +56,9 @@ defmodule MnesiaAssistant do
     do: Mnesia.unsubscribe({:table, table, simple_detailed})
 
   def unsubscribe(what), do: Mnesia.unsubscribe(what)
+
+  # config_key() = extra_db_nodes | dc_dump_limit
+  # config_value() = [node()] | number()
+  def change_config(config, value) when config in [:extra_db_nodes, :dc_dump_limit],
+    do: Mnesia.change_config(config, value)
 end

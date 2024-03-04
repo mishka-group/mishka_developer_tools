@@ -9,6 +9,9 @@ defmodule MnesiaAssistant.Query do
   def read(table, key, lock_type) when lock_type in @table_lock_types,
     do: Mnesia.read(table, key, lock_type)
 
+  # mnesia:read(Tab, Key, write)
+  def wread({table, key}), do: Mnesia.wread({table, key})
+
   # mnesia:index_read(person, 36, age)
   def index_read(table, key, attr), do: Mnesia.index_read(table, key, attr)
 
@@ -30,9 +33,25 @@ defmodule MnesiaAssistant.Query do
 
   def delete(table, key), do: Mnesia.delete({table, key})
 
+  # delete_object(Tab :: table(), Rec :: tuple(), LockKind :: write_locks())
+  def delete_object(record) when is_tuple(record), do: Mnesia.delete_object(record)
+
+  def delete_object(table, record, lock_type)
+      when is_tuple(record) and lock_type in [:write, :sticky_write],
+      do: Mnesia.delete_object(table, record, lock_type)
+
+  # mnesia:delete(Tab, Key, sticky_write)
+  def s_delete({table, key}), do: Mnesia.s_delete({table, key})
+
+  # mnesia:delete_object(Tab, Record, sticky_write), where Tab is element(1, Record)
+  def s_delete_object(record), do: Mnesia.s_delete_object(record)
+
   def write(name, data, lock_type \\ :write) when lock_type in [:write, :sticky_write] do
     Mnesia.write(name, data, lock_type)
   end
+
+  # mnesia:write(Tab, Record, sticky_write), where Tab is element(1, Record)
+  def s_write(record), do: Mnesia.s_write(record)
 
   def select(table, match_fields, conds, lock_type, opts)
       when is_list(match_fields) and is_list(conds) and lock_type in @table_lock_types do
@@ -103,11 +122,31 @@ defmodule MnesiaAssistant.Query do
 
   def dirty_delete({table, key}), do: Mnesia.dirty_delete(table, key)
 
+  def dirty_delete_object(record) when is_tuple(record), do: Mnesia.dirty_delete_object(record)
+
   def dirty_write(name, data), do: Mnesia.dirty_write(name, data)
 
-  def is_transaction?(), do: Mnesia.is_transaction()
+  def dirty_index_match_object(pattern, index_attr),
+    do: Mnesia.dirty_index_match_object(pattern, index_attr)
 
-  def abort(reason), do: Mnesia.abort(reason)
+  def dirty_index_match_object(table, pattern, index_attr),
+    do: Mnesia.dirty_index_match_object(table, pattern, index_attr)
+
+  def dirty_select(table, match_fields, conds, result_type \\ [:"$$"]) do
+    Mnesia.dirty_select(table, select_converter(table, match_fields, conds, result_type))
+  end
+
+  def dirty_select(table, spec), do: Mnesia.dirty_select(table, spec)
+
+  # dirty_update_counter(Counter :: {Tab :: table(), Key :: term()}, Incr :: integer())
+  def dirty_update_counter({table, key}, incr) when is_integer(incr),
+    do: Mnesia.dirty_update_counter({table, key}, incr)
+
+  # dirty_update_counter(Tab :: table(), Key :: term(), Incr :: integer())
+  def dirty_update_counter(table, key, incr) when is_integer(incr),
+    do: Mnesia.dirty_update_counter(table, key, incr)
+
+  def is_transaction?(), do: Mnesia.is_transaction()
 
   def transaction(transaction_fn) when is_function(transaction_fn) do
     Mnesia.transaction(transaction_fn)

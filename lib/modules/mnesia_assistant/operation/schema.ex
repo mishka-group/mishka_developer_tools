@@ -4,6 +4,8 @@ defmodule MnesiaAssistant.Schema do
   # Schema
   def schema(), do: Mnesia.schema()
 
+  def schema(table), do: Mnesia.schema(table)
+
   def create(nodes \\ [node()]) when is_list(nodes) do
     create_dir()
     Mnesia.create_schema([node()])

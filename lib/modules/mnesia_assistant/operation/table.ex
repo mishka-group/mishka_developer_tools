@@ -173,6 +173,17 @@ defmodule MnesiaAssistant.Table do
 
   def dirty_all_keys(module), do: Mnesia.dirty_all_keys(module)
 
+  def read_lock_table(table), do: Mnesia.read_lock_table(table)
+
+  # TODO: needs some builder
+  def table(table), do: Mnesia.table(table)
+  # Options = Option | [Option]
+  # Option = MnesiaOpt | QlcOption
+  # MnesiaOpt = {traverse, SelectOp} | {lock, lock_kind()} | {n_objects, integer() >= 0}
+  # SelectOp = select | {select, ets:match_spec()}
+  # QlcOption = {key_equality, '==' | '=:='}
+  def table(table, options), do: Mnesia.table(table, options)
+
   def validator(:storage_properties, value) when is_list(value) do
     Enum.reduce_while(value, [], fn item, _acc ->
       case item do
