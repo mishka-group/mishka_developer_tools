@@ -1,4 +1,7 @@
 defmodule MnesiaAssistant.Information do
+  @moduledoc """
+
+  """
   alias :mnesia, as: Mnesia
   @debug_level_types [:none, :verbose, :debug, :trace, false, true]
 
@@ -38,6 +41,9 @@ defmodule MnesiaAssistant.Information do
     :version
   ]
 
+  @doc """
+
+  """
   def info(), do: Mnesia.info()
 
   def info({:system, type}) when type in @system_types, do: Mnesia.system_info(type)
@@ -46,12 +52,24 @@ defmodule MnesiaAssistant.Information do
 
   def info(:schema), do: Mnesia.schema()
 
+  @doc """
+
+  """
   def system_info(type) when is_atom(type), do: Mnesia.system_info(type)
 
+  @doc """
+
+  """
   def set_debug_level(level) when level in @debug_level_types,
     do: Mnesia.set_debug_level(level)
 
+  @doc """
+
+  """
   def report_event(event), do: Mnesia.report_event(event)
 
+  @doc """
+
+  """
   def sync_log(), do: Mnesia.sync_log()
 end

@@ -2,6 +2,9 @@ defmodule MnesiaAssistant do
   alias MnesiaAssistant.{Information, Schema}
   alias :mnesia, as: Mnesia
 
+  # TODO: https://www.erlang.org/doc/man/mnesia_frag_hash
+  # TODO: https://www.erlang.org/doc/man/mnesia_registry
+
   def initial() do
     # TODO: add __using__ to create and start Mnesia
     # application ensure_all_started
