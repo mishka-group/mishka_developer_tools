@@ -88,7 +88,7 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.Parser do
   end
 
   defp add_parent_tags(items, parent, type \\ "normal") do
-    id = parent <> "::" <> Helper.Extra.randstring(8)
+    id = parent <> "::" <> MishkaDeveloperTools.Helper.Extra.randstring(8)
 
     Enum.map(items, fn item ->
       if Keyword.keyword?(item) and !Keyword.has_key?(item, :__node_type__) and

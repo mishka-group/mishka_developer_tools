@@ -265,7 +265,7 @@ defmodule MnesiaAssistant.Query do
 
     conds =
       Enum.map(conds, fn {cond, field, value} ->
-        {Helper.Extra.elixir_to_erlang_guard(cond), field, value}
+        {MishkaDeveloperTools.Helper.Extra.elixir_to_erlang_guard(cond), field, value}
       end)
 
     [{fields_pattern, conds, result_type}]

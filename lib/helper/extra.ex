@@ -1,4 +1,4 @@
-defmodule Helper.Extra do
+defmodule MishkaDeveloperTools.Helper.Extra do
   @alphabet Enum.concat([?0..?9, ?A..?Z, ?a..?z])
 
   # Do not use for security and sensitive cases
