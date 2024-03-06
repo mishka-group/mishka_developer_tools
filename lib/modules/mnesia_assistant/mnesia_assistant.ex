@@ -180,8 +180,8 @@ defmodule MnesiaAssistant do
   without needing to stop and restart the database,
   making it particularly useful for tuning performance or behavior in live systems.
 
-  `config`: --> extra_db_nodes | dc_dump_limit
-  `value`: -->  [node()] | number()
+  * `config`: --> extra_db_nodes | dc_dump_limit
+  * `value`: -->  [node()] | number()
   """
   def change_config(config, value) when config in [:extra_db_nodes, :dc_dump_limit],
     do: Mnesia.change_config(config, value)
