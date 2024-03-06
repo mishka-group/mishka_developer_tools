@@ -172,6 +172,25 @@ defmodule MnesiaAssistant do
   def unsubscribe(what), do: Mnesia.unsubscribe(what)
 
   @doc """
+  When tracing a system of Mnesia applications it is useful to be able to
+  interleave Mnesia own events with `application-related` events that give
+  information about the application context.
+
+  Whenever the application begins a new and demanding Mnesia task,
+  or if it enters a new interesting phase in its execution, it can be a good idea
+  to use mnesia:report_event/1. Event can be any term and generates
+  a `{mnesia_user, Event}` event for any processes that subscribe
+  to Mnesia system events. for more information read `subscribe/1` document.
+
+  ### Example:
+
+  ```elixir
+  MnesiaAssistant.report_event(event)
+  ```
+  """
+  def report_event(event), do: Mnesia.report_event(event)
+
+  @doc """
   The `:mnesia.change_config/2` function in Mnesia, the distributed database management
   system in Erlang/OTP, is used to dynamically change the configuration parameters
   of the Mnesia system while it is running.
@@ -182,6 +201,12 @@ defmodule MnesiaAssistant do
 
   * `config`: --> extra_db_nodes | dc_dump_limit
   * `value`: -->  [node()] | number()
+
+  ### Example
+
+  ```elixir
+  MnesiaAssistant.change_config(config, value)
+  ```
   """
   def change_config(config, value) when config in [:extra_db_nodes, :dc_dump_limit],
     do: Mnesia.change_config(config, value)
