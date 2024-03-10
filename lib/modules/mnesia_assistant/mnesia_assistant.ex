@@ -54,22 +54,22 @@ defmodule MnesiaAssistant do
   def start(:app), do: Application.start(:mnesia)
 
   @doc """
-    The `mnesia` database provides you with the capability to perform your storage
-    either on the hard drive or on the RAM, or both at the same time, depending
-    on the software approach that you have chosen. In order to accomplish this goal,
-    its path for storage on the disc (the position of storage) must be known.
-    This can be accomplished in a number of different ways.
+  The `mnesia` database provides you with the capability to perform your storage
+  either on the hard drive or on the RAM, or both at the same time, depending
+  on the software approach that you have chosen. In order to accomplish this goal,
+  its path for storage on the disc (the position of storage) must be known.
+  This can be accomplished in a number of different ways.
 
-    You can begin the compilation process by using the configuration file of
-    your programme. In this technique, you will need to specify the directory
-    for the `:mnesia` (`:dir`) command. And then there is the second technique,
-    which is the function of the same function and is carried out in the form of run time.
+  You can begin the compilation process by using the configuration file of
+  your programme. In this technique, you will need to specify the directory
+  for the `:mnesia` (`:dir`) command. And then there is the second technique,
+  which is the function of the same function and is carried out in the form of run time.
 
-    ### Example
+  ### Example
 
-    ```elixir
-      MnesiaAssistant.set_dir("/tmp/db") # --> Application.put_env(:mnesia, :dir, dir)
-    ```
+  ```elixir
+    MnesiaAssistant.set_dir("/tmp/db") # --> Application.put_env(:mnesia, :dir, dir)
+  ```
   """
   def set_dir(dir), do: Application.put_env(:mnesia, :dir, dir)
 
@@ -205,7 +205,7 @@ defmodule MnesiaAssistant do
   ### Example
 
   ```elixir
-  MnesiaAssistant.change_config(config, value)
+    MnesiaAssistant.change_config(config, value)
   ```
   """
   def change_config(config, value) when config in [:extra_db_nodes, :dc_dump_limit],

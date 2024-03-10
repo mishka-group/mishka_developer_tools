@@ -206,13 +206,13 @@ defmodule MnesiaAssistant.Transaction do
   ### Example:
 
   ```elixir
-  alias MnesiaAssistant.Query
+    alias MnesiaAssistant.Query
 
-  fun = fn ->
-    Query.write({Person, Query.dirty_last(Person) + 1, "Mishka, 20})
-  end
+    fun = fn ->
+      Query.write({Person, Query.dirty_last(Person) + 1, "Mishka, 20})
+    end
 
-  MnesiaAssistant.Transaction.sync_transaction(fun)
+    MnesiaAssistant.Transaction.sync_transaction(fun)
   ```
   """
   def sync_transaction(sync_fun) when is_function(sync_fun), do: Mnesia.sync_transaction(sync_fun)
@@ -312,7 +312,7 @@ defmodule MnesiaAssistant.Transaction do
       MnesiaAssistant.Query.write({Person, 11, "life"})
     end
 
-  MnesiaAssistant.Transaction.transaction(trans)
+    MnesiaAssistant.Transaction.transaction(trans)
   ```
   """
   def transaction(transaction_fn) when is_function(transaction_fn),

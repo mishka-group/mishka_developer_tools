@@ -148,7 +148,7 @@ defmodule MnesiaAssistant.Information do
   ### Example:
 
   ```elixir
-  MnesiaAssistant.Information.sync_log()
+    MnesiaAssistant.Information.sync_log()
   ```
   """
   def sync_log(), do: Mnesia.sync_log()

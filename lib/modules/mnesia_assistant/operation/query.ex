@@ -179,15 +179,15 @@ defmodule MnesiaAssistant.Query do
   def s_delete({table, key}), do: Mnesia.s_delete({table, key})
 
   @doc """
-    It is like `MnesiaAssistant.Query.delete_object(table, record, :sticky_write)`
-    where Tab is element(1, Record).
-    For more information read `delete_object/3` or `mnesia:delete_object(Tab, Record, sticky_write)`.
+  It is like `MnesiaAssistant.Query.delete_object(table, record, :sticky_write)`
+  where Tab is element(1, Record).
+  For more information read `delete_object/3` or `mnesia:delete_object(Tab, Record, sticky_write)`.
 
-    ### Example:
+  ### Example:
 
-    ```elixir
-      MnesiaAssistant.Query.s_delete_object({Person, 2, "John Doe", 30})
-    ```
+  ```elixir
+    MnesiaAssistant.Query.s_delete_object({Person, 2, "John Doe", 30})
+  ```
   """
   def s_delete_object(record), do: Mnesia.s_delete_object(record)
 

@@ -383,11 +383,11 @@ defmodule MnesiaAssistant.Table do
   @doc """
     Calls the function `mnesia:lock({table, Tab}, write)`. Read `lock/2` document.
 
-    ### Example:
+  ### Example:
 
-    ```elixir
-      MnesiaAssistant.Table.write_lock_table(Person)
-    ```
+  ```elixir
+    MnesiaAssistant.Table.write_lock_table(Person)
+  ```
   """
   def write_lock_table(table), do: Mnesia.write_lock_table(table)
 
@@ -413,19 +413,19 @@ defmodule MnesiaAssistant.Table do
   ### Example:
 
   ```elixir
-  fun = fn ->
-    # Use ETS to get all records from the :people table and count them
-    ets_table = :ets.tab2list(:people)
-    length(ets_table)
-  end
+    fun = fn ->
+      # Use ETS to get all records from the :people table and count them
+      ets_table = :ets.tab2list(:people)
+      length(ets_table)
+    end
 
-  MnesiaAssistant.Table.ets(fun)
-  # OR
-  MnesiaAssistant.Table.ets(fn ->
-    MnesiaAssistant.Table.all_keys(module)
-  end)
-  # OR
-  MnesiaAssistant.Table.ets(fn -> Enum.each(list, &save_dirty/1) end)
+    MnesiaAssistant.Table.ets(fun)
+    # OR
+    MnesiaAssistant.Table.ets(fn ->
+      MnesiaAssistant.Table.all_keys(module)
+    end)
+    # OR
+    MnesiaAssistant.Table.ets(fn -> Enum.each(list, &save_dirty/1) end)
   ```
   """
   def ets(ets_fn) when is_function(ets_fn), do: Mnesia.ets(ets_fn)
@@ -573,18 +573,18 @@ defmodule MnesiaAssistant.Table do
     do: Mnesia.add_table_copy(module, node, type)
 
   @doc """
-    Moves the copy of table Tab from node `From` to node `To`.
+  Moves the copy of table Tab from node `From` to node `To`.
 
-    > The storage type is preserved. For example, a RAM table moved from one node remains
-    > a RAM on the new node. Other transactions can still read and write in the table while it is being moved.
+  > The storage type is preserved. For example, a RAM table moved from one node remains
+  > a RAM on the new node. Other transactions can still read and write in the table while it is being moved.
 
-    This function cannot be used on `local_content` tables.
+  This function cannot be used on `local_content` tables.
 
-    ### Example:
+  ### Example:
 
-    ```elixir
-       MnesiaAssistant.Table.add_table_copy(Person, A_NODE, B_NODE)
-    ```
+  ```elixir
+      MnesiaAssistant.Table.add_table_copy(Person, A_NODE, B_NODE)
+  ```
   """
   def move_table_copy(module, from, to) do
     Mnesia.move_table_copy(module, from, to)
@@ -728,7 +728,6 @@ defmodule MnesiaAssistant.Table do
   """
   def read_lock_table(table), do: Mnesia.read_lock_table(table)
 
-  #
   @doc """
   ### Erlang document:
 

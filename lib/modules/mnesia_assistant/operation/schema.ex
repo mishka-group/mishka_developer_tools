@@ -77,11 +77,11 @@ defmodule MnesiaAssistant.Schema do
   @doc """
   For deactivating `activate_checkpoint/1`.
 
-    ### Example:
+  ### Example:
 
-    ```elixir
-      MnesiaAssistant.Schema.deactivate_checkpoint(name)
-    ```
+  ```elixir
+    MnesiaAssistant.Schema.deactivate_checkpoint(name)
+  ```
   """
   def deactivate_checkpoint(name), do: Mnesia.deactivate_checkpoint(name)
 
