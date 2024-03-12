@@ -38,7 +38,6 @@ defmodule MnesiaAssistant.Table do
     :wild_pattern
   ]
 
-  @table_lock_types [:read, :write, :sticky_write]
   @change_table_access_mode_types [:read_only, :read_write]
 
   @doc """
@@ -151,7 +150,6 @@ defmodule MnesiaAssistant.Table do
   """
   def create_table(module, opts) when is_list(opts) do
     Mnesia.create_table(module, opts)
-    |> MnesiaAssistant.Error.error()
   end
 
   @doc """
@@ -378,7 +376,8 @@ defmodule MnesiaAssistant.Table do
     MnesiaAssistant.Table.lock({:table, Person}, :load)
   ```
   """
-  def lock(opts, type) when type in (@table_lock_types ++ :load), do: Mnesia.lock(opts, type)
+  def lock(opts, type) when type in [:read, :write, :sticky_write, :load],
+    do: Mnesia.lock(opts, type)
 
   @doc """
     Calls the function `mnesia:lock({table, Tab}, write)`. Read `lock/2` document.
