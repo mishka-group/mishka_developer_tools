@@ -1,4 +1,7 @@
 defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive do
+  alias MishkaDeveloperTools.Helper.Extra
+  @family_alphabet Enum.concat([?a..?z, ~c" "])
+
   @spec call({atom(), any()}, list(any()), String.t()) :: {any(), any()}
   def call({_field, input}, nil, _hint), do: {input, []}
 
@@ -411,6 +414,31 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive do
     else
       {:error, field, :uuid, "Invalid UUID format in the #{field} field"}
     end
+  end
+
+  def validate(:username, input, field) do
+    if is_binary(input) and Extra.validated_user?(input) do
+      input
+    else
+      {:error, field, :username, "Invalid username format in the #{field} field"}
+    end
+  end
+
+  def validate(:full_name, input, field) when is_binary(input) do
+    formated? =
+      input
+      |> String.to_charlist()
+      |> Enum.all?(&(&1 in @family_alphabet))
+
+    if formated? and !String.starts_with?(input, " ") do
+      input
+    else
+      {:error, field, :full_name, "Invalid family format in the #{field} field"}
+    end
+  end
+
+  def validate(:full_name, _input, field) do
+    {:error, field, :full_name, "Invalid family format in the #{field} field"}
   end
 
   def validate({:enum, "String" <> list}, input, field) when is_binary(input) do
