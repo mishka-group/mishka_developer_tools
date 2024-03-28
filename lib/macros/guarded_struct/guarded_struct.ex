@@ -2717,10 +2717,11 @@ defmodule GuardedStruct do
       case Keyword.get(opts, :validator) do
         nil ->
           # In this place we checke local validator function of caller
-          if Code.ensure_loaded?(caller) and
-               function_exported?(caller, :validator, 2),
-             do: apply(caller, :validator, [field, value]),
-             else: {:ok, field, value}
+          try do
+            apply(caller, :validator, [field, value])
+          rescue
+            _ -> {:ok, field, value}
+          end
 
         {module, func} ->
           apply(module, func, [field, value])
@@ -2849,13 +2850,14 @@ defmodule GuardedStruct do
                   |> Derive.pre_derives_check(opts, field)
 
                 module ->
-                  if !Code.ensure_loaded?(module) do
-                    {get_field_validator(opts, cond_data.caller, field, sanitized_value), opts}
-                    |> Derive.pre_derives_check(opts, field)
-                  else
+                  try do
                     {opts, cond_data.caller, field, sanitized_value, type, module}
                     |> execute_field_validator(:external)
                     |> Derive.pre_derives_check(opts, field)
+                  rescue
+                    _ ->
+                      {get_field_validator(opts, cond_data.caller, field, sanitized_value), opts}
+                      |> Derive.pre_derives_check(opts, field)
                   end
               end
 
