@@ -1986,9 +1986,9 @@ defmodule GuardedStruct do
       |> Enum.reduce_while([], fn item, acc ->
         concated = Module.concat(String.split(item, ".", trim: true))
 
-        {Code.ensure_loaded(concated), function_exported?(concated, :__information__, 0)}
+        {concated, function_exported?(concated, :__information__, 0)}
         |> case do
-          {{:module, module}, true} ->
+          {module, true} ->
             module_info = apply(module, :__information__, [])
 
             if(module_info.key == :root,
@@ -2717,11 +2717,9 @@ defmodule GuardedStruct do
       case Keyword.get(opts, :validator) do
         nil ->
           # In this place we checke local validator function of caller
-          try do
-            apply(caller, :validator, [field, value])
-          rescue
-            _ -> {:ok, field, value}
-          end
+          if function_exported?(caller, :validator, 2),
+            do: apply(caller, :validator, [field, value]),
+            else: {:ok, field, value}
 
         {module, func} ->
           apply(module, func, [field, value])
