@@ -6,6 +6,7 @@
 defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
   use ExUnit.Case, async: true
   alias MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive
+  alias MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest.TestAuthStruct
 
   ############# (▰˘◡˘▰) GlobalTest GuardedStructTest Data (▰˘◡˘▰) ##############
   defmodule TestUserAuthStruct do

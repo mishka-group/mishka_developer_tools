@@ -37,7 +37,7 @@ defmodule MnesiaAssistant.Schema do
     MnesiaAssistant.Schema.create_schema([node()])
   ```
   """
-  def create_schema(nodes \\ [node()]) when is_list(nodes), do: Mnesia.create_schema([node()])
+  def create_schema(nodes \\ [node()]) when is_list(nodes), do: Mnesia.create_schema(nodes)
 
   @doc """
   In the same way that you are able to generate a schema for a particular node,

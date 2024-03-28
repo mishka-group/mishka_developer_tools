@@ -1,6 +1,26 @@
 defmodule MnesiaAssistant.Error do
   alias :mnesia, as: Mnesia
+  require Logger
   # types link https://www.erlang.org/doc/man/mnesia#data-types
+
+  @error_types [
+    :nested_transaction,
+    :badarg,
+    :no_transaction,
+    :combine_error,
+    :bad_index,
+    :already_exists,
+    :index_exists,
+    :no_exists,
+    :system_limit,
+    :mnesia_down,
+    :not_a_db_node,
+    :bad_type,
+    :node_not_running,
+    :truncated_binary_file,
+    :active,
+    :illegal
+  ]
 
   @doc """
   ### Erlang document:
@@ -47,7 +67,88 @@ defmodule MnesiaAssistant.Error do
   ```elixir
     MnesiaAssistant.Error.error_description(error)
   ```
-
   """
   def error_description(error), do: Mnesia.error_description(error)
+
+  def error_description(error, identifier) when error in [{:atomic, :ok}, :ok] do
+    Logger.info(
+      "Identifier: #{inspect(identifier)}; The action concerned was completed successfully."
+    )
+
+    {:ok, :atomic}
+  end
+
+  def error_description(:starting, identifier) do
+    Logger.info(
+      "Identifier: #{inspect(identifier)}; The action concerned is being started successfully."
+    )
+
+    {:ok, :atomic}
+  end
+
+  def error_description({:aborted, {:already_exists, _module}} = error, identifier) do
+    concerted = error_description(error)
+
+    Logger.warning("""
+    Identifier: #{inspect(identifier)}
+    MnesiaError: #{inspect(error)}
+    ConvertedError: #{inspect(concerted)}
+    """)
+
+    {:error, error, elem(concerted, 0) |> to_string}
+  end
+
+  def error_description({:error, {_, {:already_exists, _}}} = error, identifier) do
+    concerted = error_description(error)
+
+    Logger.warning("""
+    Identifier: #{inspect(identifier)}
+    MnesiaError: #{inspect(error)}
+    ConvertedError: #{inspect(concerted)}
+    """)
+
+    {:error, error, elem(concerted, 0) |> to_string}
+  end
+
+  def error_description({:aborted, error_type} = error, identifier) when is_tuple(error_type) do
+    if elem(error_type, 0) in @error_types do
+      concerted = error_description(error)
+
+      Logger.error("""
+      Identifier: #{inspect(identifier)}
+      MnesiaError: #{inspect(error)}
+      ConvertedError: #{inspect(concerted)}
+      """)
+
+      {:error, error, elem(concerted, 0) |> to_string}
+    else
+      error_description(error, identifier)
+    end
+  end
+
+  def error_description(error, identifier) do
+    concerted = error_description(error)
+
+    Logger.error("""
+    Identifier: #{inspect(identifier)}
+    MnesiaError: #{inspect(error)}
+    ConvertedError: #{inspect(concerted)}
+    """)
+
+    {:error, error, concerted}
+  end
+
+  def try?({:error, {:timeout, _missing_tables}, _}, max, current) when current <= max, do: true
+
+  def try?({:error, {:timeout, _missing_tables}, _}, max, current) when current > max, do: false
+
+  def try?({:ok, :atomic}, _max, _current), do: false
+
+  def try?(_error, _max, _current), do: false
+
+  def try?({:error, {:timeout, _missing_tables}, _}), do: true
+
+  def try?({:ok, :atomic}), do: false
+
+  def try?(_error), do: false
 end

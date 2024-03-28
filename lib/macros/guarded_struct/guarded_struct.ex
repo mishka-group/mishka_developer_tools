@@ -52,6 +52,7 @@ defmodule GuardedStruct do
 
   @temporary_revaluation [
     :gs_fields,
+    :gs_sub_fields,
     :gs_types,
     :gs_enforce_keys,
     :gs_validator,
@@ -1351,7 +1352,7 @@ defmodule GuardedStruct do
       end
 
       def enforce_keys() do
-        unquote(Enum.at(escaped_list, 1))
+        unquote(Enum.at(escaped_list, 2))
       end
 
       def enforce_keys(:all) do
@@ -1359,7 +1360,7 @@ defmodule GuardedStruct do
       end
 
       def enforce_keys(key) do
-        Enum.member?(unquote(Enum.at(escaped_list, 1)), key)
+        Enum.member?(unquote(Enum.at(escaped_list, 2)), key)
       end
 
       def keys() do
@@ -1386,7 +1387,7 @@ defmodule GuardedStruct do
               |> GuardedStruct.reverse_module_keys(info.key)
           )
 
-        Map.merge(info, %{path: path})
+        Map.merge(info, %{path: path, keys: keys(), enforce_keys: enforce_keys()})
       end
     end
   end
@@ -1571,22 +1572,34 @@ defmodule GuardedStruct do
   @doc false
   def builder(actions, key, type, error \\ false) do
     %{attrs: attrs, module: module, revaluation: [h | t]} = actions
-    [enforces, validator, main_validator, derives, authorized, external, core_keys, _, _] = t
+
+    [
+      sub_fields,
+      enforce_keys,
+      validator,
+      main_validator,
+      derives,
+      authorized_fields,
+      external,
+      core_keys,
+      conditional_fields,
+      _caller
+    ] = t
+
     found_main_validator = Enum.find(main_validator, &is_tuple(&1))
-    fields = h |> Enum.map(&elem(&1, 0))
-    conditionals = Enum.at(t, 7)
+    fields = Enum.map(h, &elem(&1, 0))
 
     attrs
     |> before_revaluation(key)
-    |> authorized_fields(fields, authorized)
-    |> required_fields(enforces)
+    |> authorized_fields(fields, authorized_fields)
+    |> required_fields(enforce_keys)
     |> Parser.convert_to_atom_map()
     |> auto_core_key(core_keys, type)
     |> domain_core_key(attrs)
     |> on_core_key(attrs)
     |> from_core_key()
-    |> conditional_fields_validating(conditionals, type, key)
-    |> sub_fields_validating(fields, module, external, key, type)
+    |> conditional_fields_validating(conditional_fields, type, key)
+    |> sub_fields_validating(fields, module, sub_fields, external, key, type)
     |> fields_validating(validator, module)
     |> main_validating(found_main_validator, main_validator, module)
     |> replace_condition_fields_derives(derives)
@@ -1758,15 +1771,25 @@ defmodule GuardedStruct do
           list(atom()),
           module(),
           keyword(),
+          keyword(),
           atom(),
           :add | :edit
         ) :: {:error, any(), :halt} | {map(), list(), list(), list(), any()}
   @doc false
-  def sub_fields_validating({:error, _, :halt} = error, _, _, _, _, _), do: error
+  def sub_fields_validating({:error, _, :halt} = error, _, _, _, _, _, _), do: error
 
-  def sub_fields_validating({:ok, attrs, conds, full_attrs}, fields, module, external, key, type) do
+  def sub_fields_validating(
+        {:ok, attrs, conds, full_attrs},
+        fields,
+        _module,
+        sub_fields,
+        external,
+        key,
+        type
+      ) do
     allowed_fields = Map.take(attrs, fields) |> Map.keys()
-    sub_modules = get_fields_sub_module(module, allowed_fields, external)
+    # TODO: lock 900 nonosec
+    sub_modules = get_fields_sub_module(allowed_fields, sub_fields, external)
 
     sub_modules_builders =
       sub_modules
@@ -1995,32 +2018,22 @@ defmodule GuardedStruct do
     end
   end
 
-  @spec get_fields_sub_module(module(), list(atom()), keyword(), boolean()) :: list()
+  @spec get_fields_sub_module(list(atom()), keyword(), keyword(), boolean()) :: list()
   @doc false
-  def get_fields_sub_module(module, fields, external, list \\ false) do
+  def get_fields_sub_module(fields, sub_fields, external, list \\ false) do
     Enum.map(fields, fn field ->
       extra_field = Keyword.get(external, field)
 
-      find_module =
-        if(!is_nil(extra_field),
-          do: [Keyword.get(external, field).module],
-          else: [module, atom_to_module(field)]
-        )
-
-      {!is_nil(extra_field), Code.ensure_loaded(Module.concat(find_module))}
+      {!is_nil(extra_field), Keyword.get(sub_fields, field), extra_field}
       |> case do
-        {true, {:module, module}} ->
-          opts = if(!is_nil(extra_field), do: Map.get(extra_field, :opts), else: [])
-
+        {true, _, %{module: module, opts: opts}} ->
           if !list,
             do: %{field: field, module: module, type: extra_field.type, opts: opts},
             else: field
 
-        {false, {:module, module}} ->
-          opts = if(!is_nil(extra_field), do: Map.get(extra_field, :opts), else: [])
-
+        {false, %{module: module}, _} ->
           if !list,
-            do: %{field: field, module: module, type: :struct, opts: opts},
+            do: %{field: field, module: module, type: :struct, opts: []},
             else: field
 
         _ ->
@@ -2151,6 +2164,7 @@ defmodule GuardedStruct do
 
     if sub_field do
       converted_name = create_module_name(name, mod, :direct)
+      Module.put_attribute(mod, :gs_sub_fields, {name, %{module: converted_name, opts: opts}})
 
       if Keyword.get(opts, :structs) do
         Module.put_attribute(

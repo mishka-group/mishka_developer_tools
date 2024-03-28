@@ -4,6 +4,7 @@ defmodule MnesiaAssistant.Table do
   """
 
   alias :mnesia, as: Mnesia
+  require Logger
 
   @type table_type() :: :set | :ordered_set | :bag
   @create_table_types [:disc_only_copies, :disc_copies, :ram_copies]
@@ -270,6 +271,41 @@ defmodule MnesiaAssistant.Table do
   """
   def wait_for_tables(tables, timeout) when is_list(tables) and is_integer(timeout),
     do: Mnesia.wait_for_tables(tables, timeout)
+
+  def wait_for_tables(tables, timeout, identifier) when is_list(tables) and is_integer(timeout) do
+    case wait_for_tables(tables, timeout) do
+      :ok ->
+        Logger.info(
+          "Identifier: #{inspect(identifier)}; The action concerned was completed successfully."
+        )
+
+        {:ok, :atomic}
+
+      {:timeout, missing_tables} = error ->
+        concerted =
+          {"The requested tables could not be loaded in the specified time #{timeout}.",
+           missing_tables}
+
+        Logger.error("""
+          Identifier: #{inspect(identifier)}
+          MnesiaError: #{inspect(error)}
+          ConvertedError: #{inspect(concerted)}
+        """)
+
+        {:error, error, elem(concerted, 0)}
+
+      error ->
+        concerted = MnesiaAssistant.Error.error_description(error)
+
+        Logger.error("""
+          Identifier: #{inspect(identifier)}
+          MnesiaError: #{inspect(error)}
+          ConvertedError: #{inspect(concerted)}
+        """)
+
+        {:error, error, elem(concerted, 0) |> to_string}
+    end
+  end
 
   @doc """
   When continuing or beginning to call a table from `Mnesia`, it is possible that you will be required to

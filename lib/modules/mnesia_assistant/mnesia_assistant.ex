@@ -210,4 +210,7 @@ defmodule MnesiaAssistant do
   """
   def change_config(config, value) when config in [:extra_db_nodes, :dc_dump_limit],
     do: Mnesia.change_config(config, value)
+
+  ################# Global Macro Public Apis #################
+  # Based on https://github.com/mishka-group/mishka_developer_tools/issues/28
 end
