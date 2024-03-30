@@ -212,7 +212,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.BasicTypesTest do
 
     [:name] = assert enforce_keys
     assert enforce_keys_by_field
-    [:title, :name] = assert keys
+    [:name, :title] = assert keys
     assert keys_by_field
   end
 

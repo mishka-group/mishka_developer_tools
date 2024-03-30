@@ -1364,7 +1364,7 @@ defmodule GuardedStruct do
       end
 
       def keys() do
-        unquote(List.first(escaped_list) |> Enum.map(&elem(&1, 0)))
+        unquote(List.first(escaped_list) |> Enum.map(&elem(&1, 0))) |> Enum.reverse()
       end
 
       def keys(:all) do

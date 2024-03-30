@@ -272,46 +272,50 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive do
       _ ->
         {:error, field, :tell, "Invalid tell format in the #{field} field"}
     end
+  end
 
-    if Code.ensure_loaded?(ExPhoneNumber) do
-      def validate({:tell, country_code}, input, field) do
-        case URL.new("tel:#{input}") do
-          {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: _tel}}} ->
-            case ExPhoneNumber.parse(input, nil) do
-              {:ok, %ExPhoneNumber.Model.PhoneNumber{country_code: ^country_code}} ->
-                input
+  if Code.ensure_loaded?(ExPhoneNumber) do
+    def validate({:tell, country_code}, input, field) do
+      case URL.new("tel:#{input}") do
+        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: _tel}}} ->
+          case ExPhoneNumber.parse(input, nil) do
+            {:ok, %ExPhoneNumber.Model.PhoneNumber{country_code: ^country_code}} ->
+              input
 
-              _ ->
-                {:error, field, :tell, "Invalid tell format in the #{field} field"}
-            end
+            _ ->
+              {:error, field, :tell, "Invalid tell format in the #{field} field"}
+          end
 
-          {:error, {URL.Parser.ParseError, _msg}} ->
-            {:error, field, :tell, "Invalid tell format in the #{field} field"}
+        {:error, {URL.Parser.ParseError, _msg}} ->
+          {:error, field, :tell, "Invalid tell format in the #{field} field"}
 
-          _ ->
-            {:error, field, :tell, "Invalid tell format in the #{field} field"}
-        end
-      rescue
-        _ -> {:error, field, :tell, "Invalid tell format in the #{field} field"}
+        _ ->
+          {:error, field, :tell, "Invalid tell format in the #{field} field"}
       end
+    rescue
+      _ -> {:error, field, :tell, "Invalid tell format in the #{field} field"}
     end
   end
 
-  def validate(:email, input, field) do
-    if Code.ensure_loaded?(EmailChecker) do
+  if Code.ensure_loaded?(EmailChecker) do
+    def validate(:email, input, field) do
       EmailChecker.valid?(input)
       |> case do
         true -> input
         _ -> {:error, field, :email, "Incorrect email in the #{field} field."}
       end
-    else
-      case Regex.match?(~r/^[A-Za-z0-9\._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/, input) do
-        true -> input
-        _ -> {:error, field, :email, "Invalid email format in the #{field} field"}
-      end
+    rescue
+      _ -> {:error, field, :email, "Invalid email format in the #{field} field"}
+    end
+  end
+
+  def validate(:email_r, input, field) do
+    case Regex.match?(~r/^[A-Za-z0-9\._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/, input) do
+      true -> input
+      _ -> {:error, field, :email_r, "Invalid email format in the #{field} field"}
     end
   rescue
-    _ -> {:error, field, :email, "Invalid email format in the #{field} field"}
+    _ -> {:error, field, :email_r, "Invalid email format in the #{field} field"}
   end
 
   if Code.ensure_loaded?(URL) do

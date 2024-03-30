@@ -188,7 +188,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
   end
 
   test "nested macro field" do
-    [:username, :profile, :auth, :age, :family, :name] = assert TestNestedStruct.keys()
+    [:name, :family, :age, :auth, :profile, :username] = assert TestNestedStruct.keys()
     [:username, :auth, :age] = assert TestNestedStruct.enforce_keys()
 
     {:error,
@@ -307,10 +307,10 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
       end
     end
 
-    [%{auth: [%{path: [:mobile, :name]}, :action, :role]}, :nickname, :title, :name] =
+    [:name, :title, :nickname, %{auth: [:role, :action, %{path: [:name, :mobile]}]}] =
       assert TestCallNestedKeys.keys(:all)
 
-    [%{auth: [%{path: [:mobile, :name]}, :action, :role]}, :name] =
+    [%{auth: [:role, :action, %{path: [:name, :mobile]}]}, :name] =
       assert TestCallNestedKeys.enforce_keys(:all)
   end
 
