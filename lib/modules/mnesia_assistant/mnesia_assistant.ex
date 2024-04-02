@@ -16,6 +16,7 @@ defmodule MnesiaAssistant do
   """
 
   alias MnesiaAssistant.{Information, Schema}
+  alias MishkaDeveloperTools.Helper.Extra
   alias :mnesia, as: Mnesia
 
   ################################################################
@@ -106,7 +107,7 @@ defmodule MnesiaAssistant do
     MnesiaAssistant.started?()
   ```
   """
-  def started?(), do: MishkaDeveloperTools.Helper.Extra.app_started?(:mnesia)
+  def started?(), do: Extra.app_started?(:mnesia)
 
   ############### Information functions Public Apis ###############
   defdelegate info(), to: Information
@@ -119,6 +120,9 @@ defmodule MnesiaAssistant do
 
   defdelegate schema(table), to: Schema
 
+  defdelegate eg(operation), to: Extra, as: :erlang_guard
+
+  defdelegate er(operation), to: Extra, as: :erlang_result
   ############### Global functions Public Apis ###############
   # Ref: https://www.erlang.org/doc/apps/mnesia/mnesia_chap5#mnesia-event-handling
   # system | activity | {table, table(), simple | detailed}
@@ -212,6 +216,10 @@ defmodule MnesiaAssistant do
     do: Mnesia.change_config(config, value)
 
   ################# Global Helper Public Apis #################
+  def tuple_to_map(:"$end_of_table", _fields, _drop), do: []
+
+  def tuple_to_map({records, cont}, fields, drop), do: {tuple_to_map(records, fields, drop), cont}
+
   def tuple_to_map(records, fields, drop) do
     Enum.reduce(records, [], fn item, acc ->
       converted =
@@ -221,6 +229,12 @@ defmodule MnesiaAssistant do
 
       acc ++ [converted]
     end)
+  end
+
+  def tuple_to_map(records, fields, nil, drop), do: tuple_to_map(records, fields, drop)
+
+  def tuple_to_map({records, cont}, fields, strc, drop) do
+    {tuple_to_map(records, fields, strc, drop), cont}
   end
 
   def tuple_to_map(records, fields, strc, drop) do

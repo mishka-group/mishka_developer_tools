@@ -256,7 +256,7 @@ defmodule MnesiaAssistant.Query do
     )
   ```
   """
-  def select(table, match_fields, conds, opts)
+  def select(table, match_fields, conds, opts, :custom)
       when is_list(match_fields) and is_list(conds) do
     result_type = Keyword.get(opts, :result_type, [:"$$"])
     lock_type = Keyword.get(opts, :lock_type)
@@ -272,6 +272,13 @@ defmodule MnesiaAssistant.Query do
   @doc """
   Read `select/5` document.
   """
+  def select(table, spec, limit, lock_type) when lock_type in @table_lock_types do
+    Mnesia.select(table, spec, limit, lock_type)
+  end
+
+  @doc """
+  Read `select/5` document.
+  """
   def select(table, spec), do: Mnesia.select(table, spec)
 
   @doc """
@@ -280,6 +287,11 @@ defmodule MnesiaAssistant.Query do
   def select(table, spec, lock_type) when lock_type in @table_lock_types do
     Mnesia.select(table, spec, lock_type)
   end
+
+  @doc """
+  Read `select/5` document.
+  """
+  def select(cont), do: Mnesia.select(cont)
 
   @doc """
   There is a distinction between this method and the `select` function,

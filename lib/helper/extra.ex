@@ -24,13 +24,19 @@ defmodule MishkaDeveloperTools.Helper.Extra do
     |> Enum.member?(name)
   end
 
+  # based on: https://www.erlang.org/doc/apps/erts/match_spec
   def erlang_guard(:or), do: :orelse
   def erlang_guard(:and), do: :andalso
+  def erlang_guard(:xor), do: :xor
   def erlang_guard(:<=), do: :"=<"
   def erlang_guard(:!=), do: :"/="
   def erlang_guard(:===), do: :"=:="
   def erlang_guard(:!==), do: :"=/="
   def erlang_guard(term), do: term
+
+  def erlang_result(:all), do: [:"$_"]
+  def erlang_result(:selected), do: [:"$$"]
+  def erlang_result(term), do: term
 
   def timestamp() do
     DateTime.utc_now()

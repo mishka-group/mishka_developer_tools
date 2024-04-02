@@ -10,6 +10,7 @@ defmodule MishkaDeveloperTools.MixProject do
       name: "Mishka developer tools",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      compilers: [:yecc, :leex] ++ Mix.compilers(),
       deps: deps(),
       description: description(),
       package: package(),
