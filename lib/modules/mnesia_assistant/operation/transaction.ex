@@ -335,4 +335,13 @@ defmodule MnesiaAssistant.Transaction do
       when is_function(transaction_fn) and is_list(args) and
              (is_integer(retries) or retries == :infinity),
       do: Mnesia.transaction(transaction_fn, args, retries)
+
+  def transaction_error(reason, module, type, field, action) do
+    {:error, error, msg} = MnesiaAssistant.Error.error_description({:aborted, reason}, module)
+
+    message =
+      "Unfortunately, there is a problem in #{type} data in the database. #{inspect(msg)}"
+
+    {:error, [%{message: message, field: field, action: action, source: error}]}
+  end
 end

@@ -24,13 +24,13 @@ defmodule MishkaDeveloperTools.Helper.Extra do
     |> Enum.member?(name)
   end
 
-  def elixir_to_erlang_guard(:or), do: :orelse
-  def elixir_to_erlang_guard(:and), do: :andalso
-  def elixir_to_erlang_guard(:<=), do: :"=<"
-  def elixir_to_erlang_guard(:!=), do: :"/="
-  def elixir_to_erlang_guard(:===), do: :"=:="
-  def elixir_to_erlang_guard(:!==), do: :"=/="
-  def elixir_to_erlang_guard(term), do: term
+  def erlang_guard(:or), do: :orelse
+  def erlang_guard(:and), do: :andalso
+  def erlang_guard(:<=), do: :"=<"
+  def erlang_guard(:!=), do: :"/="
+  def erlang_guard(:===), do: :"=:="
+  def erlang_guard(:!==), do: :"=/="
+  def erlang_guard(term), do: term
 
   def timestamp() do
     DateTime.utc_now()

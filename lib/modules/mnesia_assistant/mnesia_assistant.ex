@@ -211,6 +211,36 @@ defmodule MnesiaAssistant do
   def change_config(config, value) when config in [:extra_db_nodes, :dc_dump_limit],
     do: Mnesia.change_config(config, value)
 
+  ################# Global Helper Public Apis #################
+  def tuple_to_map(records, fields, drop) do
+    Enum.reduce(records, [], fn item, acc ->
+      converted =
+        Enum.zip(fields, Tuple.delete_at(item, 0) |> Tuple.to_list())
+        |> Enum.into(%{})
+        |> Map.drop(drop)
+
+      acc ++ [converted]
+    end)
+  end
+
+  def tuple_to_map(records, fields, strc, drop) do
+    Enum.reduce(records, [], fn item, acc ->
+      converted =
+        Enum.zip(fields, Tuple.delete_at(item, 0) |> Tuple.to_list())
+        |> Enum.into(%{})
+        |> Map.drop(drop)
+
+      acc ++ [struct!(strc, converted)]
+    end)
+  end
+
   ################# Global Macro Public Apis #################
   # Based on https://github.com/mishka-group/mishka_developer_tools/issues/28
+  # TODO: we need some strategy to implement fragment
+  # {:frag_properties,
+  #  [
+  #    {:node_pool, all_active_nodes},
+  #    {:n_fragments, 4},
+  #    {:n_disc_only_copies, all_active_nodes |> length}
+  #  ]}
 end

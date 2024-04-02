@@ -5,6 +5,7 @@ defmodule MnesiaAssistant.Query do
   in this section of the database.
   """
   alias :mnesia, as: Mnesia
+  alias MishkaDeveloperTools.Helper.Extra
   @table_lock_types [:read, :write, :sticky_write]
 
   @doc """
@@ -729,9 +730,7 @@ defmodule MnesiaAssistant.Query do
     fields_pattern = ([table] ++ match_fields) |> List.to_tuple()
 
     conds =
-      Enum.map(conds, fn {cond, field, value} ->
-        {MishkaDeveloperTools.Helper.Extra.elixir_to_erlang_guard(cond), field, value}
-      end)
+      Enum.map(conds, fn {cond, field, value} -> {Extra.erlang_guard(cond), field, value} end)
 
     [{fields_pattern, conds, result_type}]
   end

@@ -840,4 +840,68 @@ defmodule MnesiaAssistant.Table do
     do: {:error, :storage_properties, "The storage_properties field must be list of tuples"}
 
   def validator(name, value), do: {:ok, name, value}
+
+  def start_table(start_data, module, database_config, identifier, suc_fn \\ nil) do
+    {number, wait_tables, waiting_time, max_try} = start_data
+    # We should wait for id_tracker table
+    case wait_for_tables(wait_tables, waiting_time, identifier) do
+      {:ok, :atomic} ->
+        output =
+          create_table(module, database_config)
+          |> MnesiaAssistant.Error.error_description(module)
+          |> case do
+            {:ok, :atomic} ->
+              re_wait_for_tables(true, [], number + 1, max_try, module, identifier, waiting_time)
+
+            {:error, {:aborted, {:already_exists, module}}, _msg} ->
+              re_wait_for_tables(true, [], number + 1, max_try, module, identifier, waiting_time)
+
+            error ->
+              Logger.error("Identifier: #{inspect(module)}; Source: #{inspect(error)}")
+              {:error, :create_table, error, identifier}
+          end
+
+        if output == {:ok, :create_table, identifier} and !is_nil(suc_fn), do: suc_fn.()
+
+        output
+
+      error ->
+        Logger.error(
+          "Identifier: #{inspect(module)}; Tries to get the table again(count: #{number + 1}). Source: #{inspect(error)}"
+        )
+
+        new_output =
+          MnesiaAssistant.Table.wait_for_tables(wait_tables, waiting_time, identifier)
+
+        new_output
+        |> MnesiaAssistant.Error.try?(max_try, number)
+        |> re_wait_for_tables(new_output, number + 1, max_try, module, identifier, waiting_time)
+    end
+  end
+
+  defp re_wait_for_tables(false, {:ok, :atomic}, _, _, _, identifier, _) do
+    :persistent_term.put(identifier, %{table: true})
+    {:ok, :create_table, identifier}
+  end
+
+  defp re_wait_for_tables(false, output, number, _, module, identifier, _) do
+    Logger.error(
+      "Identifier: #{inspect(module)}; Tries to get the table again(count: #{number + 1}). Source: #{inspect(output)}"
+    )
+
+    {:error, :create_table, output, identifier}
+  end
+
+  defp re_wait_for_tables(true, _output, number, max_try, module, identifier, waiting_time) do
+    Logger.warning(
+      "Identifier: #{inspect(module)}; Tries to get the table again(count: #{number})."
+    )
+
+    new_output =
+      MnesiaAssistant.Table.wait_for_tables([module], waiting_time, module)
+
+    new_output
+    |> MnesiaAssistant.Error.try?(max_try, number)
+    |> re_wait_for_tables(new_output, number + 1, max_try, module, identifier, waiting_time)
+  end
 end

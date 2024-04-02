@@ -252,28 +252,6 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive do
     _ -> {:error, field, :url, "Invalid url format in the #{field} field"}
   end
 
-  if Code.ensure_loaded?(URL) do
-    def validate(:geo_url, input, field) do
-      location("geo:#{input}", field, :geo_url)
-    end
-
-    def validate(:tell, input, field) do
-      case URL.new("tel:#{input}") do
-        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} when not is_nil(tel) ->
-          input
-
-        {:error, {URL.Parser.ParseError, _msg}} ->
-          {:error, field, :tell, "Invalid tell format in the #{field} field"}
-
-        _ ->
-          {:error, field, :tell, "Invalid tell format in the #{field} field"}
-      end
-    rescue
-      _ ->
-        {:error, field, :tell, "Invalid tell format in the #{field} field"}
-    end
-  end
-
   if Code.ensure_loaded?(ExPhoneNumber) do
     def validate({:tell, country_code}, input, field) do
       case URL.new("tel:#{input}") do
@@ -295,6 +273,28 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive do
     rescue
       _ -> {:error, field, :tell, "Invalid tell format in the #{field} field"}
     end
+  end
+
+  if Code.ensure_loaded?(URL) do
+    def validate(:tell, input, field) do
+      case URL.new("tel:#{input}") do
+        {:ok, %URL{scheme: "tel", parsed_path: %URL.Tel{tel: tel}}} when not is_nil(tel) ->
+          input
+
+        {:error, {URL.Parser.ParseError, _msg}} ->
+          {:error, field, :tell, "Invalid tell format in the #{field} field"}
+
+        _ ->
+          {:error, field, :tell, "Invalid tell format in the #{field} field"}
+      end
+    rescue
+      _ ->
+        {:error, field, :tell, "Invalid tell format in the #{field} field"}
+    end
+  end
+
+  def validate(:geo_url, input, field) do
+    location("geo:#{input}", field, :geo_url)
   end
 
   if Code.ensure_loaded?(EmailChecker) do
