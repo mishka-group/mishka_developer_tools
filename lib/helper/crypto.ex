@@ -1,4 +1,5 @@
 defmodule MishkaDeveloperTools.Helper.Crypto do
+  # https://github.com/dashbitco/nimble_totp/blob/master/lib/nimble_totp.ex#L259
   # It should support diffrent type of hashing from user selected
   # bcrypt - bcrypt_elixir https://hex.pm/packages/bcrypt_elixir
   # pbkdf2 - pbkdf2_elixir https://hex.pm/packages/pbkdf2_elixir

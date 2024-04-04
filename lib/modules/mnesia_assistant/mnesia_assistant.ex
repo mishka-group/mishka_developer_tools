@@ -231,6 +231,8 @@ defmodule MnesiaAssistant do
     end)
   end
 
+  def tuple_to_map(:"$end_of_table", _fields, _, _drop), do: []
+
   def tuple_to_map(records, fields, nil, drop), do: tuple_to_map(records, fields, drop)
 
   def tuple_to_map({records, cont}, fields, strc, drop) do

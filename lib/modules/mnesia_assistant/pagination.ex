@@ -2,7 +2,40 @@ defmodule MnesiaAssistant.Pagination do
   alias MnesiaAssistant.{Transaction, Query}
   import MnesiaAssistant, only: [eg: 1, er: 1, tuple_to_map: 4]
 
-  def infinite_scroll(table, keys, strc, limit, page, spec \\ nil) when page >= 1 do
+  def infinite_scroll({_record, _cont} = output, _table, keys, strc, _limit) do
+    infinite_scroll(output, keys, strc)
+  end
+
+  def infinite_scroll(table, keys, strc, limit, spec) do
+    match_pattern =
+      if is_nil(spec) do
+        fields =
+          ([table] ++ Enum.map(1..length(keys), fn _x -> :_ end))
+          |> List.to_tuple()
+
+        [{fields, [], er(:all)}]
+      else
+        spec
+      end
+
+    Transaction.activity(:async_dirty, fn -> Query.select(table, match_pattern, limit, :read) end)
+    |> tuple_to_map(keys, strc, [])
+    |> case do
+      [] -> []
+      data -> data
+    end
+  end
+
+  def infinite_scroll({_record, cont}, keys, strc) do
+    Transaction.activity(:async_dirty, fn -> Query.select(cont) end)
+    |> tuple_to_map(keys, strc, [])
+    |> case do
+      [] -> []
+      data -> data
+    end
+  end
+
+  def infinite_scroll(table, keys, strc, limit, page, spec) when page >= 1 do
     match_pattern =
       if is_nil(spec) do
         fields =
@@ -44,6 +77,22 @@ defmodule MnesiaAssistant.Pagination do
   def numerical(table, keys, strc, start: start, last: last) do
     fields = {table, :"$1", :_, :_, :_, :_, :_, :_, :_, :_, :_, :_, :_, :_, :_}
     conds = [{eg(:and), {eg(:>), :"$1", start}, {eg(:<), :"$1", last}}]
+    spec = [{fields, conds, er(:all)}]
+
+    Transaction.transaction(fn -> Query.select(table, spec, :read) end)
+    |> case do
+      {:atomic, res} ->
+        tuple_to_map(res, keys, strc, [])
+
+      {:aborted, reason} ->
+        Transaction.transaction_error(reason, __MODULE__, "listing", :global, :database)
+    end
+  end
+
+  def numerical(table, keys, strc, page, limit) when page > 0 and limit > 0 do
+    start = page * limit - limit
+    fields = {table, :"$1", :_, :_, :_, :_, :_, :_, :_, :_, :_, :_, :_, :_, :_}
+    conds = [{eg(:and), {eg(:>), :"$1", start}, {eg(:<), :"$1", page * limit}}]
     spec = [{fields, conds, er(:all)}]
 
     Transaction.transaction(fn -> Query.select(table, spec, :read) end)
