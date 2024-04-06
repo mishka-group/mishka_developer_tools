@@ -1894,6 +1894,9 @@ defmodule GuardedStruct do
 
     {status, main_outputs} =
       cond do
+        length(validated_errors) > 0 ->
+          {:error, %{}}
+
         !is_nil(main_validator) ->
           {module, func} = main_validator
           apply(module, func, [validated_allowed_data])
@@ -2649,16 +2652,26 @@ defmodule GuardedStruct do
       {:ok, 0, sub_errors, true} when sub_errors != [] ->
         {:error, :nested, sub_builders_errors, struct(module, main_error_or_data), conds.data}
 
+      {:ok, val_err, _, false} when val_err > 0 ->
+        errors = cond_errors_converter(conds)
+        {:error, validated_errors ++ sub_builders_errors ++ errors}
+
       {:ok, _, _, false} ->
         errors = cond_errors_converter(conds)
         {:error, validated_errors ++ sub_builders_errors ++ errors, main_error_or_data}
 
+      {:error, val_err, _, false} when val_err > 0 ->
+        errors = cond_errors_converter(conds)
+        {:error, validated_errors ++ sub_builders_errors ++ errors}
+
       {:error, _, _, false} ->
         errors = cond_errors_converter(conds)
-
         {:error, validated_errors ++ sub_builders_errors ++ [main_error_or_data] ++ errors}
 
       {:ok, _, _, true} ->
+        {:error, validated_errors ++ sub_builders_errors}
+
+      {:error, val_err, _, true} when val_err > 0 ->
         {:error, validated_errors ++ sub_builders_errors}
 
       {:error, _, _, true} ->

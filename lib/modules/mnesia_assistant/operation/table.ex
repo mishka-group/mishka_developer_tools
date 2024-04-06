@@ -880,7 +880,6 @@ defmodule MnesiaAssistant.Table do
   end
 
   defp re_wait_for_tables(false, {:ok, :atomic}, _, _, _, identifier, _) do
-    :persistent_term.put(identifier, %{table: true})
     {:ok, :create_table, identifier}
   end
 

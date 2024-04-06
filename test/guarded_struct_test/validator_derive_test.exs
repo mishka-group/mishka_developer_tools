@@ -38,7 +38,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
     end
 
     def main_validator(value) do
-      if Map.get(value, :changed) == 555_555 do
+      if Map.get(value, :changed) == 555_555 or Map.get(value, :action) == 25 do
         {:error, %{message: "there is an Error", field: :global, action: :main_validator}}
       else
         {:ok, value}
@@ -465,9 +465,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ValidatorDeriveTest do
 
     {:error,
      [
-       %{message: "No, never", field: :changed, action: :validator},
-       %{message: "there is an Error", field: :global, action: :main_validator}
+       %{message: "No, never", field: :changed, action: :validator}
      ]} = assert TestAuthStruct.builder(%{changed: 555_555})
+
+    {:error,
+     [
+       %{message: "there is an Error", field: :global, action: :main_validator}
+     ]} = assert TestAuthStruct.builder(%{changed: "https://github.com/mishka-group", action: 25})
   end
 
   test "key entries inside derive when derives used" do
