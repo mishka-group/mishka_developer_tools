@@ -1387,7 +1387,16 @@ defmodule GuardedStruct do
               |> GuardedStruct.reverse_module_keys(info.key)
           )
 
-        Map.merge(info, %{path: path, keys: keys(), enforce_keys: enforce_keys()})
+        conds = Enum.at(unquote(escaped_list), 9) |> Enum.map(&elem(&1, 0)) |> Enum.uniq()
+
+        fields = %{
+          path: path,
+          keys: keys(),
+          enforce_keys: enforce_keys(),
+          conditional_keys: conds
+        }
+
+        Map.merge(info, fields)
       end
     end
   end
