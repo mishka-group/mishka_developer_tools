@@ -115,6 +115,11 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.Parser do
 
   defp convert_key(key), do: key
 
+  defp convert_value(%{__struct__: struct} = map)
+       when struct in [NaiveDateTime, DateTime, Date] do
+    map
+  end
+
   defp convert_value(%{} = map), do: convert_to_atom_map(map)
 
   defp convert_value([]), do: []
