@@ -3,7 +3,7 @@ defmodule MnesiaAssistant.Transaction do
   In this module, there are functions that are related to Transactions or that are opposite to commands.
   """
   alias :mnesia, as: Mnesia
-
+  @dialyzer {:nowarn_function, abort: 1}
   @doc """
   Termination of a `Mnesia` transaction means that an exception is thrown to an enclosing catch.
   Makes the transaction silently return the tuple `{:aborted, reason}`.

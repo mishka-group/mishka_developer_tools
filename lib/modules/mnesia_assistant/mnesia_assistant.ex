@@ -145,8 +145,6 @@ defmodule MnesiaAssistant do
     # What = system | activity | {table, table(), simple | detailed}
   ```
   """
-  def subscribe({:table, table}), do: Mnesia.subscribe({:table, table})
-
   def subscribe({:table, table, simple_detailed}),
     do: Mnesia.subscribe({:table, table, simple_detailed})
 
@@ -168,8 +166,6 @@ defmodule MnesiaAssistant do
   # What = system | activity | {table, table(), simple | detailed}
   ```
   """
-  def unsubscribe({:table, table}), do: Mnesia.unsubscribe({:table, table})
-
   def unsubscribe({:table, table, simple_detailed}),
     do: Mnesia.unsubscribe({:table, table, simple_detailed})
 

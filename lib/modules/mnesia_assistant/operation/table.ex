@@ -282,28 +282,29 @@ defmodule MnesiaAssistant.Table do
         {:ok, :atomic}
 
       {:timeout, missing_tables} = error ->
-        concerted =
+        converted =
           {"The requested tables could not be loaded in the specified time #{timeout}.",
            missing_tables}
 
         Logger.error("""
           Identifier: #{inspect(identifier)}
           MnesiaError: #{inspect(error)}
-          ConvertedError: #{inspect(concerted)}
+          ConvertedError: #{inspect(converted)}
         """)
 
-        {:error, error, elem(concerted, 0)}
+        {:error, error, elem(converted, 0)}
 
       error ->
-        concerted = MnesiaAssistant.Error.error_description(error)
+        converted = MnesiaAssistant.Error.error_description(error)
 
         Logger.error("""
           Identifier: #{inspect(identifier)}
           MnesiaError: #{inspect(error)}
-          ConvertedError: #{inspect(concerted)}
+          ConvertedError: #{inspect(converted)}
         """)
 
-        {:error, error, elem(concerted, 0) |> to_string}
+        err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
+        {:error, error, err}
     end
   end
 

@@ -87,55 +87,58 @@ defmodule MnesiaAssistant.Error do
   end
 
   def error_description({:aborted, {:already_exists, _module}} = error, identifier) do
-    concerted = error_description(error)
+    converted = error_description(error)
 
     Logger.warning("""
     Identifier: #{inspect(identifier)}
     MnesiaError: #{inspect(error)}
-    ConvertedError: #{inspect(concerted)}
+    ConvertedError: #{inspect(converted)}
     """)
 
-    {:error, error, elem(concerted, 0) |> to_string}
+    err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
+    {:error, error, err}
   end
 
   def error_description({:error, {_, {:already_exists, _}}} = error, identifier) do
-    concerted = error_description(error)
+    converted = error_description(error)
 
     Logger.warning("""
     Identifier: #{inspect(identifier)}
     MnesiaError: #{inspect(error)}
-    ConvertedError: #{inspect(concerted)}
+    ConvertedError: #{inspect(converted)}
     """)
 
-    {:error, error, elem(concerted, 0) |> to_string}
+    err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
+    {:error, error, err}
   end
 
   def error_description({:aborted, error_type} = error, identifier) when is_tuple(error_type) do
     if elem(error_type, 0) in @error_types do
-      concerted = error_description(error)
+      converted = error_description(error)
 
       Logger.error("""
       Identifier: #{inspect(identifier)}
       MnesiaError: #{inspect(error)}
-      ConvertedError: #{inspect(concerted)}
+      ConvertedError: #{inspect(converted)}
       """)
 
-      {:error, error, elem(concerted, 0) |> to_string}
+      err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
+      {:error, error, err}
     else
       error_description(error, identifier)
     end
   end
 
   def error_description(error, identifier) do
-    concerted = error_description(error)
+    converted = error_description(error)
 
     Logger.error("""
     Identifier: #{inspect(identifier)}
     MnesiaError: #{inspect(error)}
-    ConvertedError: #{inspect(concerted)}
+    ConvertedError: #{inspect(converted)}
     """)
 
-    {:error, error, concerted}
+    {:error, error, converted}
   end
 
   def try?({:error, {:timeout, _missing_tables}, _}, max, current) when current <= max, do: true
