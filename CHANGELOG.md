@@ -1,3 +1,34 @@
+# Changelog for MishkaDeveloperTools 0.1.5
+
+---
+
+> **The decision was made that this version will be a long-term version, and it will also include features that are several versions behind the existing version. However, because of the pressing issues with the builder's loading speed and the solution to those issues, it was decided to release this version sooner with fewer features than it had originally planned.**
+
+---
+
+### Features:
+
+- [x] Add `condition_field` fields inside `__information__` function
+- [x] <del>Inside module derive, in nested struct we can call from `caller`</del>
+- [x] Add `uuid` from `ecto`
+- [x] Add keys and enforce keys in `__information__` function
+- [x] Add some helpers like: `timestamp`, `validated_user?` and validation `username`
+
+### Improvement:
+
+- [x] Speed problem in the derive section, and before this part of app V0.1.4, [#30](https://github.com/mishka-group/mishka_developer_tools/issues/30)
+- [x] Fix performance issue inside sanitizer and validation, when we are using external `deps`
+- [x] Fix `main_validator` and **halt** the error when we have errors inside `validator` and not load `main_validator`
+- [x] Add some information and helper to be compatible for Mnesia (need more in the future)
+- [x] Fix bug and Add `NaiveDateTime`, `DateTime`, `Date` struct to map parser
+
+### Extra
+
+- [x] Mnesia wrapper for Elixir, [#28](https://github.com/mishka-group/mishka_developer_tools/issues/28)
+- [x] Add Erlang guard convertor for Elixir (simple helper function)
+- [x] Add `Mnesia` pagination (infinite_scroll, numerical)
+- [x] Add some helper to work with `Mnesia` data
+
 # Changelog for MishkaDeveloperTools 0.1.4
 
 ### Features:
@@ -33,10 +64,11 @@
 - [x] Support pre-check derives inside conditional fields
 - [x] Normalize conditional fields errors
 - [x] Normalize validator errors
-- [x] Normalize  errors `hint`
+- [x] Normalize errors `hint`
 - [x] Normalize `derives` errors
 - [x] Fix `dialyzer` warning
 - [x] Support derive in normal conditional field without validator
+
 ```elixir
 conditional_field(:id, String.t()) do
   field(:id, String.t(), derive: "sanitize(tag=strip_tags) validate(url, max_len=160)")
@@ -48,11 +80,12 @@ end
 
 - [x] Add LiveBook
 
-
 # Changelog for MishkaDeveloperTools 0.1.3
 
 **Features**:
+
 - [x] Support List `conditional_field`
+
 ```elixir
 "actor": [
   "http://joe.example.org",
@@ -64,17 +97,20 @@ end
   :test
 ]
 ```
+
 - [x] Covering `hint` inside derive `conditional_field` and normal `derive`
 - [x] Support `domain` key inside children fields
 - [x] Support new derives: `not_flatten_empty`, `not_flatten_empty_item` as validation
 - [x] Support `not_empty` and `max_len`, `min_len` for list in validation derive.
 
 **Fixed bugs**:
+
 - [x] Fix and Remove `downcase` bug in `strip_tags`
 - [x] Fix and Remove preventer of calling a `struct` inside itself
 - [x] Fix domain core key to prevent it not to check domain when the key is `nil`
 
 **Improvements**:
+
 - [x] Changing the structure of on core key based on the value of the caller
 - [x] Support calling struct inside itself
 - [x] Separate all test of `GuardedStruct` macro in different files
@@ -83,7 +119,9 @@ end
 # Changelog for MishkaDeveloperTools 0.1.2
 
 ---
+
 - [x] Solving the problem of creating extra `atom` in case of a mistake or an attack on the system. It could be a `security` issue, please update.
+
 ---
 
 - [x] Add allowed parent domain core key `Enum` derive style
@@ -97,7 +135,6 @@ end
 - [x] Add Supporting new sanitizer for `:string_float`
 - [x] Add Supporting new validation for `:string_float`
 - [x] Add Supporting new validation for `:some_string_float`
-
 
 # Changelog for MishkaDeveloperTools 0.1.1
 
@@ -119,7 +156,6 @@ end
 - [x] Add `auto`, `on`, `from` core keys for list of structs
 - [x] Re-structured outputs for new capabilities with backward compatibility
 - [x] Add permission access module in runtime
-
 
 # Changelog for MishkaDeveloperTools 0.1.0
 
@@ -160,11 +196,3 @@ end
 - [x] Fix tests for Elixir `1.15`
 - [x] Make all dependencies optional based on user requirements
 - [x] improve documents
-
-# Changelog for MishkaDeveloperTools 0.0.8
-
-- [x] Improve CRUD macro `callbacks` and `specs` return for `dialyzer`
-- [x] Add new delete macro and function
-- [x] Support UUID and the other type of ID
-- [x] Improve testing
-- [x] Improving and updating the coding structure
