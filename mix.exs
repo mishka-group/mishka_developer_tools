@@ -1,6 +1,7 @@
 defmodule MishkaDeveloperTools.MixProject do
   use Mix.Project
   @version "0.1.5"
+  @source_url "https://github.com/mishka-group/mishka_developer_tools"
 
   def project do
     [
@@ -15,13 +16,13 @@ defmodule MishkaDeveloperTools.MixProject do
       description: description(),
       package: package(),
       homepage_url: "https://github.com/mishka-group",
-      source_url: "https://github.com/mishka-group/mishka_developer_tools",
+      source_url: @source_url,
       test_elixirc_options: [debug_info: Mix.env() == :test],
       docs: [
         main: "MishkaDeveloperTools",
         source_ref: "master",
         extras: ["README.md"],
-        source_url: "https://github.com/mishka-group/mishka_developer_tools"
+        source_url: @source_url
       ]
     ]
   end
@@ -46,6 +47,7 @@ defmodule MishkaDeveloperTools.MixProject do
       {:email_checker, "~> 0.2.4", optional: true},
       {:ex_url, "~> 2.0", optional: true},
       {:ex_phone_number, "~> 0.4.3", optional: true},
+      {:nimble_totp, "~> 1.0", optional: true},
       # Dev dependencies
       {:ex_doc, "~> 0.31.1", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
@@ -64,7 +66,10 @@ defmodule MishkaDeveloperTools.MixProject do
       files: ~w(lib .formatter.exs mix.exs LICENSE README*),
       licenses: ["Apache-2.0"],
       maintainers: ["Shahryar Tavakkoli"],
-      links: %{"GitHub" => "https://github.com/mishka-group/mishka_developer_tools"}
+      links: %{
+        "GitHub" => @source_url,
+        "Changelog" => "#{@source_url}/blob/master/CHANGELOG.md"
+      }
     ]
   end
 end
