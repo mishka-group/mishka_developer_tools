@@ -1,4 +1,5 @@
 defmodule MishkaDeveloperTools.Helper.Crypto do
+  @type based32_url :: <<_::64, _::_*8>>
   @doc """
   Generate a binary composed of random bytes.
 
@@ -15,6 +16,7 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   #=> <<178, 117, 46, 7, 172, 202, 108, 127, 186, 180, ...>>
   ```
   """
+  @spec secret(integer()) :: any()
   def secret(size \\ 20) do
     :crypto.strong_rand_bytes(size)
   end
@@ -53,6 +55,10 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
 
     - **More info: https://dashbit.co/blog/introducing-nimble-totp**
     """
+    @spec create_otp_link(binary(), String.t(), String.t()) :: %{
+            secret: String.t(),
+            url: based32_url()
+          }
     def create_otp_link(secret, issuer, label) do
       user_url = NimbleTOTP.otpauth_uri("#{issuer}:#{label}", secret, issuer: issuer)
       base32_secret = URI.decode_query(URI.parse(user_url).query)["secret"]
@@ -89,6 +95,10 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
 
     - **More info: https://dashbit.co/blog/introducing-nimble-totp**
     """
+    @spec create_otp_link_and_secret(String.t(), String.t()) :: %{
+            secret: String.t(),
+            url: based32_url()
+          }
     def create_otp_link_and_secret(issuer, label) do
       secret = NimbleTOTP.secret()
       user_url = NimbleTOTP.otpauth_uri("#{issuer}:#{label}", secret, issuer: issuer)
@@ -99,11 +109,16 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     @doc """
     For information See `create_otp_link/3`
     """
+    @spec create_otp(binary(), String.t(), String.t()) :: %{
+            secret: String.t(),
+            url: based32_url()
+          }
     def create_otp(secret, issuer, label), do: create_otp_link(secret, issuer, label)
 
     @doc """
     For information See `create_otp_link_and_secret/2`
     """
+    @spec create_otp(binary(), String.t()) :: %{secret: String.t(), url: <<_::64, _::_*8>>}
     def create_otp(issuer, label), do: create_otp_link_and_secret(issuer, label)
 
     @doc """
@@ -131,6 +146,7 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     > One thing to keep in mind is that you ought to have already kept the
     > secret of each user in a location such as a database.
     """
+    @spec valid_otp?(binary(), String.t()) :: boolean()
     def valid_otp?(secret, otp) do
       NimbleTOTP.valid?(secret, otp)
     end
@@ -160,6 +176,7 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     > One thing to keep in mind is that you ought to have already kept the
     > secret of each user in a location such as a database.
     """
+    @spec valid_otp?(binary(), String.t(), :base32 | NimbleTOTP.time()) :: boolean()
     def valid_otp?(secret, otp, :base32), do: base32_valid_otp?(secret, otp)
 
     def valid_otp?(secret, otp, last_used) do
@@ -169,11 +186,13 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     @doc """
     For information See `valid_otp?/3` and `valid_otp?/2`
     """
+    @spec valid_otp?(binary(), String.t(), NimbleTOTP.time(), :base32) :: boolean()
     def valid_otp?(secret, otp, last_used, :base32), do: base32_valid_otp?(secret, otp, last_used)
 
     @doc """
     For information See `valid_otp?/3` and `valid_otp?/2`
     """
+    @spec base32_valid_otp?(binary(), String.t()) :: boolean()
     def base32_valid_otp?(secret, otp) do
       Base.decode32!(secret)
       |> NimbleTOTP.valid?(otp)
@@ -182,6 +201,7 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     @doc """
     For information See `valid_otp?/3` and `valid_otp?/2`
     """
+    @spec base32_valid_otp?(binary(), String.t(), NimbleTOTP.time()) :: boolean()
     def base32_valid_otp?(secret, otp, last_used) do
       Base.decode32!(secret)
       |> NimbleTOTP.valid?(otp, since: last_used)
