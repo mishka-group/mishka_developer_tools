@@ -1,4 +1,7 @@
 defmodule MishkaDeveloperTools.Helper.Crypto do
+  @moduledoc """
+
+  """
   @type based32_url :: <<_::64, _::_*8>>
   @doc """
   Generate a binary composed of random bytes.
@@ -66,7 +69,7 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     end
 
     @doc """
-      Generates an OTP authentication URL with a given issuer, and label.
+    Generates an OTP authentication URL with a given issuer, and label.
 
     #### Parameters:
 
@@ -208,15 +211,180 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     end
   end
 
-  # TODO: create qr code and docs for otp
+  @doc """
+  ### Bcrypt
 
-  # It should support diffrent type of hashing from user selected
-  # bcrypt - bcrypt_elixir https://hex.pm/packages/bcrypt_elixir
-  # pbkdf2 - pbkdf2_elixir https://hex.pm/packages/pbkdf2_elixir
-  # argon2 - argon2_elixir https://hex.pm/packages/argon2_elixir (recommended)
-  #
+  - `bcrypt_elixir`: https://hex.pm/packages/bcrypt_elixir
+  - `LICENSE`: https://github.com/riverrun/comeonin/blob/master/LICENSE
+
+  > #### Use cases information {: .warning}
+  >
+  > Make sure you have a `C compiler` installed. See the Comeonin wiki for details.
+  > Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
+
+  Bcrypt is a key derivation function for passwords designed by Niels
+  Provos and David Mazières. Bcrypt is an adaptive function, which means
+  that it can be configured to remain slow and resistant to brute-force
+  attacks even as computational power increases.
+
+  Bcrypt has no known vulnerabilities and has been widely tested for over 15 years.
+  However, as it has a low memory use, it is susceptible to GPU cracking attacks.
+
+  ---
+
+  You are required to make use of this function in order to generate an irreversible (hashed)
+  duplicate of the user's password when you are storing your password.
+
+  Additionally, you should save it in the database together with other unique features
+  of your unique program.
+
+  ### Exmple:
+
+  ```elixir
+  create_hash_password("USER_HARD_PASSWORD", :bcrypt)
+  ```
+
+  ---
+
+  ### Pbkdf2
+
+  - `pbkdf2` - pbkdf2_elixir https://hex.pm/packages/pbkdf2_elixir
+  - `LICENSE`: https://github.com/riverrun/pbkdf2_elixir/blob/master/LICENSE.md
+
+  Pbkdf2 is a password-based key derivation function that uses a password, a variable-length
+  salt and an iteration count and applies a pseudorandom function to these to produce a key.
+
+  Pbkdf2 has no known vulnerabilities and has been widely tested for over 15 years.
+  However, like Bcrypt, as it has a low memory use, it is susceptible to GPU cracking attacks.
+
+  The original implementation of Pbkdf2 used SHA-1 as the pseudorandom function,
+  but this version uses HMAC-SHA-512, the default, or HMAC-SHA-256.
+
+  ### Exmple:
+
+  ```elixir
+  create_hash_password("USER_HARD_PASSWORD", :pbkdf2)
+  ```
+
+  ---
+
+  ### Argon2
+
+  Argon2 is the winner of the Password Hashing Competition (PHC).
+
+  - https://password-hashing.net/
+  - `argon2`: argon2_elixir https://hex.pm/packages/argon2_elixir (recommended)
+  - https://github.com/riverrun/argon2_elixir/blob/master/LICENSE.md
+
+  Argon2 is a memory-hard password hashing function which can be used to hash passwords for credential
+  storage, key derivation, or other applications.
+
+  Being memory-hard means that it is not only computationally expensive, but it also uses a
+  lot of memory (which can be configured). This means that it is much more difficult
+  to attack Argon2 hashes using GPUs or dedicated hardware.
+
+  > #### Use cases information {: .warning}
+  >
+  > Make sure you have a `C compiler` installed. See the Comeonin wiki for details.
+  > Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
+
+  #### Configuration
+  The following four parameters can be set in the config file (these can all be overridden using keyword options):
+
+  - t_cost - time cost
+  > the amount of computation, given in number of iterations
+  >
+  > 3 is the default
+
+  - m_cost - memory usage
+
+  > 16 is the default - this will produce a memory usage of 64 MiB (2 ^ 16 KiB)
+  >
+  > parallelism - number of parallel threads
+  >
+  > 4 is the default
+
+  - argon2_type - argon2 variant to use
+
+  > 0 (Argon2d), 1 (Argon2i) or 2 (Argon2id)
+  >
+  > 2 is the default (Argon2id)
+
+  ---
+
+  For verifing you can use like this:
+
+  ```elixir
+  verify_password(hash, "USER_HARD_PASSWORD", :bcrypt)
+
+  verify_password(hash, "USER_HARD_PASSWORD", :pbkdf2)
+
+  verify_password(hash, "USER_HARD_PASSWORD", :argon2)
+  ```
+  """
+  if Code.ensure_loaded?(Bcrypt) do
+    def create_hash_password(password, :bcrypt) do
+      Bcrypt.hash_pwd_salt(password)
+    end
+  end
+
+  if Code.ensure_loaded?(Pbkdf2) do
+    def create_hash_password(password, :pbkdf2) do
+      Pbkdf2.hash_pwd_salt(password, digest: :sha512)
+    end
+  end
+
+  if Code.ensure_loaded?(Argon2) do
+    def create_hash_password(password, :argon2) do
+      Argon2.hash_pwd_salt(password, digest: :sha512)
+    end
+  end
+
+  @doc """
+  For information See `create_hash_password/2`.
+  """
+  if Code.ensure_loaded?(Bcrypt) do
+    def verify_password(hash, password, :bcrypt) do
+      Bcrypt.verify_pass(password, hash)
+    end
+
+    def verify_password(hash, password, :bcrypt_2b) do
+      String.replace_prefix(hash, "$2y$", "$2b$")
+      |> then(&Bcrypt.verify_pass(password, &1))
+    end
+  end
+
+  if Code.ensure_loaded?(Pbkdf2) do
+    def verify_password(hash, password, :pbkdf2) do
+      Pbkdf2.verify_pass(password, hash)
+    end
+  end
+
+  if Code.ensure_loaded?(Argon2) do
+    def verify_password(hash, password, :argon2) do
+      Argon2.verify_pass(password, hash)
+    end
+  end
+
+  if Code.ensure_loaded?(Bcrypt) do
+    def no_user_verify_password(password, :bcrypt) do
+      Bcrypt.no_user_verify(password: password)
+    end
+  end
+
+  if Code.ensure_loaded?(Pbkdf2) do
+    def no_user_verify_password(password, :pbkdf2) do
+      Pbkdf2.no_user_verify(password: password)
+    end
+  end
+
+  if Code.ensure_loaded?(Argon2) do
+    def no_user_verify_password(password, :argon2) do
+      Argon2.no_user_verify(password: password)
+    end
+  end
+
   # boruta_auth/lib/boruta/oauth/request/base.ex
-
   # [
   #   "client_credentials",
   #   "password",
