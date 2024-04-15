@@ -66,4 +66,15 @@ defmodule MishkaDeveloperTools.Helper.Extra do
     |> String.to_charlist()
     |> Enum.all?(&(&1 in allowed_chars))
   end
+
+  def get_unix_time() do
+    DateTime.utc_now() |> DateTime.to_unix()
+  end
+
+  def get_unix_time_with_shift(number, type \\ :second)
+      when type in [:day, :hour, :minute, :second] do
+    DateTime.utc_now()
+    |> DateTime.add(number, type)
+    |> DateTime.to_unix()
+  end
 end

@@ -1,10 +1,17 @@
 defmodule MishkaDeveloperTools.Helper.Crypto do
   @moduledoc """
+  In reality, this module serves as a support for other libraries in addition
+  to Erlang's built-in functions for encryption, hashing, and other topics that are associated
+  with the language.
 
+  It should be brought to your attention that certain functions necessitate the addition of their
+  dependencies to the primary project. Consequently, prior to making use of these functionalities,
+  establish the appropriate dependence within the project in accordance with your requirements.
   """
+  alias Postgrex.Extensions.JSON
   @type based32_url :: <<_::64, _::_*8>>
 
-  @simple_hash_algs %{
+  @hash_algs %{
     "RS256" => %{"type" => :asymmetric, "hash_algorithm" => :sha256, "binary_size" => 16},
     "RS384" => %{"type" => :asymmetric, "hash_algorithm" => :sha384, "binary_size" => 24},
     "RS512" => %{"type" => :asymmetric, "hash_algorithm" => :sha512, "binary_size" => 32},
@@ -12,6 +19,8 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     "HS384" => %{"type" => :symmetric, "hash_algorithm" => :sha384, "binary_size" => 24},
     "HS512" => %{"type" => :symmetric, "hash_algorithm" => :sha512, "binary_size" => 32}
   }
+
+  @hash_algs_keys Map.keys(@hash_algs)
 
   @doc """
   Generate a binary composed of random bytes.
@@ -407,9 +416,52 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
 
   - https://github.com/malach-it/boruta_auth/blob/master/lib/boruta/oauth/schemas/client.ex#L173
   """
-  def simple_hash(text, alg, truncated \\ nil) do
-    :crypto.hash(@simple_hash_algs[alg]["hash_algorithm"], text)
-    |> binary_part(0, truncated || @simple_hash_algs[alg]["binary_size"])
-    |> Base.url_encode64(padding: false)
+  def simple_hash(text, alg, truncated \\ nil) when alg in @hash_algs_keys do
+    hashed =
+      :crypto.hash(@hash_algs[alg]["hash_algorithm"], text)
+      |> binary_part(0, truncated || @hash_algs[alg]["binary_size"])
+
+    {Base.url_encode64(hashed, padding: false), hashed}
+  end
+
+  def simple_hash(rand_size \\ 32) do
+    token = :crypto.strong_rand_bytes(rand_size)
+    hashed = :crypto.hash(:sha256, token)
+
+    {Base.url_encode64(token, padding: false), hashed}
+  end
+
+  if Code.ensure_loaded?(JSON) and Code.ensure_loaded?(Joken) do
+    defmodule Token do
+      use Joken.Config
+    end
+
+    def create_signer(alg, key) when alg in @hash_algs_keys do
+      Joken.Signer.create(alg, key)
+    end
+
+    def generate_and_sign(extra_claims, signer \\ nil) do
+      if !is_nil(signer),
+        do: Token.generate_and_sign(extra_claims, signer),
+        else: Token.generate_and_sign(extra_claims)
+    end
+
+    def generate_and_sign!(extra_claims, signer \\ nil) do
+      if !is_nil(signer),
+        do: Token.generate_and_sign!(extra_claims, signer),
+        else: Token.generate_and_sign!(extra_claims)
+    end
+
+    def verify_and_validate(token, signer \\ nil) do
+      if !is_nil(signer),
+        do: Token.verify_and_validate(token, signer),
+        else: Token.verify_and_validate(token)
+    end
+
+    def verify_and_validate!(token, signer \\ nil) do
+      if !is_nil(signer),
+        do: Token.verify_and_validate!(token, signer),
+        else: Token.verify_and_validate!(token)
+    end
   end
 end
