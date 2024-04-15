@@ -58,7 +58,7 @@ defmodule MnesiaAssistant.BackupAndRestore do
   def set_master_nodes(nodes) when is_list(nodes), do: Mnesia.set_master_nodes(nodes)
 
   @doc """
-  The `:mnesia.backup_checkpoint/1` function is used in Mnesia to create a
+  The `:mnesia.backup_checkpoint/2` function is used in Mnesia to create a
   backup of the database at a specific checkpoint.
 
   This function allows you to specify a checkpoint name, and `Mnesia`
