@@ -402,6 +402,10 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   > #### Security issue {: .warning}
   >
   > It is not recommended to use this function for hashing passwords or JWTs.
+
+  ##### I inspired the initial code from this path:
+
+  - https://github.com/malach-it/boruta_auth/blob/master/lib/boruta/oauth/schemas/client.ex#L173
   """
   def simple_hash(text, alg, truncated \\ nil) do
     :crypto.hash(@simple_hash_algs[alg]["hash_algorithm"], text)
