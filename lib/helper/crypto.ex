@@ -3,6 +3,16 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
 
   """
   @type based32_url :: <<_::64, _::_*8>>
+
+  @simple_hash_algs %{
+    "RS256" => %{"type" => :asymmetric, "hash_algorithm" => :sha256, "binary_size" => 16},
+    "RS384" => %{"type" => :asymmetric, "hash_algorithm" => :sha384, "binary_size" => 24},
+    "RS512" => %{"type" => :asymmetric, "hash_algorithm" => :sha512, "binary_size" => 32},
+    "HS256" => %{"type" => :symmetric, "hash_algorithm" => :sha256, "binary_size" => 16},
+    "HS384" => %{"type" => :symmetric, "hash_algorithm" => :sha384, "binary_size" => 24},
+    "HS512" => %{"type" => :symmetric, "hash_algorithm" => :sha512, "binary_size" => 32}
+  }
+
   @doc """
   Generate a binary composed of random bytes.
 
@@ -384,31 +394,18 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     end
   end
 
-  # boruta_auth/lib/boruta/oauth/request/base.ex
-  # [
-  #   "client_credentials",
-  #   "password",
-  #   "authorization_code",
-  #   "refresh_token",
-  #   "implicit",
-  #   "revoke",
-  #   "introspect"
-  # ]
+  @doc """
+  This is a straightforward data hashing function that does not differentiate between
+  **`symmetric`** and **`asymmetric`** functions according to their characteristics. Take, for instance,
+  the use of **`checksums`** or codes associated with `nonce`, `c_hash`, `at_hash`, and other similar concepts.
 
-  # RS256: [type: :asymmetric, hash_algorithm: :SHA256, binary_size: 16]
-  # RS384: [type: :asymmetric, hash_algorithm: :SHA384, binary_size: 24]
-  # RS512: [type: :asymmetric, hash_algorithm: :SHA512, binary_size: 32]
-  # HS256: [type: :symmetric, hash_algorithm: :SHA256, binary_size: 16]
-  # HS384: [type: :symmetric, hash_algorithm: :SHA384, binary_size: 24]
-  # HS512: [type: :symmetric, hash_algorithm: :SHA512, binary_size: 32]
-
-  # def hash(string, client) do
-  #   hash_alg(client)
-  #   |> Atom.to_string()
-  #   |> String.downcase()
-  #   |> String.to_atom()
-  #   |> :crypto.hash(string)
-  #   |> binary_part(0, hash_binary_size(client))
-  #   |> Base.url_encode64(padding: false)
-  # end
+  > #### Security issue {: .warning}
+  >
+  > It is not recommended to use this function for hashing passwords or JWTs.
+  """
+  def simple_hash(text, alg, truncated \\ nil) do
+    :crypto.hash(@simple_hash_algs[alg]["hash_algorithm"], text)
+    |> binary_part(0, truncated || @simple_hash_algs[alg]["binary_size"])
+    |> Base.url_encode64(padding: false)
+  end
 end
