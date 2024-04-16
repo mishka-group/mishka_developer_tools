@@ -734,12 +734,12 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
       key_base
       |> Plug.Crypto.sign(salt, data, opts)
     end
+  end
 
-    @doc false
-    def random_key_base(length \\ 64) when length > 31 do
-      :crypto.strong_rand_bytes(length)
-      |> Base.encode64(padding: false)
-      |> binary_part(0, length)
-    end
+  @doc false
+  def random_key_base(length \\ 64) when length > 31 do
+    :crypto.strong_rand_bytes(length)
+    |> Base.encode64(padding: false)
+    |> binary_part(0, length)
   end
 end
