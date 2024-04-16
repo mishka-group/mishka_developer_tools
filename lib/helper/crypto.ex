@@ -341,6 +341,7 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   verify_password(hash, "USER_HARD_PASSWORD", :argon2)
   ```
   """
+  @spec create_hash_password(String.t(), :argon2 | :bcrypt | :pbkdf2) :: String.t()
   if Code.ensure_loaded?(Bcrypt) do
     def create_hash_password(password, :bcrypt) do
       Bcrypt.hash_pwd_salt(password)
@@ -362,6 +363,8 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   @doc """
   For information See `create_hash_password/2`.
   """
+  @spec verify_password(binary(), String.t(), :argon2 | :bcrypt | :bcrypt_2b | :pbkdf2) ::
+          boolean()
   if Code.ensure_loaded?(Bcrypt) do
     def verify_password(hash, password, :bcrypt) do
       Bcrypt.verify_pass(password, hash)
@@ -386,6 +389,7 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   end
 
   if Code.ensure_loaded?(Bcrypt) do
+    @spec no_user_verify_password(String.t(), :argon2 | :bcrypt | :pbkdf2) :: false
     def no_user_verify_password(password, :bcrypt) do
       Bcrypt.no_user_verify(password: password)
     end
@@ -406,7 +410,8 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   @doc """
   This is a straightforward data hashing function that does not differentiate between
   **`symmetric`** and **`asymmetric`** functions according to their characteristics. Take, for instance,
-  the use of **`checksums`** or codes associated with `nonce`, `c_hash`, `at_hash`, and other similar concepts.
+  the use of **`checksums`** or codes associated with `nonce`, `c_hash`, `at_hash`,
+  `short-lived Access Token`, and other similar concepts.
 
   > #### Security issue {: .warning}
   >
@@ -415,7 +420,24 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   ##### I inspired the initial code from this path:
 
   - https://github.com/malach-it/boruta_auth/blob/master/lib/boruta/oauth/schemas/client.ex#L173
+
+  ### Example:
+  ```elixir
+  simple_hash("Your text", "RS512")
+  simple_hash("Your text", "RS512", 32)
+
+  # OR
+  simple_hash()
+  simple_hash(32)
+  ```
+
+  > This function in all types of input and output is as follows
+
+  ```elixir
+  {URL Encode64, Binary}
+  ```
   """
+  @spec simple_hash(String.t(), String.t()) :: {binary(), binary()}
   def simple_hash(text, alg, truncated \\ nil) when alg in @hash_algs_keys do
     hashed =
       :crypto.hash(@hash_algs[alg]["hash_algorithm"], text)
@@ -424,6 +446,10 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     {Base.url_encode64(hashed, padding: false), hashed}
   end
 
+  @doc """
+  For information See `simple_hash/2` and `simple_hash/3`.
+  """
+  @spec simple_hash() :: {binary(), binary()}
   def simple_hash(rand_size \\ 32) do
     token = :crypto.strong_rand_bytes(rand_size)
     hashed = :crypto.hash(:sha256, token)
@@ -436,28 +462,116 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
       use Joken.Config
     end
 
+    @doc """
+    For your convenience, this function will generate a signature for you, allowing you to sign
+    the data that you desire. It is necessary to create a signature before you can create a `JWT`.
+    Pay a visit to the `Joken` library if you have certain requirements that you need to fulfill.
+
+    ### Example:
+    ```elixir
+    create_signer("HS384", "YOUR SECURE KEY")
+    create_signer("RS512", %{"pem" => pem_file})
+    // OR
+    create_typed_signer("HS384", "YOUR SECURE KEY")
+    create_typed_signer("RS512", %{"pem" => pem_file})
+    ```
+
+    For more information about `pem`:
+    - https://hexdocs.pm/joken/signers.html#pem-privacy-enhanced-mail
+
+
+    If you want to create `signer` with pem like RSA as an asymmetric, see `create_typed_signer/2`
+    or `create_typed_signer/3`
+
+    See this issue:
+    - https://github.com/joken-elixir/joken/issues/420
+    """
+    @spec create_signer(String.t(), binary() | map()) :: Joken.Signer.t()
     def create_signer(alg, key) when alg in @hash_algs_keys do
       Joken.Signer.create(alg, key)
     end
 
+    @doc """
+    For information See `create_signer/2`.
+    """
+    @spec create_typed_signer(String.t(), binary(), binary() | nil) :: Joken.Signer.t()
+    def create_typed_signer(alg, key, pem \\ nil) when alg in @hash_algs_keys do
+      case @hash_algs[alg]["type"] do
+        :asymmetric when not is_nil(pem) -> Joken.Signer.create(alg, %{"pem" => pem})
+        _ -> create_signer(alg, key)
+      end
+    end
+
+    @doc """
+    It is possible to use a signature that you have already made in order to sign a
+    piece of data by utilizing this function. Take note that signing guarantees
+    that no changes will be made to the data, and that all of your information will
+    be entirely transparent.
+
+    ### Example:
+    ```elixir
+    signer = create_typed_signer("HS384", "YOUR SECURE KEY")
+    generate_and_sign(extra_claims, signer)
+    ```
+
+    > If you do not send the signer, it will attempt to retrieve it from the config of
+    > your `Joken` module.
+    >
+    > Generates claims with the given token configuration and merges them with the given extra claims.
+    """
+    @spec generate_and_sign(map(), Joken.Signer.t() | nil) ::
+            {:error, atom() | keyword()} | {:ok, binary(), %{optional(binary()) => any()}}
     def generate_and_sign(extra_claims, signer \\ nil) do
       if !is_nil(signer),
         do: Token.generate_and_sign(extra_claims, signer),
         else: Token.generate_and_sign(extra_claims)
     end
 
+    @doc """
+    For information See `generate_and_sign/2` or `generate_and_sign/1`.
+    """
+    @spec generate_and_sign!(map(), Joken.Signer.t() | nil) :: binary()
     def generate_and_sign!(extra_claims, signer \\ nil) do
       if !is_nil(signer),
         do: Token.generate_and_sign!(extra_claims, signer),
         else: Token.generate_and_sign!(extra_claims)
     end
 
+    @doc """
+    It is like `generate_and_sign/2` or `generate_and_sign/1`, but it did not generate claims.
+    """
+    @spec encode_and_sign(map(), Joken.Signer.t() | nil) ::
+            {:error, atom() | keyword()} | {:ok, binary(), %{optional(binary()) => any()}}
+    def encode_and_sign(extra_claims, signer \\ nil) do
+      if !is_nil(signer),
+        do: Token.encode_and_sign(extra_claims, signer),
+        else: Token.encode_and_sign(extra_claims)
+    end
+
+    @doc """
+    Verifies a bearer_token using the given signer and executes hooks if any are given.
+
+    > If you do not send the signer, it will attempt to retrieve it from the config of
+    > your `Joken` module.
+
+    ### Example:
+    ```elixir
+    signer = create_typed_signer("HS384", "YOUR SECURE KEY")
+    verify_and_validate(token, signer)
+    ```
+    """
+    @spec verify_and_validate(binary(), Joken.Signer.t() | nil) ::
+            {:error, atom() | keyword()} | {:ok, %{optional(binary()) => any()}}
     def verify_and_validate(token, signer \\ nil) do
       if !is_nil(signer),
         do: Token.verify_and_validate(token, signer),
         else: Token.verify_and_validate(token)
     end
 
+    @doc """
+    For information See `verify_and_validate/2` or `verify_and_validate/1`.
+    """
+    @spec verify_and_validate!(binary(), Joken.Signer.t() | nil) :: %{optional(binary()) => any()}
     def verify_and_validate!(token, signer \\ nil) do
       if !is_nil(signer),
         do: Token.verify_and_validate!(token, signer),
