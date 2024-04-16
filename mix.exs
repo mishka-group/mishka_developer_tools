@@ -50,6 +50,7 @@ defmodule MishkaDeveloperTools.MixProject do
       {:nimble_totp, "~> 1.0", optional: true},
       {:joken, "~> 2.6", optional: true},
       {:jason, "~> 1.4", optional: true},
+      {:plug, "~> 1.15", optional: true},
       # Make sure you have a C compiler installed. See the Comeonin wiki for details.
       # Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
       {:bcrypt_elixir, "~> 3.1", optional: true},

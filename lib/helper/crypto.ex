@@ -7,6 +7,21 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
   It should be brought to your attention that certain functions necessitate the addition of their
   dependencies to the primary project. Consequently, prior to making use of these functionalities,
   establish the appropriate dependence within the project in accordance with your requirements.
+
+  These functions are custom or wrappers, Copy from:
+
+  - https://hexdocs.pm/plug_crypto/2.0.0/Plug.Crypto.html
+  - https://hexdocs.pm/phoenix/Phoenix.Token.html
+  - https://github.com/dashbitco/nimble_totp/blob/master/lib/nimble_totp.ex
+  - https://dashbit.co/blog/introducing-nimble-totp
+  - https://hex.pm/packages/bcrypt_elixir
+  - https://hex.pm/packages/pbkdf2_elixir
+  - https://password-hashing.net/
+  - https://hex.pm/packages/argon2_elixir
+  - https://github.com/malach-it/boruta_auth
+  - https://github.com/joken-elixir/joken
+  - https://hexdocs.pm/phoenix/mix_phx_gen_auth.html
+  - https://hexdocs.pm/phoenix/Mix.Tasks.Phx.Gen.Secret.html
   """
   alias Postgrex.Extensions.JSON
   @type based32_url :: <<_::64, _::_*8>>
@@ -230,119 +245,122 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     end
   end
 
-  @doc """
-  ### Bcrypt
+  if Code.ensure_loaded?(Bcrypt) or Code.ensure_loaded?(Pbkdf2) or Code.ensure_loaded?(Argon2) do
+    @doc """
+    ### Bcrypt
 
-  - `bcrypt_elixir`: https://hex.pm/packages/bcrypt_elixir
-  - `LICENSE`: https://github.com/riverrun/comeonin/blob/master/LICENSE
+    - `bcrypt_elixir`: https://hex.pm/packages/bcrypt_elixir
+    - `LICENSE`: https://github.com/riverrun/comeonin/blob/master/LICENSE
 
-  > #### Use cases information {: .warning}
-  >
-  > Make sure you have a `C compiler` installed. See the Comeonin wiki for details.
-  > Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
+    > #### Use cases information {: .warning}
+    >
+    > Make sure you have a `C compiler` installed. See the Comeonin wiki for details.
+    > Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
 
-  Bcrypt is a key derivation function for passwords designed by Niels
-  Provos and David Mazières. Bcrypt is an adaptive function, which means
-  that it can be configured to remain slow and resistant to brute-force
-  attacks even as computational power increases.
+    Bcrypt is a key derivation function for passwords designed by Niels
+    Provos and David Mazières. Bcrypt is an adaptive function, which means
+    that it can be configured to remain slow and resistant to brute-force
+    attacks even as computational power increases.
 
-  Bcrypt has no known vulnerabilities and has been widely tested for over 15 years.
-  However, as it has a low memory use, it is susceptible to GPU cracking attacks.
+    Bcrypt has no known vulnerabilities and has been widely tested for over 15 years.
+    However, as it has a low memory use, it is susceptible to GPU cracking attacks.
 
-  ---
+    ---
 
-  You are required to make use of this function in order to generate an irreversible (hashed)
-  duplicate of the user's password when you are storing your password.
+    You are required to make use of this function in order to generate an irreversible (hashed)
+    duplicate of the user's password when you are storing your password.
 
-  Additionally, you should save it in the database together with other unique features
-  of your unique program.
+    Additionally, you should save it in the database together with other unique features
+    of your unique program.
 
-  ### Exmple:
+    ### Exmple:
 
-  ```elixir
-  create_hash_password("USER_HARD_PASSWORD", :bcrypt)
-  ```
+    ```elixir
+    create_hash_password("USER_HARD_PASSWORD", :bcrypt)
+    ```
 
-  ---
+    ---
 
-  ### Pbkdf2
+    ### Pbkdf2
 
-  - `pbkdf2` - pbkdf2_elixir https://hex.pm/packages/pbkdf2_elixir
-  - `LICENSE`: https://github.com/riverrun/pbkdf2_elixir/blob/master/LICENSE.md
+    - `pbkdf2` - pbkdf2_elixir https://hex.pm/packages/pbkdf2_elixir
+    - `LICENSE`: https://github.com/riverrun/pbkdf2_elixir/blob/master/LICENSE.md
 
-  Pbkdf2 is a password-based key derivation function that uses a password, a variable-length
-  salt and an iteration count and applies a pseudorandom function to these to produce a key.
+    Pbkdf2 is a password-based key derivation function that uses a password, a variable-length
+    salt and an iteration count and applies a pseudorandom function to these to produce a key.
 
-  Pbkdf2 has no known vulnerabilities and has been widely tested for over 15 years.
-  However, like Bcrypt, as it has a low memory use, it is susceptible to GPU cracking attacks.
+    Pbkdf2 has no known vulnerabilities and has been widely tested for over 15 years.
+    However, like Bcrypt, as it has a low memory use, it is susceptible to GPU cracking attacks.
 
-  The original implementation of Pbkdf2 used SHA-1 as the pseudorandom function,
-  but this version uses HMAC-SHA-512, the default, or HMAC-SHA-256.
+    The original implementation of Pbkdf2 used SHA-1 as the pseudorandom function,
+    but this version uses HMAC-SHA-512, the default, or HMAC-SHA-256.
 
-  ### Exmple:
+    ### Exmple:
 
-  ```elixir
-  create_hash_password("USER_HARD_PASSWORD", :pbkdf2)
-  ```
+    ```elixir
+    create_hash_password("USER_HARD_PASSWORD", :pbkdf2)
+    ```
 
-  ---
+    ---
 
-  ### Argon2
+    ### Argon2
 
-  Argon2 is the winner of the Password Hashing Competition (PHC).
+    Argon2 is the winner of the Password Hashing Competition (PHC).
 
-  - https://password-hashing.net/
-  - `argon2`: argon2_elixir https://hex.pm/packages/argon2_elixir (recommended)
-  - https://github.com/riverrun/argon2_elixir/blob/master/LICENSE.md
+    - https://password-hashing.net/
+    - `argon2`: argon2_elixir https://hex.pm/packages/argon2_elixir (recommended)
+    - https://github.com/riverrun/argon2_elixir/blob/master/LICENSE.md
 
-  Argon2 is a memory-hard password hashing function which can be used to hash passwords for credential
-  storage, key derivation, or other applications.
+    Argon2 is a memory-hard password hashing function which can be used to hash passwords for credential
+    storage, key derivation, or other applications.
 
-  Being memory-hard means that it is not only computationally expensive, but it also uses a
-  lot of memory (which can be configured). This means that it is much more difficult
-  to attack Argon2 hashes using GPUs or dedicated hardware.
+    Being memory-hard means that it is not only computationally expensive, but it also uses a
+    lot of memory (which can be configured). This means that it is much more difficult
+    to attack Argon2 hashes using GPUs or dedicated hardware.
 
-  > #### Use cases information {: .warning}
-  >
-  > Make sure you have a `C compiler` installed. See the Comeonin wiki for details.
-  > Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
+    > #### Use cases information {: .warning}
+    >
+    > Make sure you have a `C compiler` installed. See the Comeonin wiki for details.
+    > Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
 
-  #### Configuration
-  The following four parameters can be set in the config file (these can all be overridden using keyword options):
+    #### Configuration
+    The following four parameters can be set in the config file (these can all be overridden using keyword options):
 
-  - t_cost - time cost
-  > the amount of computation, given in number of iterations
-  >
-  > 3 is the default
+    - t_cost - time cost
+    > the amount of computation, given in number of iterations
+    >
+    > 3 is the default
 
-  - m_cost - memory usage
+    - m_cost - memory usage
 
-  > 16 is the default - this will produce a memory usage of 64 MiB (2 ^ 16 KiB)
-  >
-  > parallelism - number of parallel threads
-  >
-  > 4 is the default
+    > 16 is the default - this will produce a memory usage of 64 MiB (2 ^ 16 KiB)
+    >
+    > parallelism - number of parallel threads
+    >
+    > 4 is the default
 
-  - argon2_type - argon2 variant to use
+    - argon2_type - argon2 variant to use
 
-  > 0 (Argon2d), 1 (Argon2i) or 2 (Argon2id)
-  >
-  > 2 is the default (Argon2id)
+    > 0 (Argon2d), 1 (Argon2i) or 2 (Argon2id)
+    >
+    > 2 is the default (Argon2id)
 
-  ---
+    ---
 
-  For verifing you can use like this:
+    For verifing you can use like this:
 
-  ```elixir
-  verify_password(hash, "USER_HARD_PASSWORD", :bcrypt)
+    ```elixir
+    verify_password(hash, "USER_HARD_PASSWORD", :bcrypt)
 
-  verify_password(hash, "USER_HARD_PASSWORD", :pbkdf2)
+    verify_password(hash, "USER_HARD_PASSWORD", :pbkdf2)
 
-  verify_password(hash, "USER_HARD_PASSWORD", :argon2)
-  ```
-  """
-  @spec create_hash_password(String.t(), :argon2 | :bcrypt | :pbkdf2) :: String.t()
+    verify_password(hash, "USER_HARD_PASSWORD", :argon2)
+    ```
+    """
+  end
+
   if Code.ensure_loaded?(Bcrypt) do
+    @spec create_hash_password(String.t(), :argon2 | :bcrypt | :pbkdf2) :: String.t()
     def create_hash_password(password, :bcrypt) do
       Bcrypt.hash_pwd_salt(password)
     end
@@ -360,12 +378,12 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
     end
   end
 
-  @doc """
-  For information See `create_hash_password/2`.
-  """
-  @spec verify_password(binary(), String.t(), :argon2 | :bcrypt | :bcrypt_2b | :pbkdf2) ::
-          boolean()
   if Code.ensure_loaded?(Bcrypt) do
+    @doc """
+    For information See `create_hash_password/2`.
+    """
+    @spec verify_password(binary(), String.t(), :argon2 | :bcrypt | :bcrypt_2b | :pbkdf2) ::
+            boolean()
     def verify_password(hash, password, :bcrypt) do
       Bcrypt.verify_pass(password, hash)
     end
@@ -576,6 +594,152 @@ defmodule MishkaDeveloperTools.Helper.Crypto do
       if !is_nil(signer),
         do: Token.verify_and_validate!(token, signer),
         else: Token.verify_and_validate!(token)
+    end
+  end
+
+  if Code.ensure_loaded?(Plug) do
+    @doc """
+    Encodes, encrypts, and signs data into a token you can send to
+    clients. Its usage is identical to that of `sign/4`, but the data
+    is extracted using `decrypt/4`, rather than `verify/4`.
+
+      - Copy from: https://github.com/phoenixframework/phoenix/blob/v1.7.12/lib/phoenix/token.ex
+
+    ## Options
+
+    * `:key_iterations` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 1000
+    * `:key_length` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 32
+    * `:key_digest` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to `:sha256`
+    * `:signed_at` - set the timestamp of the token in seconds.
+      Defaults to `System.system_time(:second)`
+    * `:max_age` - the default maximum age of the token. Defaults to
+      86400 seconds (1 day) and it may be overridden on `decrypt/4`.
+    """
+    def encrypt(key_base, secret, data, opts \\ []) when is_binary(secret) do
+      key_base
+      |> Plug.Crypto.encrypt(secret, data, opts)
+    end
+
+    @doc """
+    Decrypts the original data from the token and verifies its integrity.
+    Its usage is identical to `verify/4` but for encrypted tokens.
+
+    - Copy from: https://github.com/phoenixframework/phoenix/blob/v1.7.12/lib/phoenix/token.ex
+
+    ## Options
+
+    * `:key_iterations` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 1000
+    * `:key_length` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 32
+    * `:key_digest` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to `:sha256`
+    * `:max_age` - verifies the token only if it has been generated
+      "max age" ago in seconds. Defaults to the max age signed in the
+      token by `encrypt/4`.
+    """
+    def decrypt(key_base, secret, token, opts \\ []) when is_binary(secret) do
+      key_base
+      |> Plug.Crypto.decrypt(secret, token, opts)
+    end
+
+    @doc """
+    Decodes the original data from the token and verifies its integrity.
+
+    ## Examples
+
+    In this scenario we will create a token, sign it, then provide it to a client
+    application.
+
+    ```elixir
+    iex> user_id    = 99
+    iex> secret     = "kjoy3o1zeidquwy1398juxzldjlksahdk3"
+    iex> namespace  = "user auth"
+    iex> token      = sign(secret, namespace, user_id)
+    ```
+
+    The mechanism for passing the token to the client is typically through a
+    cookie, a JSON response body, or HTTP header. For now, assume the client has
+    received a token it can use to validate requests for protected resources.
+
+    When the server receives a request, it can use `verify/4` to determine if it
+    should provide the requested resources to the client:
+
+    ```elixir
+    iex> verify(secret, namespace, token, max_age: 86400)
+    {:ok, 99}
+    ```
+
+    In this example, we know the client sent a valid token because `verify/4`
+    returned a tuple of type `{:ok, user_id}`. The server can now proceed with
+    the request.
+
+    However, if the client had sent an expired token, an invalid token, or `nil`,
+    `verify/4` would have returned an error instead:
+
+    ```elixir
+    iex> verify(secret, namespace, expired, max_age: 86400)
+    {:error, :expired}
+
+    iex> verify(secret, namespace, invalid, max_age: 86400)
+    {:error, :invalid}
+
+    iex> verify(secret, namespace, nil, max_age: 86400)
+    {:error, :missing}
+    ```
+
+    ## Options
+
+    * `:key_iterations` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 1000
+    * `:key_length` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 32
+    * `:key_digest` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to `:sha256`
+    * `:max_age` - verifies the token only if it has been generated
+      "max age" ago in seconds. Defaults to the max age signed in the
+      token by `sign/4`.
+    """
+    def verify(key_base, salt, token, opts \\ []) when is_binary(salt) do
+      key_base
+      |> Plug.Crypto.verify(salt, token, opts)
+    end
+
+    @doc """
+    Encodes and signs data into a token you can send to clients.
+
+    ## Options
+
+    * `:key_iterations` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 1000
+    * `:key_length` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to 32
+    * `:key_digest` - option passed to `Plug.Crypto.KeyGenerator`
+      when generating the encryption and signing keys. Defaults to `:sha256`
+    * `:signed_at` - set the timestamp of the token in seconds.
+      Defaults to `System.system_time(:second)`
+    * `:max_age` - the default maximum age of the token. Defaults to
+      86400 seconds (1 day) and it may be overridden on `verify/4`.
+
+    ### Example:
+    ```elixir
+    key_base = random_key_base()
+    sign(key_base, "user-secret", {:elixir, :terms})
+    ```
+    """
+    def sign(key_base, salt, data, opts \\ []) when is_binary(salt) do
+      key_base
+      |> Plug.Crypto.sign(salt, data, opts)
+    end
+
+    @doc false
+    def random_key_base(length \\ 64) when length > 31 do
+      :crypto.strong_rand_bytes(length)
+      |> Base.encode64(padding: false)
+      |> binary_part(0, length)
     end
   end
 end
