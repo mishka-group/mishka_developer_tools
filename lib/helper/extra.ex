@@ -61,6 +61,20 @@ defmodule MishkaDeveloperTools.Helper.Extra do
 
   def validated_user?(_username), do: false
 
+  def validated_password?(password) when is_binary(password) do
+    regex_pattern = ~r/^[0-9A-Za-z@#$%^_\-!(,)*]{9,130}$/
+
+    Enum.all?([
+      Regex.match?(regex_pattern, password),
+      Regex.match?(~r/[A-Z]/, password),
+      Regex.match?(~r/[a-z]/, password),
+      Regex.match?(~r/\d/, password),
+      Regex.match?(~r/[@#$%^_\-!(,)*]/, password)
+    ])
+  end
+
+  def validated_password?(_password), do: false
+
   defp check_specific_characters?(input, allowed_chars) do
     input
     |> String.to_charlist()
