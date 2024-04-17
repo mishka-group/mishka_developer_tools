@@ -1,3 +1,10 @@
+# Changelog for MishkaDeveloperTools 0.1.6
+
+### Features:
+
+- [x] Add `Crypto` helper module
+- [x] Add new optional dependencies and their wrappers [`nimble_totp`, `joken`, `jason`, `plug`, `bcrypt_elixir`, `pbkdf2_elixir`, `argon2_elixir`]
+
 # Changelog for MishkaDeveloperTools 0.1.5
 
 ---

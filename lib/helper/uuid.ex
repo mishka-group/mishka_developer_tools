@@ -13,6 +13,37 @@ defmodule MishkaDeveloperTools.Helper.UUID do
   @type t :: <<_::288>>
   @type raw :: <<_::128>>
 
+  defmodule HelperEcto.CastError do
+    @moduledoc """
+    Raised when a changeset can't cast a value.
+    """
+    defexception [:message, :type, :value]
+
+    def exception(opts) do
+      type = Keyword.fetch!(opts, :type)
+      value = Keyword.fetch!(opts, :value)
+      msg = opts[:message] || "cannot cast #{inspect(value)} to #{format(type)}"
+      %__MODULE__{message: msg, type: type, value: value}
+    end
+
+    @doc """
+    Format type for error messaging and logs.
+    """
+    def format({composite, type}) when composite in [:array, :map] do
+      "{#{inspect(composite)}, #{format(type)}}"
+    end
+
+    def format({:parameterized, type, params}) do
+      if function_exported?(type, :format, 1) do
+        apply(type, :format, [params])
+      else
+        "##{inspect(type)}<#{inspect(params)}>"
+      end
+    end
+
+    def format(type), do: inspect(type)
+  end
+
   @spec cast(t | raw | any) :: {:ok, t} | :error
   def cast(uuid)
 
@@ -36,7 +67,7 @@ defmodule MishkaDeveloperTools.Helper.UUID do
   def cast!(uuid) do
     case cast(uuid) do
       {:ok, hex_uuid} -> hex_uuid
-      :error -> raise Ecto.CastError, type: __MODULE__, value: uuid
+      :error -> raise HelperEcto.CastError, type: __MODULE__, value: uuid
     end
   end
 
