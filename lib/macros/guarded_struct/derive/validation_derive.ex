@@ -293,8 +293,10 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive do
     end
   end
 
-  def validate(:geo_url, input, field) do
-    location("geo:#{input}", field, :geo_url)
+  if Code.ensure_loaded?(URL) do
+    def validate(:geo_url, input, field) do
+      location("geo:#{input}", field, :geo_url)
+    end
   end
 
   if Code.ensure_loaded?(EmailChecker) do
