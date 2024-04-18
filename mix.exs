@@ -57,7 +57,7 @@ defmodule MishkaDeveloperTools.MixProject do
       {:pbkdf2_elixir, "~> 2.2", optional: true},
       {:argon2_elixir, "~> 4.0", optional: true},
       # Dev dependencies
-      {:ex_doc, "~> 0.31.1", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.32.1", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
