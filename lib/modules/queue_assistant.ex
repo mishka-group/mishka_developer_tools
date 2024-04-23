@@ -2,6 +2,8 @@ defmodule QueueAssistant do
   @moduledoc """
   This is a simple wrapper for the Erlang queue, in which the order of some entries
   has also been changed
+
+  - **Based on:** https://www.erlang.org/doc/man/queue
   """
 
   @type queue_type :: :queue.queue(any())

@@ -153,6 +153,14 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.ValidationDerive do
     end
   end
 
+  def validate(:queue, input, field) do
+    if QueueAssistant.is_queue?(input) do
+      input
+    else
+      {:error, field, :queue, "The #{field} field must be a queue format"}
+    end
+  end
+
   def validate({:max_len, len}, input, field) when is_binary(input) do
     if String.length(input) <= len,
       do: input,

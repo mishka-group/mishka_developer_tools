@@ -15,8 +15,10 @@ defmodule MnesiaAssistant do
   6. `MnesiaAssistant.BackupAndRestore`
   """
 
+  require Logger
   alias MnesiaAssistant.{Information, Schema}
   alias MishkaDeveloperTools.Helper.Extra
+  alias MnesiaAssistant.Error, as: MError
   alias :mnesia, as: Mnesia
 
   ################################################################
@@ -53,6 +55,17 @@ defmodule MnesiaAssistant do
   Read `start/0` document.
   """
   def start(:app), do: Application.start(:mnesia)
+
+  @doc false
+  def start(mode, dir, identifier) do
+    Logger.warning("Mnesia's initial valuation process has begun.")
+    stop() |> MError.error_description()
+    mnesia_dir = dir <> "/#{mode}"
+    File.mkdir_p(mnesia_dir) |> MError.error_description(identifier)
+    Application.put_env(:mnesia, :dir, mnesia_dir |> to_charlist)
+    MnesiaAssistant.Schema.create_schema([node()]) |> MError.error_description(identifier)
+    start() |> MError.error_description(identifier)
+  end
 
   @doc """
   The `mnesia` database provides you with the capability to perform your storage
