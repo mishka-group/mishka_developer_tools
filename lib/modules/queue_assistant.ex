@@ -270,7 +270,9 @@ defmodule QueueAssistant do
   # false
   ```
   """
-  @spec is_empty?(queue_type()) :: boolean()
+  @spec is_empty?(queue_type() | nil) :: boolean()
+  def is_empty?(nil), do: true
+
   def is_empty?(queue) do
     :queue.is_empty(queue)
   end
@@ -279,7 +281,7 @@ defmodule QueueAssistant do
   @doc """
   For see more information, check `is_empty?/1`
   """
-  @spec empty?(queue_type()) :: boolean()
+  @spec empty?(queue_type() | nil) :: boolean()
   def empty?(queue), do: is_empty?(queue)
 
   @doc """
@@ -294,7 +296,7 @@ defmodule QueueAssistant do
   """
   @spec is_queue?(queue_type()) :: boolean()
   def is_queue?(queue) do
-    :queue.is_empty(queue)
+    :queue.is_queue(queue)
   end
 
   @doc """
