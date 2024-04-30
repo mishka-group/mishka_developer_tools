@@ -107,6 +107,12 @@ defmodule MishkaDeveloperTools.Macros.GuardedStruct.Derive.Parser do
 
   def convert_to_atom_map({:ok, map}) when is_map(map), do: convert_to_atom_map(map)
 
+  def convert_to_atom_map(map) when is_struct(map) do
+    for {key, value} <- Map.from_struct(map),
+        into: %{},
+        do: {convert_key(key), convert_value(value)}
+  end
+
   def convert_to_atom_map(map) when is_map(map) do
     for {key, value} <- map, into: %{}, do: {convert_key(key), convert_value(value)}
   end

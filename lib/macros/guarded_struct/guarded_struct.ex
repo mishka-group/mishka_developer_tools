@@ -1317,7 +1317,10 @@ defmodule GuardedStruct do
       def builder(attrs, error \\ false)
 
       def builder({key, attrs} = input, error)
-          when is_tuple(input) and is_map(attrs) and (is_list(key) or is_atom(key)) do
+          when is_tuple(input) and (is_map(attrs) or is_struct(attrs)) and
+                 (is_list(key) or is_atom(key)) do
+        attrs = if(is_struct(attrs), do: Map.from_struct(attrs), else: attrs)
+
         GuardedStruct.builder(
           %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
           key,
@@ -1327,7 +1330,10 @@ defmodule GuardedStruct do
       end
 
       def builder({key, attrs, type} = input, error)
-          when is_tuple(input) and is_map(attrs) and (is_list(key) or is_atom(key)) do
+          when is_tuple(input) and (is_map(attrs) or is_struct(attrs)) and
+                 (is_list(key) or is_atom(key)) do
+        attrs = if(is_struct(attrs), do: Map.from_struct(attrs), else: attrs)
+
         GuardedStruct.builder(
           %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
           key,
@@ -1336,7 +1342,9 @@ defmodule GuardedStruct do
         )
       end
 
-      def builder(attrs, error) when is_map(attrs) do
+      def builder(attrs, error) when is_map(attrs) or is_struct(attrs) do
+        attrs = if(is_struct(attrs), do: Map.from_struct(attrs), else: attrs)
+
         GuardedStruct.builder(
           %{attrs: attrs, module: unquote(module), revaluation: unquote(escaped_list)},
           :root,
