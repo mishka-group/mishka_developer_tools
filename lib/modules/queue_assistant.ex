@@ -387,7 +387,8 @@ defmodule QueueAssistant do
   # [2, 3, 4, 5]
   ```
   """
-  @spec out(queue_type()) :: {:empty | {:value, any()}, queue_type()}
+  @dialyzer {:nowarn_function, out: 1}
+  @spec out(queue_type()) :: {:empty, {[], []}} | {{:value, any()}, queue_type()}
   def out(queue) do
     :queue.out(queue)
   end
@@ -605,6 +606,15 @@ defmodule QueueAssistant do
   @spec peek_r(queue_type()) :: :empty | {:value, any()}
   def peek_r(queue) do
     :queue.peek_r(queue)
+  end
+
+  @doc """
+  Please see `join/2` and `to_list/1`.
+  """
+  @spec join_to_list(queue_type(), queue_type()) :: list(any())
+  def join_to_list(queue, queue1) do
+    :queue.join(queue, queue1)
+    |> :queue.to_list()
   end
 
   # The "Okasaki API" is inspired by "Purely Functional Data Structures" by Chris Okasaki.
