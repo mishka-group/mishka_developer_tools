@@ -58,7 +58,10 @@ defmodule MnesiaAssistant do
 
   @doc false
   def start(mode, dir, identifier) do
-    Logger.warning("Mnesia's initial valuation process has begun.")
+    Logger.warning(
+      "Identifier: #{inspect(identifier)} ::: MnesiaMessage: Mnesia's initial valuation process has begun."
+    )
+
     stop() |> MError.error_description()
     mnesia_dir = dir <> "/#{mode}"
     File.mkdir_p(mnesia_dir) |> MError.error_description(identifier)

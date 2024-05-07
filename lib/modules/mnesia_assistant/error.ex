@@ -72,7 +72,7 @@ defmodule MnesiaAssistant.Error do
 
   def error_description(error, identifier) when error in [{:atomic, :ok}, :ok] do
     Logger.info(
-      "Identifier: #{inspect(identifier)}; The action concerned was completed successfully."
+      "Identifier: #{inspect(identifier)} ::: MnesiaMessage: The action concerned was completed successfully."
     )
 
     {:ok, :atomic}
@@ -80,7 +80,7 @@ defmodule MnesiaAssistant.Error do
 
   def error_description(:starting, identifier) do
     Logger.info(
-      "Identifier: #{inspect(identifier)}; The action concerned is being started successfully."
+      "Identifier: #{inspect(identifier)} ::: MnesiaMessage: The action concerned is being started successfully."
     )
 
     {:ok, :atomic}
@@ -89,11 +89,9 @@ defmodule MnesiaAssistant.Error do
   def error_description({:aborted, {:already_exists, _module}} = error, identifier) do
     converted = error_description(error)
 
-    Logger.warning("""
-    Identifier: #{inspect(identifier)}
-    MnesiaError: #{inspect(error)}
-    ConvertedError: #{inspect(converted)}
-    """)
+    Logger.warning(
+      "Identifier: #{inspect(identifier)} ::: MnesiaError: #{inspect(error)} ::: ConvertedError: #{inspect(converted)}"
+    )
 
     err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
     {:error, error, err}
@@ -102,11 +100,9 @@ defmodule MnesiaAssistant.Error do
   def error_description({:error, {_, {:already_exists, _}}} = error, identifier) do
     converted = error_description(error)
 
-    Logger.warning("""
-    Identifier: #{inspect(identifier)}
-    MnesiaError: #{inspect(error)}
-    ConvertedError: #{inspect(converted)}
-    """)
+    Logger.warning(
+      "Identifier: #{inspect(identifier)} ::: MnesiaError: #{inspect(error)} ::: ConvertedError: #{inspect(converted)}"
+    )
 
     err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
     {:error, error, err}
@@ -116,11 +112,9 @@ defmodule MnesiaAssistant.Error do
     if elem(error_type, 0) in @error_types do
       converted = error_description(error)
 
-      Logger.error("""
-      Identifier: #{inspect(identifier)}
-      MnesiaError: #{inspect(error)}
-      ConvertedError: #{inspect(converted)}
-      """)
+      Logger.error(
+        "Identifier: #{inspect(identifier)} ::: MnesiaError: #{inspect(error)} ::: ConvertedError: #{inspect(converted)}"
+      )
 
       err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
       {:error, error, err}
@@ -132,11 +126,9 @@ defmodule MnesiaAssistant.Error do
   def error_description(error, identifier) do
     converted = error_description(error)
 
-    Logger.error("""
-    Identifier: #{inspect(identifier)}
-    MnesiaError: #{inspect(error)}
-    ConvertedError: #{inspect(converted)}
-    """)
+    Logger.error(
+      "Identifier: #{inspect(identifier)} ::: MnesiaError: #{inspect(error)} ::: ConvertedError: #{inspect(converted)}"
+    )
 
     {:error, error, converted}
   end

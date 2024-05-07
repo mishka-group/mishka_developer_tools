@@ -276,7 +276,7 @@ defmodule MnesiaAssistant.Table do
     case wait_for_tables(tables, timeout) do
       :ok ->
         Logger.info(
-          "Identifier: #{inspect(identifier)}; The action concerned was completed successfully."
+          "Identifier: #{inspect(identifier)} ::: MnesiaMessage: The action concerned was completed successfully."
         )
 
         {:ok, :atomic}
@@ -286,22 +286,18 @@ defmodule MnesiaAssistant.Table do
           {"The requested tables could not be loaded in the specified time #{timeout}.",
            missing_tables}
 
-        Logger.error("""
-          Identifier: #{inspect(identifier)}
-          MnesiaError: #{inspect(error)}
-          ConvertedError: #{inspect(converted)}
-        """)
+        Logger.error(
+          "Identifier: #{inspect(identifier)} ::: MnesiaError: #{inspect(error)} ::: ConvertedError: #{inspect(converted)}"
+        )
 
         {:error, error, elem(converted, 0)}
 
       error ->
         converted = MnesiaAssistant.Error.error_description(error)
 
-        Logger.error("""
-          Identifier: #{inspect(identifier)}
-          MnesiaError: #{inspect(error)}
-          ConvertedError: #{inspect(converted)}
-        """)
+        Logger.error(
+          "Identifier: #{inspect(identifier)} ::: MnesiaError: #{inspect(error)} ::: ConvertedError: #{inspect(converted)}"
+        )
 
         err = if is_tuple(converted), do: to_string(elem(converted, 0)), else: converted
         {:error, error, err}
@@ -858,7 +854,7 @@ defmodule MnesiaAssistant.Table do
               re_wait_for_tables(true, [], number + 1, max_try, module, identifier, waiting_time)
 
             error ->
-              Logger.error("Identifier: #{inspect(module)}; Source: #{inspect(error)}")
+              Logger.error("Identifier: #{inspect(module)} ::: Source: #{inspect(error)}")
               {:error, :create_table, error, identifier}
           end
 
@@ -868,7 +864,7 @@ defmodule MnesiaAssistant.Table do
 
       error ->
         Logger.error(
-          "Identifier: #{inspect(module)}; Tries to get the table again(count: #{number + 1}). Source: #{inspect(error)}"
+          "Identifier: #{inspect(module)} ::: MnesiaError: Tries to get the table again(count: #{number + 1}). ::: Source: #{inspect(error)}"
         )
 
         new_output =
@@ -886,7 +882,7 @@ defmodule MnesiaAssistant.Table do
 
   defp re_wait_for_tables(false, output, number, _, module, identifier, _) do
     Logger.error(
-      "Identifier: #{inspect(module)}; Tries to get the table again(count: #{number + 1}). Source: #{inspect(output)}"
+      "Identifier: #{inspect(module)} ::: MnesiaError: Tries to get the table again(count: #{number + 1}). ::: Source: #{inspect(output)}"
     )
 
     {:error, :create_table, output, identifier}
@@ -894,7 +890,7 @@ defmodule MnesiaAssistant.Table do
 
   defp re_wait_for_tables(true, _output, number, max_try, module, identifier, waiting_time) do
     Logger.warning(
-      "Identifier: #{inspect(module)}; Tries to get the table again(count: #{number})."
+      "Identifier: #{inspect(module)} ::: MnesiaError: Tries to get the table again(count: #{number})."
     )
 
     new_output =
