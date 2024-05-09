@@ -617,6 +617,14 @@ defmodule QueueAssistant do
     |> :queue.to_list()
   end
 
+  @doc """
+  Please see `join/2` and `to_list/1`.
+  """
+  @spec join_to_list(list(any()), list(any())) :: queue_type()
+  def list_to_join(queue, queue1) do
+    :queue.join(:queue.from_list(queue), :queue.from_list(queue1))
+  end
+
   # The "Okasaki API" is inspired by "Purely Functional Data Structures" by Chris Okasaki.
   # It regards queues as lists. This API is by many regarded as strange and avoidable.
   # For example, many reverse operations have lexically reversed names, some with more
