@@ -139,6 +139,8 @@ defmodule MnesiaAssistant do
   defdelegate eg(operation), to: Extra, as: :erlang_guard
 
   defdelegate er(operation), to: Extra, as: :erlang_result
+
+  defdelegate erl_fields(tuple, fields, keys, num), to: Extra, as: :erlang_fields
   ############### Global functions Public Apis ###############
   # Ref: https://www.erlang.org/doc/apps/mnesia/mnesia_chap5#mnesia-event-handling
   # system | activity | {table, table(), simple | detailed}
