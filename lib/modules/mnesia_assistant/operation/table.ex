@@ -269,10 +269,10 @@ defmodule MnesiaAssistant.Table do
    MnesiaAssistant.Table.wait_for_tables(Person, 5000)
   ```
   """
-  def wait_for_tables(tables, timeout) when is_list(tables) and is_integer(timeout),
+  def wait_for_tables(tables, timeout) when is_list(tables),
     do: Mnesia.wait_for_tables(tables, timeout)
 
-  def wait_for_tables(tables, timeout, identifier) when is_list(tables) and is_integer(timeout) do
+  def wait_for_tables(tables, timeout, identifier) when is_list(tables) do
     case wait_for_tables(tables, timeout) do
       :ok ->
         Logger.info(
