@@ -696,6 +696,14 @@ defmodule QueueAssistant do
   end
 
   @doc """
+  Please see `head/1`.
+  """
+  @spec first(queue_type()) :: any()
+  def first(queue) do
+    :queue.head(queue)
+  end
+
+  @doc """
   Returns a queue `q2` that is the result of removing the tail item from `q1`.
 
   ### Example:
