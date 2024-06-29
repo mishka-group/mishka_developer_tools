@@ -279,7 +279,7 @@ NormalValidatorStruct.builder(%{name: "Mishka"})
 NormalValidatorStruct.builder(%{name: :mishka})
 ```
 
-> **Note**: There are other ways to call the `validator` function. Using a Tuple is the first method. It is shown in the code excerpt above. The module address appears in the first entry, and the function name in Atomic form appears in the second. 
+> **Note**: There are other ways to call the `validator` function. Using a Tuple is the first method. It is shown in the code excerpt above. The module address appears in the first entry, and the function name in Atomic form appears in the second.
 > Note that you can use `__MODULE__` if you define it in this module.
 > But there's a simpler method. The module itself has a reserved word for `validator`. It only has to be valued as a field; the macro will verify that the input is accurate.
 
@@ -959,7 +959,7 @@ defmodule AutoCoreKeyStruct do
   end
 
   def create_uuid(default) do
-    Ecto.UUID.generate() <> "-#{default}"
+    MishkaDeveloperTools.Helper.UUID.generate() <> "-#{default}"
   end
 end
 ```
@@ -1094,7 +1094,7 @@ defmodule FromCoreKeyStruct do
   end
 
   def create_uuid(default) do
-    Ecto.UUID.generate() <> "-#{default}"
+    MishkaDeveloperTools.Helper.UUID.generate() <> "-#{default}"
   end
 end
 ```

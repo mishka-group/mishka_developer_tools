@@ -98,11 +98,11 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
 
     guardedstruct do
       field(:username, String.t(), derive: "validate(not_empty)")
-      field(:user_id, String.t(), auto: {Ecto.UUID, :generate})
-      field(:parent_id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:user_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
+      field(:parent_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
 
       sub_field(:profile, struct()) do
-        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
         field(:nickname, String.t(), derive: "validate(not_empty)")
 
         sub_field(:social, struct()) do
@@ -113,13 +113,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
       end
 
       sub_field(:items, struct(), structs: true) do
-        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
         field(:something, String.t(), derive: "validate(string)", from: "root::username")
       end
     end
 
     def create_uuid(default) do
-      Ecto.UUID.generate() <> "-#{default}"
+      MishkaDeveloperTools.Helper.UUID.generate() <> "-#{default}"
     end
   end
 
@@ -130,17 +130,17 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.GlobalTest do
       field(:name, String.t(), derive: "validate(string)")
 
       sub_field(:profile, struct()) do
-        field(:id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
         field(:nickname, String.t(), on: "root::name", derive: "validate(string)")
         field(:github, String.t(), derive: "validate(string)")
 
         sub_field(:identity, struct()) do
           field(:provider, String.t(), on: "root::profile::github", derive: "validate(string)")
-          field(:id, String.t(), auto: {Ecto.UUID, :generate})
+          field(:id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
           field(:rel, String.t(), on: "sub_identity::auth_path::action")
 
           sub_field(:sub_identity, struct()) do
-            field(:id, String.t(), auto: {Ecto.UUID, :generate})
+            field(:id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
             field(:auth_path, struct(), struct: TestAuthStruct)
           end
         end

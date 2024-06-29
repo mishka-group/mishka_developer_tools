@@ -845,7 +845,7 @@ defmodule GuardedStruct do
     end
 
     def create_uuid(default) do
-      Ecto.UUID.generate() <> "-\#{default}\"
+      MishkaDeveloperTools.Helper.UUID.generate() <> "-\#{default}\"
     end
   end
   ```
@@ -954,7 +954,7 @@ defmodule GuardedStruct do
     end
 
     def create_uuid(default) do
-      Ecto.UUID.generate() <> "-\#{default}\"
+      MishkaDeveloperTools.Helper.UUID.generate() <> "-\#{default}\"
     end
   end
   ```

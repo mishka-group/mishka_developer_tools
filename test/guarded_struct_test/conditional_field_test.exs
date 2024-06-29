@@ -121,7 +121,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
 
       field(:second_username, String.t(), from: "root::information::name")
 
-      field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+      field(:record_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
 
       conditional_field(:profile, any(), priority: true) do
         field(:profile, String.t(), hint: "profile1", validator: {VAL, :is_string_data})
@@ -344,7 +344,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.ConditionalFieldTest do
           field(:action, String.t())
           field(:type, String.t(), on: "root::sub_field_on_header")
           field(:from_test, String.t(), from: "root::from_test_field")
-          field(:auto_test, String.t(), auto: {Ecto.UUID, :generate})
+          field(:auto_test, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
         end
 
         field(:activity4, String.t(),

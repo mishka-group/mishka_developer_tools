@@ -19,7 +19,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
       sub_field(:projects, struct(), structs: true, on: "root::provider") do
         field(:action, String.t())
         field(:type, String.t(), on: "root::provider_path")
-        field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:record_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
         field(:from_provider, String.t(), from: "root::provider")
         field(:from_nothing, String.t(), from: "root::nothing")
       end
@@ -27,7 +27,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
       sub_field(:project, struct(), on: "root::provider") do
         field(:action, String.t())
         field(:type, String.t(), on: "root::provider_path")
-        field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:record_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
         field(:from_provider, String.t(), from: "root::provider")
         field(:from_nothing, String.t(), from: "root::nothing")
       end
@@ -39,7 +39,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
         ) do
           field(:action, String.t())
           field(:type, String.t(), on: "root::provider2")
-          field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+          field(:record_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
           field(:from_provider, String.t(), from: "root::provider")
           field(:from_nothing, String.t(), from: "root::nothing")
           field(:on_nothing, String.t(), on: "root::project::test")
@@ -53,7 +53,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
         ) do
           field(:action, String.t())
           field(:type, String.t())
-          field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+          field(:record_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
           field(:from_provider, String.t(), from: "root::provider")
           field(:from_nothing, String.t(), from: "root::nothing")
           field(:on_nothing, String.t(), on: "root::projects::test")
@@ -69,7 +69,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
       sub_field(:code_base, struct()) do
         field(:repo, String.t())
         field(:type, String.t())
-        field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+        field(:record_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
         field(:from_provider, String.t(), from: "root::provider")
         field(:from_nothing, String.t(), from: "root::nothing")
         field(:on_nothing, String.t(), on: "root::projects::test")
@@ -83,7 +83,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
         ) do
           field(:action, String.t())
           field(:type, String.t())
-          field(:record_id, String.t(), auto: {Ecto.UUID, :generate})
+          field(:record_id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate})
           field(:from_provider, String.t(), from: "root::provider")
           field(:from_nothing, String.t(), from: "root::nothing")
           field(:on_nothing, String.t(), on: "root::projects::test")
@@ -146,7 +146,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
         field(:action, String.t(), derive: "validate(not_empty)")
       end
 
-      conditional_field(:id, String.t(), auto: {Ecto.UUID, :generate}) do
+      conditional_field(:id, String.t(), auto: {MishkaDeveloperTools.Helper.UUID, :generate}) do
         field(:id, String.t(),
           derive: "sanitize(tag=strip_tags) validate(url, max_len=160)",
           hint: "url_id"
@@ -922,8 +922,8 @@ defmodule MishkaDeveloperToolsTest.GuardedStruct.CoreKeysTest do
                auth: %{action: "ok"}
              })
 
-    {:ok, _uuid} = assert Ecto.UUID.cast(uuid)
-    {:ok, _uuid} = assert Ecto.UUID.cast(uuid1)
+    {:ok, _uuid} = assert MishkaDeveloperTools.Helper.UUID.cast(uuid)
+    {:ok, _uuid} = assert MishkaDeveloperTools.Helper.UUID.cast(uuid1)
 
     # TODO: check the error of :edit
     {:ok,

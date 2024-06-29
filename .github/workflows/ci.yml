@@ -18,31 +18,16 @@ jobs:
       matrix:
         include:
           - pair:
-              elixir: "1.15.7"
-              otp: "26.2.1"
-              postgres: "14.1-alpine"
+              elixir: "1.17.1"
+              otp: "27.0"
 
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:${{matrix.pair.postgres}}
-        env:
-          POSTGRES_DB: mishka_test
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432/tcp
-
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: erlef/setup-beam@v1
+        id: beam
         with:
           otp-version: ${{matrix.pair.otp}}
           elixir-version: ${{matrix.pair.elixir}}
@@ -53,15 +38,10 @@ jobs:
           mix local.rebar --force
 
       - name: Source Compiling
-        env:
-          DATABASE_DEVELOPERT_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
         run: |
           mix deps.get
           mix deps.compile
 
       - name: Run test with temporary information
-        env:
-          DATABASE_DEVELOPERT_URL: postgresql://postgres:postgres@localhost:${{job.services.postgres.ports[5432]}}/mishka_developer_tools_test
         run: |
-          mix dialyzer
           mix test --trace

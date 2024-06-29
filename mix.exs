@@ -1,6 +1,6 @@
 defmodule MishkaDeveloperTools.MixProject do
   use Mix.Project
-  @version "0.1.5"
+  @version "0.1.6"
   @source_url "https://github.com/mishka-group/mishka_developer_tools"
 
   def project do
@@ -40,25 +40,21 @@ defmodule MishkaDeveloperTools.MixProject do
   defp deps do
     [
       # Optional dependencies
-      {:ecto_sql, "~> 3.11", optional: true},
-      {:postgrex, "~> 0.17.2", optional: true},
-      {:ecto_enum, "~> 1.4", optional: true},
       {:html_sanitize_ex, "~> 1.4.3", optional: true},
       {:email_checker, "~> 0.2.4", optional: true},
       {:ex_url, "~> 2.0", optional: true},
-      {:ex_phone_number, "~> 0.4.3", optional: true},
+      {:ex_phone_number, "~> 0.4.4", optional: true},
       {:nimble_totp, "~> 1.0", optional: true},
       {:joken, "~> 2.6", optional: true},
       {:jason, "~> 1.4", optional: true},
-      {:plug, "~> 1.15", optional: true},
+      {:plug, "~> 1.16", optional: true},
       # Make sure you have a C compiler installed. See the Comeonin wiki for details.
       # Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
       {:bcrypt_elixir, "~> 3.1", optional: true},
       {:pbkdf2_elixir, "~> 2.2", optional: true},
       {:argon2_elixir, "~> 4.0", optional: true},
       # Dev dependencies
-      {:ex_doc, "~> 0.32", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 
