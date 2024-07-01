@@ -31,7 +31,7 @@ The package can be installed by adding `mishka_developer_tools` to your list of 
 ```elixir
 def deps do
   [
-    {:mishka_developer_tools, "~> 0.1.6"}
+    {:mishka_developer_tools, "~> 0.1.7"}
   ]
 end
 ```

@@ -1,3 +1,21 @@
+# Changelog for MishkaDeveloperTools 0.1.7
+
+> Kindly ensure that the macro is updated as quickly as feasible. This version includes a bug patch in the macro kernel that eliminates the issue of not being able to build in projects.
+
+In the past, it was possible to extend validation and sanitizer functions within the macro itself; however, this was a relatively insignificant addition that was ultimately overwritten. The same opportunity will now be available to you if you include environment in the project.
+
+### For example:
+```elixir
+Application.put_env(:guarded_struct, :validate_derive, [TestValidate, TestValidate2])
+Application.put_env(:guarded_struct, :sanitize_derive, [TestSanitize, TestSanitize2])
+
+# OR
+Application.put_env(:guarded_struct, :validate_derive, TestValidate)
+Application.put_env(:guarded_struct, :sanitize_derive, TestSanitize)
+```
+
+I offer my heartfelt apologies for the occurrence of this bug and express my desire to encounter less similar challenges in the future.
+
 # Changelog for MishkaDeveloperTools 0.1.6
 
 ### Features:

@@ -332,6 +332,8 @@ defmodule GuardedStruct do
   | `"sanitize(strip_tags)"` | `:html_sanitize_ex` | Sanitize your string base on `strip_tags` |
   | `"sanitize(tag)"` | `:html_sanitize_ex` | Sanitize your string base on `html_sanitize_ex` selection |
   | `"sanitize(string_float)"` | `:html_sanitize_ex` or `none` | Sanitize your string base on `html_sanitize_ex` and `Float.parse/1` |
+  | `"sanitize(string_float)"`  | `:html_sanitize_ex` or NO | Sanitize your string base on `html_sanitize_ex` and `Float.parse/1` |
+  | `"sanitize(string_integer)"`  | `:html_sanitize_ex` or NO | Sanitize your string base on `html_sanitize_ex` and `Integer.parse/1` |
 
   #### Validate
 
@@ -387,6 +389,9 @@ defmodule GuardedStruct do
   | `"validate(some_string_integer)"` | NO | Validate if the string data is integer (Somewhat by removing the string)|
   | `"validate(not_flatten_empty)"` | NO | Validate the list if it is empty by summing and flattening the entire list|
   | `"validate(not_flatten_empty_item)"` | NO | Validate the list if it is empty by summing and flattening the entire list and first level children|
+  | `"validate(queue)"`                             | NO              | Validate the data is Erlang queue or not |
+  | `"validate(username)"`                             | NO              | Validate the input has username format or not |
+  | `"validate(full_name)"`                             | NO              | Validate the input has full_name format or not |
 
   ```elixir
   defmodule MyModule do
@@ -407,6 +412,17 @@ defmodule GuardedStruct do
   ##### Options
   * `validate_derive` - It can be just one module or a list of modules
   * `sanitize_derive` - It can be just one module or a list of modules
+
+  First set Application env:
+
+  ```elixir
+  Application.put_env(:guarded_struct, :validate_derive, [TestValidate, TestValidate2])
+  Application.put_env(:guarded_struct, :sanitize_derive, [TestSanitize, TestSanitize2])
+
+  # OR
+  Application.put_env(:guarded_struct, :validate_derive, TestValidate)
+  Application.put_env(:guarded_struct, :sanitize_derive, TestSanitize)
+  ```
 
   ```elixir
   defmodule TestValidate do
@@ -1494,13 +1510,6 @@ defmodule GuardedStruct do
   @doc false
   def register_struct(block, opts, key, caller) do
     quote do
-      [:validate_derive, :sanitize_derive]
-      |> Enum.each(fn item ->
-        if is_nil(Application.compile_env(:guarded_struct, item)) do
-          Application.put_env(:guarded_struct, item, Keyword.get(unquote(opts), item))
-        end
-      end)
-
       Enum.each(unquote(@temporary_revaluation), fn attr ->
         Module.register_attribute(__MODULE__, attr, accumulate: true)
       end)

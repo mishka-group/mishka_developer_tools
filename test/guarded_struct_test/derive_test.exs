@@ -648,7 +648,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
   defmodule TestExistCustomValidateDerive do
     use GuardedStruct
 
-    guardedstruct validate_derive: TestValidate, sanitize_derive: TestSanitize do
+    guardedstruct do
       field(:id, integer(), derive: "validate(not_exist)")
       field(:title, String.t(), derive: "validate(string)")
       field(:name, String.t(), derive: "sanitize(capitalize_v2)")
@@ -658,7 +658,7 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
   defmodule TestCustomeDerive do
     use GuardedStruct
 
-    guardedstruct validate_derive: TestValidate, sanitize_derive: TestSanitize do
+    guardedstruct do
       field(:id, integer())
       field(:title, String.t(), derive: "validate(not_empty, testv1)")
       field(:name, String.t(), derive: "validate(string, not_empty) sanitize(trim, capitalize)")
@@ -701,14 +701,13 @@ defmodule MishkaDeveloperToolsTest.GuardedStructDeriveTest do
      ]} = assert TestCustomeDerive.builder(%{id: 1, title: 1})
   end
 
-  Application.put_env(:guarded_struct, :validate_derive, nil)
-  Application.put_env(:guarded_struct, :sanitize_derive, nil)
+  Application.put_env(:guarded_struct, :validate_derive, [TestValidate, TestValidate2])
+  Application.put_env(:guarded_struct, :sanitize_derive, [TestSanitize, TestSanitize2])
 
   defmodule TestCustomListDerive do
     use GuardedStruct
 
-    guardedstruct validate_derive: [TestValidate, TestValidate2],
-                  sanitize_derive: [TestSanitize, TestSanitize2] do
+    guardedstruct do
       field(:id, integer())
       field(:title, String.t(), derive: "validate(not_empty, testv2)")
 
