@@ -1,6 +1,6 @@
 defmodule MishkaDeveloperTools.MixProject do
   use Mix.Project
-  @version "0.1.7"
+  @version "0.1.8"
   @source_url "https://github.com/mishka-group/mishka_developer_tools"
 
   def project do
@@ -39,11 +39,6 @@ defmodule MishkaDeveloperTools.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # Optional dependencies
-      {:html_sanitize_ex, "~> 1.4.3", optional: true},
-      {:email_checker, "~> 0.2.4", optional: true},
-      {:ex_url, "~> 2.0", optional: true},
-      {:ex_phone_number, "~> 0.4.4", optional: true},
       {:nimble_totp, "~> 1.0", optional: true},
       {:joken, "~> 2.6", optional: true},
       {:jason, "~> 1.4", optional: true},

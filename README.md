@@ -6,7 +6,9 @@ We tried to deliver a series of our client's [**CMS**](https://github.com/mishka
 
 ---
 
-- ### [GuardedStruct](https://github.com/mishka-group/mishka_developer_tools/blob/master/guidance/guarded-struct.md)
+- ### [GuardedStruct](https://github.com/mishka-group/guarded_struct)
+
+  **We recently separated the [GuardedStruct](https://github.com/mishka-group/guarded_struct) macro into a standalone library. Please visit its repository for more information.**
 
   > The creation of this macro will allow you to build `Structs` that provide you with a number of important options, including the following:
   >

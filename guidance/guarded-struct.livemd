@@ -17,6 +17,8 @@ Mix.install([
 
 The creation of this macro will allow you to build `Structs` that provide you with a number of important options, including the following:
 
+> **We recently separated the [GuardedStruct](https://github.com/mishka-group/guarded_struct) macro into a standalone library. Please visit its repository for more information.**
+
 1. **Validation**
 2. **Sanitizing**
 3. **Constructor**
