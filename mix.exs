@@ -31,7 +31,6 @@ defmodule MishkaDeveloperTools.MixProject do
   def application do
     [
       extra_applications: [:logger, :mnesia],
-      included_applications: [:mnesia],
       mod: {MishkaDeveloperTools.Application, []}
     ]
   end
