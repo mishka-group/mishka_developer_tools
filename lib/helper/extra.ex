@@ -41,7 +41,13 @@ defmodule MishkaDeveloperTools.Helper.Extra do
   def erlang_fields(tuple, [], _keys, _num), do: tuple
 
   def erlang_fields(tuple, [h | t], keys, num) do
-    new_tuple = Tuple.append(tuple, if(h in keys, do: String.to_atom("$#{num}"), else: :_))
+    new_tuple =
+      Tuple.insert_at(
+        tuple,
+        tuple_size(tuple),
+        if(h in keys, do: String.to_atom("$#{num}"), else: :_)
+      )
+
     erlang_fields(new_tuple, t, keys, if(h in keys, do: num + 1, else: num))
   end
 
