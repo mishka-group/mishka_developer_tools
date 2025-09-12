@@ -1,6 +1,6 @@
 defmodule MishkaDeveloperTools.MixProject do
   use Mix.Project
-  @version "0.1.8"
+  @version "0.1.9"
   @source_url "https://github.com/mishka-group/mishka_developer_tools"
 
   def project do
@@ -41,14 +41,14 @@ defmodule MishkaDeveloperTools.MixProject do
       {:nimble_totp, "~> 1.0", optional: true},
       {:joken, "~> 2.6", optional: true},
       {:jason, "~> 1.4", optional: true},
-      {:plug, "~> 1.17", optional: true},
+      {:plug, "~> 1.18", optional: true},
       # Make sure you have a C compiler installed. See the Comeonin wiki for details.
       # Wiki link: https://github.com/riverrun/comeonin/wiki/Requirements
       {:bcrypt_elixir, "~> 3.2", optional: true},
       {:pbkdf2_elixir, "~> 2.3", optional: true},
       {:argon2_elixir, "~> 4.1", optional: true},
       # Dev dependencies
-      {:ex_doc, "~> 0.37", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.38", only: :dev, runtime: false}
     ]
   end
 
