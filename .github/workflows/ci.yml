@@ -1,47 +1,30 @@
-name: MishkaDeveloperTools CI
+name: CI
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
+  workflow_dispatch:
+
+# A newer push to the same branch or pull request makes the run in progress pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   ci:
-    env:
-      GITHUB_ACTION: true
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - pair:
-              elixir: "1.17.1"
-              otp: "27.0"
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: erlef/setup-beam@v1
-        id: beam
-        with:
-          otp-version: ${{matrix.pair.otp}}
-          elixir-version: ${{matrix.pair.elixir}}
-
-      - name: Elixir and Erlang Dependencies
-        run: |
-          mix local.hex --force
-          mix local.rebar --force
-
-      - name: Source Compiling
-        run: |
-          mix deps.get
-          mix deps.compile
-
-      - name: Run test with temporary information
-        run: |
-          mix test --trace
+    # Switch to @ci-v1 once mishka-group/mishka_cms#77 is merged and tagged.
+    uses: mishka-group/mishka_cms/.github/workflows/mishka-ci.yml@ci/shared-workflows
+    with:
+      # Today CI only runs the tests on the oldest pair; there is no .tool-versions.
+      elixir: 1.17.1
+      otp: "27.0"
+      credo: false
+      dialyzer: false
+      ex_dna: false
+      mix-audit: false
+      test-args: --trace
