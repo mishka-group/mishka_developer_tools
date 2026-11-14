@@ -1,0 +1,40 @@
+name: Release
+
+# "Run workflow" with a version is the release button: it bumps @version in mix.exs, tags
+# `v<version>`, runs CI on that commit, builds the ebin tarball, creates the GitHub release and
+# publishes the package to Hex through the workload identity (staged: approve it on hex.pm).
+# Pushing a `v*` tag by hand releases that tag; "Run workflow" without a version is a dry run.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, e.g. 0.1.1 (empty dry-runs the version in mix.exs)
+        required: false
+
+concurrency:
+  group: release
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    # Switch to @ci-v1 once mishka-group/mishka_cms#77 is merged and tagged.
+    uses: mishka-group/mishka_cms/.github/workflows/mishka-release.yml@ci-v1
+    with:
+      version: ${{ inputs.version }}
+      elixir: 1.17.1
+      otp: "27.0"
+      credo: false
+      dialyzer: false
+      ex_dna: false
+      mix-audit: false
+      test-args: --trace
+      github-release: true
+      ebin: true
+      # The library has no `priv`.
+      ebin-paths: ""
+    secrets: inherit
